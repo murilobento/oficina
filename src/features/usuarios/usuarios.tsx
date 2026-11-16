@@ -1,87 +1,105 @@
 import { useMemo, useState } from "react";
 
-import {
-  type ColumnFiltersState,
-  type ColumnVisibilityState,
-  type PaginationState,
-  type SortingState,
-  useTable,
-} from "@tanstack/react-table";
-import { Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { dataTableFeatures } from "@/lib/data-table-features";
+import {
+  Listagem,
+  ListagemBusca,
+  ListagemCabecalho,
+  ListagemCartao,
+  ListagemCartoes,
+  ListagemFiltro,
+  ListagemFiltros,
+  ListagemGrupoFiltros,
+  ListagemRodape,
+  ListagemTabela,
+  ListagemVazia,
+} from "@/components/layout/listagem";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
+import { cn, getInitials } from "@/lib/utils";
 
-import { gerarSenhaProvisoria, perfis, type Usuario, type UsuarioStatus, usuariosIniciais } from "./data";
+import {
+  formatarData,
+  formatarDataHora,
+  gerarSenhaProvisoria,
+  perfilPorId,
+  perfis,
+  statusDoUsuario,
+  type Usuario,
+  usuariosIniciais,
+} from "./data";
 import { ConfirmacaoDialog, SenhaProvisoriaDialog } from "./usuario-dialogs";
 import { UsuarioForm, type UsuarioFormValores } from "./usuario-form";
-import { criarColunasUsuarios } from "./usuarios-columns";
-import { UsuariosTable } from "./usuarios-table";
+import { AcoesUsuario, StatusBadge } from "./usuario-partes";
 
-const TODOS = "Todos";
-const FILTRO_PERFIL = [TODOS, ...perfis.map((perfil) => perfil.nome)];
-const FILTRO_STATUS: string[] = [TODOS, "Ativo", "Senha provisória", "Desativado"] satisfies (UsuarioStatus | "Todos")[];
+const TODOS = "todos";
+const FILTRO_PERFIL = [{ valor: TODOS, texto: "Todos" }, ...perfis.map((perfil) => ({ valor: perfil.id, texto: perfil.nome }))];
+const FILTRO_STATUS = [
+  { valor: TODOS, texto: "Todos" },
+  { valor: "Ativo", texto: "Ativo" },
+  { valor: "Senha provisória", texto: "Senha provisória" },
+  { valor: "Desativado", texto: "Desativado" },
+];
 
 type Confirmacao = { tipo: "redefinir" | "desativar" | "reativar"; usuario: Usuario };
 type SenhaExibida = { usuario: Usuario; senha: string; motivo: "cadastro" | "redefinicao" };
 
+function Identidade({ usuario }: { usuario: Usuario }) {
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <Avatar size="lg" className={cn("font-medium", !usuario.ativo && "opacity-50")}>
+        <AvatarFallback>{getInitials(usuario.nome)}</AvatarFallback>
+      </Avatar>
+      <div className="min-w-0">
+        <div className="truncate font-medium">{usuario.nome}</div>
+        <div className="text-muted-foreground truncate text-sm">{usuario.email}</div>
+      </div>
+    </div>
+  );
+}
+
 /**
- * Tela de usuários (protótipo): listagem com busca, filtros e paginação, formulário de
- * cadastro/edição e os fluxos de senha provisória e desativação. Os dados são de exemplo
- * e ficam só na memória; a ligação com o Supabase entra na etapa 1.2 do PRD.
+ * Tela de funcionários (protótipo), no padrão de listagem do sistema. Os dados são de exemplo
+ * e ficam só na memória; a ligação com o Supabase entra junto com o login.
  */
 export function Usuarios() {
   const [usuarios, setUsuarios] = useState<Usuario[]>(usuariosIniciais);
+
+  const [busca, setBusca] = useState("");
+  const [filtroPerfil, setFiltroPerfil] = useState(TODOS);
+  const [filtroStatus, setFiltroStatus] = useState(TODOS);
+  const [pagina, setPagina] = useState(1);
 
   const [formAberto, setFormAberto] = useState(false);
   const [emEdicao, setEmEdicao] = useState<Usuario | null>(null);
   const [confirmacao, setConfirmacao] = useState<Confirmacao | null>(null);
   const [senhaExibida, setSenhaExibida] = useState<SenhaExibida | null>(null);
 
-  const [sorting, setSorting] = useState<SortingState>([{ id: "nome", desc: false }]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({ busca: false });
-  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
+  const filtrados = useMemo(() => {
+    const termo = normalizar(busca.trim());
+    return usuarios
+      .filter((usuario) => filtroPerfil === TODOS || usuario.perfilId === filtroPerfil)
+      .filter((usuario) => filtroStatus === TODOS || statusDoUsuario(usuario) === filtroStatus)
+      .filter((usuario) => termo === "" || normalizar(`${usuario.nome} ${usuario.email}`).includes(termo))
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  }, [usuarios, busca, filtroPerfil, filtroStatus]);
 
-  const colunas = useMemo(
-    () =>
-      criarColunasUsuarios({
-        aoEditar: (usuario) => {
-          setEmEdicao(usuario);
-          setFormAberto(true);
-        },
-        aoRedefinirSenha: (usuario) => setConfirmacao({ tipo: "redefinir", usuario }),
-        aoAlternarAtivo: (usuario) => setConfirmacao({ tipo: usuario.ativo ? "desativar" : "reativar", usuario }),
-      }),
-    [],
-  );
+  const { visiveis, paginaAtual, totalPaginas } = paginar(filtrados, pagina);
 
-  const table = useTable({
-    features: dataTableFeatures,
-    data: usuarios,
-    columns: colunas,
-    state: { sorting, columnFilters, columnVisibility, pagination },
-    getRowId: (row) => row.id,
-    autoResetPageIndex: false,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: setPagination,
-  });
-
-  const busca = (table.getColumn("busca")?.getFilterValue() as string | undefined) ?? "";
-  const filtroPerfil = (table.getColumn("perfil")?.getFilterValue() as string | undefined) ?? TODOS;
-  const filtroStatus = (table.getColumn("status")?.getFilterValue() as string | undefined) ?? TODOS;
-  const totalFiltrado = table.getFilteredRowModel().rows.length;
-
-  function filtrar(colunaId: string, valor: string) {
-    table.getColumn(colunaId)?.setFilterValue(valor === TODOS ? undefined : valor);
-    table.setPageIndex(0);
+  function abrirForm(usuario: Usuario | null) {
+    setEmEdicao(usuario);
+    setFormAberto(true);
   }
+
+  const acoes = {
+    aoEditar: abrirForm,
+    aoRedefinirSenha: (usuario: Usuario) => setConfirmacao({ tipo: "redefinir", usuario }),
+    aoAlternarAtivo: (usuario: Usuario) =>
+      setConfirmacao({ tipo: usuario.ativo ? "desativar" : "reativar", usuario }),
+  };
 
   function salvar(valores: UsuarioFormValores) {
     if (emEdicao) {
@@ -116,86 +134,114 @@ export function Usuarios() {
     setConfirmacao(null);
   }
 
+  const vazio = <ListagemVazia>Nenhum funcionário encontrado com esses filtros.</ListagemVazia>;
+
   return (
-    <>
-      <Card>
-        <CardHeader className="border-b has-data-[slot=card-action]:grid-cols-1 md:has-data-[slot=card-action]:grid-cols-[1fr_auto]">
-          <CardTitle className="text-xl leading-none">Funcionários</CardTitle>
-          <CardDescription className="max-w-sm leading-snug">
-            Quem acessa o sistema e com qual perfil.
-          </CardDescription>
-          <CardAction className="col-start-1 row-start-auto flex w-full flex-wrap justify-start gap-2 justify-self-stretch md:col-start-2 md:row-span-2 md:row-start-1 md:w-auto md:flex-nowrap md:justify-end md:justify-self-end">
-            <InputGroup className="h-7 w-full md:w-64">
-              <InputGroupAddon align="inline-start">
-                <Search className="size-3.5" />
-              </InputGroupAddon>
-              <InputGroupInput
-                className="h-7"
-                placeholder="Buscar por nome ou e-mail"
-                aria-label="Buscar usuários"
-                value={busca}
-                onChange={(event) => {
-                  table.getColumn("busca")?.setFilterValue(event.target.value || undefined);
-                  table.setPageIndex(0);
-                }}
-              />
-            </InputGroup>
-            <Button
-              size="sm"
-              onClick={() => {
-                setEmEdicao(null);
-                setFormAberto(true);
-              }}
-            >
-              <Plus /> Novo usuário
-            </Button>
-          </CardAction>
-        </CardHeader>
+    <Listagem>
+      <ListagemCabecalho
+        titulo="Funcionários"
+        descricao="Quem acessa o sistema e com qual perfil."
+        rotuloNovo="Novo funcionário"
+        aoNovo={() => abrirForm(null)}
+      />
 
-        <CardContent className="flex flex-col gap-4 px-0">
-          <div className="flex flex-wrap items-center justify-between gap-3 px-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <Select value={filtroPerfil} onValueChange={(valor) => filtrar("perfil", valor)}>
-                <SelectTrigger size="sm">
-                  <span className="text-muted-foreground">Perfil:</span>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper" align="start">
-                  <SelectGroup>
-                    {FILTRO_PERFIL.map((opcao) => (
-                      <SelectItem key={opcao} value={opcao}>
-                        {opcao}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+      <ListagemFiltros>
+        <ListagemBusca
+          valor={busca}
+          aoMudar={(valor) => {
+            setBusca(valor);
+            setPagina(1);
+          }}
+          placeholder="Nome ou e-mail"
+          rotulo="Buscar funcionários"
+        />
+        <ListagemGrupoFiltros>
+          <ListagemFiltro
+            rotulo="Perfil"
+            valor={filtroPerfil}
+            opcoes={FILTRO_PERFIL}
+            aoMudar={(valor) => {
+              setFiltroPerfil(valor);
+              setPagina(1);
+            }}
+          />
+          <ListagemFiltro
+            rotulo="Status"
+            valor={filtroStatus}
+            opcoes={FILTRO_STATUS}
+            aoMudar={(valor) => {
+              setFiltroStatus(valor);
+              setPagina(1);
+            }}
+          />
+        </ListagemGrupoFiltros>
+      </ListagemFiltros>
 
-              <Select value={filtroStatus} onValueChange={(valor) => filtrar("status", valor)}>
-                <SelectTrigger size="sm">
-                  <span className="text-muted-foreground">Situação:</span>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper" align="start">
-                  <SelectGroup>
-                    {FILTRO_STATUS.map((opcao) => (
-                      <SelectItem key={opcao} value={opcao}>
-                        {opcao}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+      <ListagemCartoes>
+        {visiveis.map((usuario) => (
+          <ListagemCartao key={usuario.id}>
+            <div className="flex items-center justify-between gap-2">
+              <Identidade usuario={usuario} />
+              <AcoesUsuario usuario={usuario} {...acoes} />
             </div>
-
-            <div className="text-muted-foreground text-sm tabular-nums">
-              {totalFiltrado} {totalFiltrado === 1 ? "usuário" : "usuários"}
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" className="font-normal">
+                {perfilPorId(usuario.perfilId)?.nome ?? "Sem perfil"}
+              </Badge>
+              <StatusBadge status={statusDoUsuario(usuario)} />
             </div>
-          </div>
+            <p className="text-muted-foreground text-sm">Último acesso: {formatarDataHora(usuario.ultimoAcesso)}</p>
+          </ListagemCartao>
+        ))}
+        {visiveis.length === 0 && <li className="col-span-full">{vazio}</li>}
+      </ListagemCartoes>
 
-          <UsuariosTable table={table} />
-        </CardContent>
-      </Card>
+      <ListagemTabela>
+        <Table className={CLASSE_TABELA}>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="py-3 font-normal">Funcionário</TableHead>
+              <TableHead className="py-3 font-normal">Perfil</TableHead>
+              <TableHead className="py-3 font-normal">Status</TableHead>
+              <TableHead className="py-3 font-normal">Último acesso</TableHead>
+              <TableHead className="hidden py-3 font-normal @6xl:table-cell">Cadastro</TableHead>
+              <TableHead className="py-3 text-right font-normal">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {visiveis.map((usuario) => (
+              <TableRow key={usuario.id}>
+                <TableCell className="max-w-60 py-3">
+                  <Identidade usuario={usuario} />
+                </TableCell>
+                <TableCell className="py-3 whitespace-nowrap">{perfilPorId(usuario.perfilId)?.nome ?? ""}</TableCell>
+                <TableCell className="py-3">
+                  <StatusBadge status={statusDoUsuario(usuario)} />
+                </TableCell>
+                <TableCell className="py-3 whitespace-nowrap">{formatarDataHora(usuario.ultimoAcesso)}</TableCell>
+                <TableCell className="hidden py-3 whitespace-nowrap @6xl:table-cell">{formatarData(usuario.criadoEm)}</TableCell>
+                <TableCell className="py-3 text-right">
+                  <AcoesUsuario usuario={usuario} {...acoes} />
+                </TableCell>
+              </TableRow>
+            ))}
+            {visiveis.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6}>{vazio}</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </ListagemTabela>
+
+      <ListagemRodape
+        total={filtrados.length}
+        singular="funcionário"
+        plural="funcionários"
+        pagina={paginaAtual}
+        totalPaginas={totalPaginas}
+        aoMudarPagina={setPagina}
+      />
 
       <UsuarioForm
         aberto={formAberto}
@@ -206,6 +252,6 @@ export function Usuarios() {
       />
       <ConfirmacaoDialog confirmacao={confirmacao} aoCancelar={() => setConfirmacao(null)} aoConfirmar={confirmar} />
       <SenhaProvisoriaDialog dados={senhaExibida} aoFechar={() => setSenhaExibida(null)} />
-    </>
+    </Listagem>
   );
 }

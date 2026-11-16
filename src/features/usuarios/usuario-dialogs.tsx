@@ -60,7 +60,7 @@ export function SenhaProvisoriaDialog({
 
         <div className="bg-muted flex items-center justify-between gap-3 rounded-md border p-3">
           <code className="font-mono text-lg tracking-wider break-all select-all">{dados?.senha}</code>
-          <Button type="button" variant="outline" size="sm" onClick={copiar}>
+          <Button type="button" variant="outline" onClick={copiar}>
             {copiada ? <Check /> : <Copy />}
             {copiada ? "Copiada" : "Copiar"}
           </Button>

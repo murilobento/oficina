@@ -1,5 +1,4 @@
 import {
-  Car,
   Home,
   type LucideIcon,
   Package,
@@ -19,10 +18,10 @@ export interface NavItem {
   permissao?: Permissao;
 }
 
-/** Um grupo que abre e fecha dentro do painel (ex.: "Ordens"). */
+/** Um grupo dentro do painel. Com `title` ele abre e fecha; sem `title` os itens aparecem direto. */
 export interface NavGroup {
   id: string;
-  title: string;
+  title?: string;
   items: NavItem[];
 }
 
@@ -39,27 +38,37 @@ export interface NavModule {
 }
 
 // Menu do sistema. A ordem aqui é a ordem dos ícones na faixa da esquerda.
+// Itens sem `url` são telas ainda não construídas.
 export const navModules: NavModule[] = [
   { id: "inicio", title: "Início", icon: Home, url: "/" },
-  { id: "clientes", title: "Clientes", icon: Users, url: "/clientes" },
-  { id: "veiculos", title: "Veículos", icon: Car, url: "/veiculos" },
   {
     id: "atendimento",
     title: "Atendimento",
     icon: Wrench,
     groups: [
       {
-        id: "ordens",
-        title: "Ordens",
+        id: "atendimento",
         items: [
-          { id: "orcamentos", title: "Orçamentos", url: "/orcamentos" },
-          { id: "ordens", title: "Ordens de serviço", url: "/ordens" },
+          { id: "orcamentos", title: "Orçamento", url: "/orcamentos" },
+          { id: "vendas", title: "Venda" },
+          { id: "compras", title: "Compra" },
         ],
       },
+    ],
+  },
+  {
+    id: "cadastro",
+    title: "Cadastro",
+    icon: Users,
+    groups: [
       {
-        id: "agenda",
-        title: "Agenda",
-        items: [{ id: "agenda", title: "Agenda de atendimentos", url: "/agenda" }],
+        id: "cadastro",
+        items: [
+          { id: "clientes", title: "Cliente", url: "/clientes" },
+          { id: "fornecedores", title: "Fornecedor", url: "/fornecedores" },
+          { id: "produtos", title: "Produto", url: "/estoque" },
+          { id: "servicos", title: "Serviço" },
+        ],
       },
     ],
   },
@@ -69,17 +78,11 @@ export const navModules: NavModule[] = [
     icon: Package,
     groups: [
       {
-        id: "pecas",
-        title: "Peças",
+        id: "estoque",
         items: [
-          { id: "pecas", title: "Peças e produtos", url: "/estoque" },
-          { id: "movimentacoes", title: "Movimentações" },
+          { id: "movimentacoes", title: "Movimentação de estoque" },
+          { id: "acertos", title: "Acerto de estoque" },
         ],
-      },
-      {
-        id: "fornecedores",
-        title: "Cadastros",
-        items: [{ id: "fornecedores", title: "Fornecedores" }],
       },
     ],
   },

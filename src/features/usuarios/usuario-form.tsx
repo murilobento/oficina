@@ -54,7 +54,7 @@ export function UsuarioForm({
 
   const enviar = form.handleSubmit((valores) => {
     if (emailsEmUso.includes(valores.email.toLowerCase())) {
-      form.setError("email", { message: "Já existe um usuário com este e-mail." });
+      form.setError("email", { message: "Já existe um funcionário com este e-mail." });
       return;
     }
     aoSalvar({ ...valores, email: valores.email.toLowerCase() });
@@ -64,7 +64,7 @@ export function UsuarioForm({
     <Sheet open={aberto} onOpenChange={(open) => !open && aoFechar()}>
       <SheetContent className="w-full! gap-0 sm:max-w-md">
         <SheetHeader className="border-b">
-          <SheetTitle>{editando ? "Editar usuário" : "Novo usuário"}</SheetTitle>
+          <SheetTitle>{editando ? "Editar funcionário" : "Novo funcionário"}</SheetTitle>
           <SheetDescription>
             {editando
               ? "Altere os dados ou o perfil."
@@ -98,7 +98,7 @@ export function UsuarioForm({
                       id="usuario-email"
                       type="email"
                       autoComplete="off"
-                      placeholder="nome@dtconstrutora.com"
+                      placeholder="nome@exemplo.com.br"
                       aria-invalid={fieldState.invalid}
                     />
                     <FieldDescription>É o que a pessoa usa para entrar no sistema.</FieldDescription>
@@ -136,11 +136,13 @@ export function UsuarioForm({
             </FieldGroup>
           </div>
 
-          <SheetFooter className="flex-row justify-end border-t">
-            <Button type="button" variant="outline" onClick={aoFechar}>
+          <SheetFooter className="flex-row justify-end gap-2 border-t">
+            <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit">{editando ? "Salvar alterações" : "Cadastrar usuário"}</Button>
+            <Button type="submit" className="flex-1 sm:flex-none">
+              {editando ? "Salvar alterações" : "Cadastrar funcionário"}
+            </Button>
           </SheetFooter>
         </form>
       </SheetContent>

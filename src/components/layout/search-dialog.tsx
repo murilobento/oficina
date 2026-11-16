@@ -105,7 +105,7 @@ export function SearchDialog() {
       >
         <Search data-icon="inline-start" />
         Buscar
-        <kbd className="bg-muted inline-flex h-5 items-center gap-1 rounded border px-1.5 text-[10px] font-medium select-none">
+        <kbd className="bg-muted hidden h-5 md:inline-flex items-center gap-1 rounded border px-1.5 text-[10px] font-medium select-none">
           Ctrl K
         </kbd>
       </Button>

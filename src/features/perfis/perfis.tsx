@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
 
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { Listagem, ListagemCabecalho } from "@/components/layout/listagem";
 import { usuariosIniciais } from "@/features/usuarios/data";
 
 import { type PerfilAcesso, perfisIniciais } from "./data";
@@ -46,19 +45,13 @@ export function Perfis() {
   }
 
   return (
-    <div className="flex flex-col gap-4 md:gap-6">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">Perfis</h1>
-          <p className="text-muted-foreground text-sm">
-            O que cada função pode fazer no sistema. Vale para todos que têm o perfil.
-          </p>
-        </div>
-        <Button className="shrink-0" onClick={() => abrir(null)}>
-          <Plus /> <span className="hidden sm:inline">Novo perfil</span>
-          <span className="sm:hidden">Novo</span>
-        </Button>
-      </div>
+    <Listagem>
+      <ListagemCabecalho
+        titulo="Perfis"
+        descricao="O que cada função pode fazer no sistema. Vale para todos que têm o perfil."
+        rotuloNovo="Novo perfil"
+        aoNovo={() => abrir(null)}
+      />
 
       <PerfisCards perfis={perfis} usuariosPorPerfil={usuariosPorPerfil} aoEditar={abrir} />
 
@@ -69,6 +62,6 @@ export function Perfis() {
         aoFechar={() => setFormAberto(false)}
         aoSalvar={salvar}
       />
-    </div>
+    </Listagem>
   );
 }

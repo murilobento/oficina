@@ -22,9 +22,14 @@ export function NavMain({ module }: { readonly module: NavModule }) {
     <SidebarGroup>
       <SidebarGroupContent>
         <SidebarMenu>
-          {module.groups?.map((group) => (
-            <NavGroupItem key={group.id} group={group} pathname={pathname} />
-          ))}
+          {module.groups?.map((group) =>
+            group.title ? (
+              <NavGroupItem key={group.id} group={group} pathname={pathname} />
+            ) : (
+              // Grupo sem título: os itens aparecem direto, sem abrir e fechar.
+              group.items.map((item) => <NavFlatItem key={item.id} item={item} pathname={pathname} />)
+            ),
+          )}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
@@ -54,6 +59,29 @@ function NavGroupItem({ group, pathname }: { readonly group: NavGroup; readonly 
         </CollapsibleContent>
       </SidebarMenuItem>
     </Collapsible>
+  );
+}
+
+function NavFlatItem({ item, pathname }: { readonly item: NavItem; readonly pathname: string }) {
+  if (!item.url) {
+    return (
+      <SidebarMenuItem>
+        {/* Tela ainda não construída: aparece apagada e não é clicável. */}
+        <SidebarMenuButton aria-disabled title={`${item.title} (em breve)`}>
+          <span>{item.title}</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  }
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild isActive={isSamePath(item.url, pathname)}>
+        <Link to={item.url}>
+          <span>{item.title}</span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
   );
 }
 

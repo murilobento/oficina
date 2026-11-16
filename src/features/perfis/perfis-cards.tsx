@@ -19,7 +19,7 @@ export function PerfisCards({
   const totalPermissoes = Object.keys(PERMISSOES).length;
 
   return (
-    <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+    <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2 xl:grid-cols-3">
       {perfis.map((perfil) => {
         const modulos = MODULOS.filter((modulo) =>
           perfil.permissoes.some((permissao) => moduloDaPermissao(permissao) === modulo.id),
@@ -27,7 +27,7 @@ export function PerfisCards({
         const pessoas = usuariosPorPerfil[perfil.id] ?? 0;
 
         return (
-          <li key={perfil.id} className="bg-card flex flex-col gap-3 rounded-xl border p-4">
+          <li key={perfil.id} className="bg-card flex min-w-0 flex-col gap-3 rounded-xl border p-4 uppercase [&_button]:uppercase">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="flex items-center gap-1.5 font-medium">
@@ -40,7 +40,6 @@ export function PerfisCards({
               </div>
               <Button
                 variant="outline"
-                size="sm"
                 className="shrink-0"
                 aria-label={`Editar ${perfil.nome}`}
                 onClick={() => aoEditar(perfil)}

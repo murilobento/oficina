@@ -20,7 +20,7 @@ export function AppLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <SidebarProvider
       defaultOpen={defaultOpen}
-      style={{ "--sidebar-width": "calc(var(--spacing) * 80)" } as CSSProperties}
+      style={{ "--sidebar-width": "calc(var(--spacing) * 60)" } as CSSProperties}
     >
       <AppSidebar />
       <SidebarInset
@@ -41,7 +41,7 @@ export function AppLayout({ children }: Readonly<{ children: ReactNode }>) {
         >
           <div className="flex w-full items-center justify-between px-4 lg:px-6">
             <div className="flex items-center gap-1 lg:gap-2">
-              <SidebarTrigger className="-ml-1" />
+              <SidebarTrigger className="-ml-2 max-md:size-11 md:-ml-1" />
               <Separator
                 orientation="vertical"
                 className="mx-2 data-[orientation=vertical]:h-4 data-[orientation=vertical]:self-center"

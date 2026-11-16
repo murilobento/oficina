@@ -87,7 +87,6 @@ export function PerfilForm({
                       {...field}
                       id="perfil-nome"
                       autoComplete="off"
-                      className="h-11"
                       aria-invalid={fieldState.invalid}
                     />
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
@@ -101,7 +100,7 @@ export function PerfilForm({
                 render={({ field }) => (
                   <Field className="gap-1.5">
                     <FieldLabel htmlFor="perfil-descricao">Descrição</FieldLabel>
-                    <Input {...field} id="perfil-descricao" autoComplete="off" className="h-11" />
+                    <Input {...field} id="perfil-descricao" autoComplete="off" />
                   </Field>
                 )}
               />
