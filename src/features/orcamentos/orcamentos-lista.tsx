@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import { toast } from "sonner";
 
+import { usePode } from "@/features/auth/sessao";
+
 import {
   Listagem,
   ListagemBusca,
@@ -25,12 +27,13 @@ import { formatarBRL } from "@/lib/numeros";
 
 import { validoAte } from "./calculo";
 import { GerarVendaDialog } from "@/features/vendas/gerar-venda-dialog";
-import { useVendasStore } from "@/features/vendas/store";
+import { useVendas } from "@/features/vendas/api";
+import { useExcluirOrcamento, useMudarStatusOrcamento, useOrcamentos, useRenovarOrcamento } from "./api";
 import { OrcamentoDetalhe, type MudancaStatus } from "./orcamento-detalhe";
 import { OrcamentoDocumento } from "./orcamento-documento";
 import { OrcamentoForm } from "./orcamento-form";
 import { AcoesOrcamento, StatusOrcamentoBadge } from "./orcamento-partes";
-import { useOrcamentosStore } from "./store";
+
 import { type Orcamento, ROTULO_STATUS, statusExibido, totaisDoOrcamento } from "./tipos";
 
 const FILTRO_STATUS = [
@@ -55,12 +58,14 @@ function dataCurta(data: Date | string): string {
 
 /** Listagem de orçamentos. Criar, editar e visualizar abrem em painel lateral. */
 export function OrcamentosLista() {
-  const orcamentos = useOrcamentosStore((estado) => estado.itens);
-  const atualizar = useOrcamentosStore((estado) => estado.atualizar);
-  const remover = useOrcamentosStore((estado) => estado.remover);
+  const orcamentos = useOrcamentos();
+  const podeEditar = usePode("orcamentos.editar");
+  const mudarStatus = useMudarStatusOrcamento();
+  const renovar = useRenovarOrcamento();
+  const remover = useExcluirOrcamento();
   const clientes = usePessoas("cliente");
   const veiculos = useVeiculos();
-  const vendas = useVendasStore((estado) => estado.itens);
+  const vendas = useVendas();
   const [gerandoVenda, setGerandoVenda] = useState<Orcamento | null>(null);
   const [aberturaVenda, setAberturaVenda] = useState(0);
 
@@ -127,22 +132,32 @@ export function OrcamentosLista() {
     setDetalheAberto(true);
   }
 
-  function mudar(orcamento: Orcamento, mudanca: MudancaStatus) {
-    if ("renovar" in mudanca) {
-      atualizar(orcamento.id, { criadoEm: new Date().toISOString() });
-      toast.success(`${orcamento.numero}: validade renovada por mais ${orcamento.validadeDias} dias.`);
-      return;
+  async function mudar(orcamento: Orcamento, mudanca: MudancaStatus) {
+    try {
+      if ("renovar" in mudanca) {
+        await renovar.mutateAsync(orcamento.id);
+        toast.success(`${orcamento.numero}: validade renovada por mais ${orcamento.validadeDias} dias.`);
+        return;
+      }
+      if (mudanca.status === "convertido") return;
+      await mudarStatus.mutateAsync({ id: orcamento.id, status: mudanca.status });
+      toast.success(`${orcamento.numero} ${MENSAGEM_STATUS[mudanca.status]}`);
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível mudar o status. Tente de novo.");
     }
-    atualizar(orcamento.id, { status: mudanca.status });
-    toast.success(`${orcamento.numero} ${MENSAGEM_STATUS[mudanca.status]}`);
   }
 
-  function confirmarExclusao() {
+  async function confirmarExclusao() {
     if (!excluindo) return;
-    remover(excluindo.id);
-    toast.success(`${excluindo.numero} excluído.`);
-    if (excluindo.id === visualizandoId) setDetalheAberto(false);
-    setExcluindo(null);
+    try {
+      await remover.mutateAsync(excluindo.id);
+      toast.success(`${excluindo.numero} excluído.`);
+      if (excluindo.id === visualizandoId) setDetalheAberto(false);
+      setExcluindo(null);
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível excluir. Tente de novo.");
+      setExcluindo(null);
+    }
   }
 
   function pedirExclusao(orcamento: Orcamento) {
@@ -173,7 +188,7 @@ export function OrcamentosLista() {
         titulo="Orçamentos"
         descricao="Propostas de peças e serviços para o cliente aprovar antes da ordem de serviço."
         rotuloNovo="Novo orçamento"
-        aoNovo={() => abrirForm(null)}
+        aoNovo={podeEditar ? () => abrirForm(null) : undefined}
       />
 
       <ListagemFiltros>
@@ -283,7 +298,7 @@ export function OrcamentosLista() {
         aoMudarPagina={setPagina}
       />
 
-      <OrcamentoForm key={abertura} aberto={formAberto} orcamento={emEdicao} aoFechar={() => setFormAberto(false)} />
+      <OrcamentoForm key={`form-${abertura}`} aberto={formAberto} orcamento={emEdicao} aoFechar={() => setFormAberto(false)} />
       <OrcamentoDetalhe
         aberto={detalheAberto}
         orcamento={visualizando}
@@ -294,7 +309,7 @@ export function OrcamentosLista() {
         aoMudar={mudar}
         aoGerarVenda={gerarVenda}
       />
-      <GerarVendaDialog key={aberturaVenda} orcamento={gerandoVenda} aoFechar={() => setGerandoVenda(null)} aoGerada={() => setDetalheAberto(false)} />
+      <GerarVendaDialog key={`venda-${aberturaVenda}`} orcamento={gerandoVenda} aoFechar={() => setGerandoVenda(null)} aoGerada={() => setDetalheAberto(false)} />
       <ConfirmarExclusaoRegistro
         nome={excluindo?.numero ?? null}
         singular="orçamento"

@@ -104,6 +104,10 @@ export function validarDesconto(
   valores: Pick<OrcamentoFormValores, "itens" | "descontoTipo" | "desconto">,
   contexto: z.RefinementCtx,
 ) {
+  if (!Number.isFinite(textoParaNumero(valores.desconto))) {
+    contexto.addIssue({ code: "custom", path: ["desconto"], message: "Informe um desconto válido." });
+    return;
+  }
   if (valores.descontoTipo === "percentual") {
     if (textoParaNumero(valores.desconto) > 100) {
       contexto.addIssue({ code: "custom", path: ["desconto"], message: "O desconto não pode passar de 100%." });

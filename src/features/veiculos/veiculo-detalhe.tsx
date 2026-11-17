@@ -5,7 +5,7 @@ import { Dado, SecaoDados } from "@/components/layout/registro-partes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useOrcamentosStore } from "@/features/orcamentos/store";
+import { useOrcamentos } from "@/features/orcamentos/api";
 import { statusExibido, totaisDoOrcamento } from "@/features/orcamentos/tipos";
 import { StatusOrcamentoBadge } from "@/features/orcamentos/orcamento-partes";
 import { StatusBadge } from "@/features/pessoas/pessoa-partes";
@@ -32,7 +32,7 @@ export function VeiculoDetalhe({
   aoAlternarAtivo: (veiculo: Veiculo) => void;
   aoExcluir: (veiculo: Veiculo) => void;
 }) {
-  const orcamentos = useOrcamentosStore((estado) => estado.itens);
+  const orcamentos = useOrcamentos();
   const clientes = usePessoas("cliente");
   const cliente = clientes.find((item) => item.id === veiculo?.clienteId);
 

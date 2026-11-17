@@ -18,7 +18,7 @@ import { routeTree } from "./routeTree.gen";
 import "./styles/globals.css";
 
 // Os cadastros agora ficam no banco: apaga as cópias antigas guardadas neste navegador (protótipo).
-for (const chave of ["empresa", "clientes", "fornecedores", "produtos", "servicos", "veiculos"]) {
+for (const chave of ["empresa", "clientes", "fornecedores", "produtos", "servicos", "veiculos", "orcamentos", "vendas", "compras", "movimentos", "acertos"]) {
   try {
     localStorage.removeItem(`oficina.${chave}`);
   } catch {

@@ -1,8 +1,9 @@
-import { AvisoEstoque } from "@/features/estoque/aviso-estoque";
 import { usePessoas } from "@/features/pessoas/api";
 import { useMemo, useState } from "react";
 
 import { toast } from "sonner";
+
+import { usePode } from "@/features/auth/sessao";
 
 import { AcoesDocumento, ConfirmarCancelamento, FILTRO_STATUS_DOCUMENTO, StatusDocumentoBadge } from "@/components/layout/documento-partes";
 import {
@@ -22,8 +23,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 import { formatarBRL } from "@/lib/numeros";
 
-import { cancelarVenda } from "./acoes";
-import { useVendasStore } from "./store";
+import { useCancelarVenda, useVendas } from "./api";
 import { FORMAS_PAGAMENTO, rotuloPagamento, totaisDaVenda, type Venda } from "./tipos";
 import { VendaDetalhe } from "./venda-detalhe";
 import { VendaForm } from "./venda-form";
@@ -34,7 +34,9 @@ const data = (valor: string) => new Date(valor).toLocaleDateString("pt-BR");
 
 /** Listagem de vendas. Orçamento aprovado vira venda no próprio orçamento; aqui também se lança venda manual. */
 export function VendasLista() {
-  const vendas = useVendasStore((estado) => estado.itens);
+  const vendas = useVendas();
+  const podeEditar = usePode("vendas.editar");
+  const cancelar = useCancelarVenda();
   const clientes = usePessoas("cliente");
 
   const [busca, setBusca] = useState("");
@@ -70,10 +72,14 @@ export function VendasLista() {
     setDetalheAberto(true);
   }
 
-  function confirmarCancelamento() {
+  async function confirmarCancelamento() {
     if (!cancelando) return;
-    cancelarVenda(cancelando);
-    toast.success(`${cancelando.numero} cancelada. As peças voltaram ao estoque.`);
+    try {
+      await cancelar.mutateAsync(cancelando.id);
+      toast.success(`${cancelando.numero} cancelada. As peças voltaram ao estoque.`);
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível cancelar. Tente de novo.");
+    }
     setCancelando(null);
   }
 
@@ -91,15 +97,18 @@ export function VendasLista() {
 
   return (
     <Listagem>
-      <AvisoEstoque />
       <ListagemCabecalho
         titulo="Vendas"
         descricao="Vendas concluídas: de orçamentos aprovados ou lançadas direto no balcão."
         rotuloNovo="Nova venda"
-        aoNovo={() => {
-          setAbertura((numero) => numero + 1);
-          setFormAberto(true);
-        }}
+        aoNovo={
+          podeEditar
+            ? () => {
+                setAbertura((numero) => numero + 1);
+                setFormAberto(true);
+              }
+            : undefined
+        }
       />
 
       <ListagemFiltros>

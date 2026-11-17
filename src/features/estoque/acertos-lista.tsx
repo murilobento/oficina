@@ -1,8 +1,8 @@
-import { toast } from "sonner";
-import { AvisoEstoque } from "./aviso-estoque";
 import { useMemo, useState } from "react";
 
 import { Eye } from "lucide-react";
+
+import { usePode } from "@/features/auth/sessao";
 
 import {
   Listagem,
@@ -24,20 +24,21 @@ import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 import { type Acerto, itensDivergentes, MOTIVOS_ACERTO } from "./acerto";
 import { AcertoDetalhe } from "./acerto-detalhe";
 import { AcertoForm } from "./acerto-form";
-import { useAcertosStore } from "./acerto-store";
+import { useAcertos } from "@/features/estoque/api";
 
 const FILTRO_MOTIVO = [{ valor: "todos", texto: "Todos" }, ...MOTIVOS_ACERTO.map((texto) => ({ valor: texto, texto }))];
 const data = (valor: string) => new Date(valor).toLocaleDateString("pt-BR");
 
 /** Listagem de acertos de estoque. Registrar abre um painel lateral; acertos salvos não se alteram. */
 export function AcertosLista() {
-  const acertos = useAcertosStore((estado) => estado.itens);
+  const acertos = useAcertos();
+  const podeEditar = usePode("estoque.editar");
 
   const [busca, setBusca] = useState("");
   const [filtroMotivo, setFiltroMotivo] = useState("todos");
   const [pagina, setPagina] = useState(1);
   const [formAberto, setFormAberto] = useState(false);
-  const [abertura] = useState(0);
+  const [abertura, setAbertura] = useState(0);
   const [detalheAberto, setDetalheAberto] = useState(false);
   const [visualizandoId, setVisualizandoId] = useState<string | null>(null);
 
@@ -78,12 +79,18 @@ export function AcertosLista() {
 
   return (
     <Listagem>
-      <AvisoEstoque />
       <ListagemCabecalho
         titulo="Acerto de estoque"
         descricao="Correção do saldo a partir da contagem física das peças."
         rotuloNovo="Novo acerto"
-        aoNovo={() => toast.info("O acerto de estoque volta na próxima etapa, quando o saldo também estiver no banco.")}
+        aoNovo={
+          podeEditar
+            ? () => {
+                setAbertura((numero) => numero + 1);
+                setFormAberto(true);
+              }
+            : undefined
+        }
       />
 
       <ListagemFiltros>

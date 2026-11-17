@@ -20,7 +20,7 @@ import {
 } from "@/components/layout/listagem";
 import { AcoesRegistro, ConfirmarExclusaoRegistro } from "@/components/layout/registro-partes";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useOrcamentosStore } from "@/features/orcamentos/store";
+import { useOrcamentos } from "@/features/orcamentos/api";
 import { StatusBadge } from "@/features/pessoas/pessoa-partes";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 import { formatarQuantidade } from "@/lib/numeros";
@@ -45,7 +45,7 @@ export function VeiculosLista({ abrirId }: { abrirId?: string }) {
   const veiculos = useMemo(() => consulta.data ?? [], [consulta.data]);
   const alternar = useAlternarAtivoVeiculo();
   const excluir = useExcluirVeiculo();
-  const orcamentos = useOrcamentosStore((estado) => estado.itens);
+  const orcamentos = useOrcamentos();
   const clientes = usePessoas("cliente");
 
   const [busca, setBusca] = useState("");

@@ -1,4 +1,4 @@
-import { subirKmDoVeiculo, useVeiculos } from "@/features/veiculos/api";
+import { useVeiculos } from "@/features/veiculos/api";
 import { usePessoas } from "@/features/pessoas/api";
 import { useState } from "react";
 
@@ -22,15 +22,14 @@ import { VeiculoRapido } from "@/features/veiculos/veiculo-rapido";
 import {
   mascararMoeda,
   mascararQuantidade,
-  proximoCodigo,
   textoParaCentavos,
   textoParaNumero,
 } from "@/lib/numeros";
 
 import { calcularTotais } from "./calculo";
 import { ResumoTotais } from "./orcamento-partes";
+import { useOrcamentos, useSalvarOrcamento } from "./api";
 import { ItensDoDocumento } from "./itens-form";
-import { useOrcamentosStore } from "./store";
 import {
   esquemaOrcamento,
   FORM_VAZIO,
@@ -56,9 +55,8 @@ export function OrcamentoForm({
   orcamento: Orcamento | null;
   aoFechar: () => void;
 }) {
-  const orcamentos = useOrcamentosStore((estado) => estado.itens);
-  const adicionar = useOrcamentosStore((estado) => estado.adicionar);
-  const atualizar = useOrcamentosStore((estado) => estado.atualizar);
+  const orcamentos = useOrcamentos();
+  const salvar = useSalvarOrcamento();
   const clientes = usePessoas("cliente");
   const veiculos = useVeiculos();
   const empresa = useEmpresa();
@@ -139,23 +137,15 @@ export function OrcamentoForm({
     form.clearErrors("desconto");
   }
 
-  const enviar = form.handleSubmit((valores) => {
-    const dados = paraOrcamento(valores);
-    // O carro guarda o km mais recente: sobe quando a visita registra um valor maior.
-    const alvo = veiculos.find((v) => v.id === dados.veiculoId);
-    if (alvo && dados.km > alvo.km) void subirKmDoVeiculo(alvo.id, dados.km);
-    if (orcamento) {
-      atualizar(orcamento.id, dados);
-      toast.success(`${orcamento.numero} atualizado.`);
-    } else {
-      const criado = adicionar({
-        ...dados,
-        numero: proximoCodigo("ORC", orcamentos.map((item) => item.numero)),
-        status: "rascunho",
-      });
-      toast.success(`${criado.numero} criado como rascunho.`);
+  const enviar = form.handleSubmit(async (valores) => {
+    // A API grava o orçamento e sobe o km do carro quando a visita registra um valor maior.
+    try {
+      const salvo = await salvar.mutateAsync({ id: orcamento?.id, dados: paraOrcamento(valores) });
+      toast.success(orcamento ? `${salvo.numero} atualizado.` : `${salvo.numero} criado como rascunho.`);
+      aoFechar();
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível salvar. Tente de novo.");
     }
-    aoFechar();
   });
 
   const erroItens = formState.errors.itens?.message ?? formState.errors.itens?.root?.message;
@@ -378,7 +368,7 @@ export function OrcamentoForm({
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none">
+            <Button type="submit" className="flex-1 sm:flex-none" disabled={salvar.isPending}>
               {editando ? "Salvar alterações" : "Criar orçamento"}
             </Button>
           </SheetFooter>

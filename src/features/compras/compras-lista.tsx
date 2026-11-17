@@ -1,8 +1,9 @@
-import { AvisoEstoque } from "@/features/estoque/aviso-estoque";
 import { usePessoas } from "@/features/pessoas/api";
 import { useMemo, useState } from "react";
 
 import { toast } from "sonner";
+
+import { usePode } from "@/features/auth/sessao";
 
 import { AcoesDocumento, ConfirmarCancelamento, FILTRO_STATUS_DOCUMENTO, StatusDocumentoBadge } from "@/components/layout/documento-partes";
 import {
@@ -20,12 +21,11 @@ import {
 } from "@/components/layout/listagem";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
-import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
+import { formatarBRL } from "@/lib/numeros";
 
-import { cancelarCompra } from "./acoes";
 import { CompraDetalhe } from "./compra-detalhe";
 import { CompraForm } from "./compra-form";
-import { useComprasStore } from "./store";
+import { useCancelarCompra, useCompras } from "./api";
 import { type Compra, totaisDaCompra } from "./tipos";
 
 const FILTRO_STATUS = FILTRO_STATUS_DOCUMENTO("Recebidas");
@@ -33,7 +33,12 @@ const data = (valor: string) => new Date(valor).toLocaleDateString("pt-BR");
 
 /** Listagem de compras de peças. Compra lançada dá entrada no estoque; só pode ser cancelada. */
 export function ComprasLista() {
-  const compras = useComprasStore((estado) => estado.itens);
+  const compras = useCompras();
+  // Compra tem custo: só quem edita compras e vê valores lança.
+  const podeEditarCompras = usePode("compras.editar");
+  const podeVerValores = usePode("valores.ver");
+  const podeEditar = podeEditarCompras && podeVerValores;
+  const cancelar = useCancelarCompra();
   const fornecedores = usePessoas("fornecedor");
 
   const [busca, setBusca] = useState("");
@@ -67,14 +72,14 @@ export function ComprasLista() {
     setDetalheAberto(true);
   }
 
-  function confirmarCancelamento() {
+  async function confirmarCancelamento() {
     if (!cancelando) return;
-    const resultado = cancelarCompra(cancelando);
-    if (resultado.ok) {
+    try {
+      await cancelar.mutateAsync(cancelando.id);
       toast.success(`${cancelando.numero} cancelada. As peças saíram do estoque.`);
-    } else {
-      const detalhe = resultado.faltas.map((f) => `${f.descricao} (comprado ${formatarQuantidade(f.pedido)}, em estoque ${formatarQuantidade(f.saldo)})`).join("; ");
-      toast.error(`Não dá para cancelar ${cancelando.numero}: parte das peças já saiu do estoque. ${detalhe}.`);
+    } catch (erro) {
+      // 409: parte das peças já saiu do estoque; a mensagem da API diz quais.
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível cancelar. Tente de novo.");
     }
     setCancelando(null);
   }
@@ -93,15 +98,18 @@ export function ComprasLista() {
 
   return (
     <Listagem>
-      <AvisoEstoque />
       <ListagemCabecalho
         titulo="Compras"
         descricao="Peças compradas dos fornecedores. Cada compra dá entrada no estoque."
         rotuloNovo="Nova compra"
-        aoNovo={() => {
-          setAbertura((numero) => numero + 1);
-          setFormAberto(true);
-        }}
+        aoNovo={
+          podeEditar
+            ? () => {
+                setAbertura((numero) => numero + 1);
+                setFormAberto(true);
+              }
+            : undefined
+        }
       />
 
       <ListagemFiltros>

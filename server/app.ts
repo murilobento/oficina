@@ -6,12 +6,16 @@ import type { Permissao } from "../src/features/auth/permissoes";
 import type { Auth } from "./auth";
 import type { Banco } from "./banco";
 import { permissoesDoPerfil } from "./perfis";
+import { registrarRotasCompras } from "./rotas/compras";
 import { registrarRotasEmpresa } from "./rotas/empresa";
+import { registrarRotasEstoque } from "./rotas/estoque";
 import { registrarRotasFipe } from "./rotas/fipe";
+import { registrarRotasOrcamentos } from "./rotas/orcamentos";
 import { registrarRotasPessoas } from "./rotas/pessoas";
 import { registrarRotasProdutos } from "./rotas/produtos";
 import { registrarRotasServicos } from "./rotas/servicos";
 import { registrarRotasVeiculos } from "./rotas/veiculos";
+import { registrarRotasVendas } from "./rotas/vendas";
 import { ErroApi } from "./rotas/util";
 
 type Sessao = NonNullable<Awaited<ReturnType<Auth["api"]["getSession"]>>>;
@@ -83,6 +87,10 @@ export function criarApp(banco: Banco, auth: Auth, opcoes: { buscar?: typeof fet
   registrarRotasProdutos(contexto);
   registrarRotasServicos(contexto);
   registrarRotasVeiculos(contexto);
+  registrarRotasCompras(contexto);
+  registrarRotasEstoque(contexto);
+  registrarRotasOrcamentos(contexto);
+  registrarRotasVendas(contexto);
   registrarRotasFipe(contexto, opcoes.buscar);
 
   app.notFound((c) => c.json({ erro: "Rota não encontrada." }, 404));

@@ -1,7 +1,7 @@
 import { useVeiculos } from "@/features/veiculos/api";
 import { Link } from "@tanstack/react-router";
 
-import { useOrcamentosStore } from "@/features/orcamentos/store";
+import { useOrcamentos } from "@/features/orcamentos/api";
 import { totaisDoOrcamento } from "@/features/orcamentos/tipos";
 import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
 
@@ -13,7 +13,7 @@ const data = (valor: string | null) => (valor ? new Date(valor).toLocaleDateStri
 /** Seção "Veículos" do painel do cliente: carros, visitas, total gasto e atalho para o histórico. */
 export function VeiculosDoCliente({ clienteId }: { clienteId: string }) {
   const veiculos = useVeiculos().filter((v) => v.clienteId === clienteId);
-  const orcamentos = useOrcamentosStore((estado) => estado.itens);
+  const orcamentos = useOrcamentos();
 
   const totalCliente = orcamentos
     .filter((o) => o.clienteId === clienteId && (o.status === "aprovado" || o.status === "convertido"))

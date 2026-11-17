@@ -42,7 +42,7 @@ export function paraSnake(chave: string): string {
   return chave.replace(/[A-Z]/g, (letra) => `_${letra.toLowerCase()}`);
 }
 
-const NUMERICOS = new Set(["saldo", "estoqueMinimo", "tempoHoras"]);
+const NUMERICOS = new Set(["saldo", "estoqueMinimo", "tempoHoras", "quantidade", "saldoSistema", "contado", "saldoApos", "desconto"]);
 
 /** Linha do banco (snake_case) para objeto do front (camelCase); numeric vira number, data vira ISO. */
 export function paraCamel<T = Record<string, unknown>>(linha: Record<string, unknown>): T {

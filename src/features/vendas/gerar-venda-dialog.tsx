@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { useProdutos } from "@/features/produtos/api";
 import { itensSemSaldo } from "@/features/estoque/movimentar";
 import type { Orcamento } from "@/features/orcamentos/tipos";
 import { totaisDoOrcamento } from "@/features/orcamentos/tipos";
 import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
 
-import { gerarVendaDoOrcamento } from "./acoes";
+import { useGerarVendaDoOrcamento } from "./api";
 import { FORMAS_PAGAMENTO } from "./tipos";
 
 /**
@@ -30,19 +31,25 @@ export function GerarVendaDialog({
 }) {
   const [forma, setForma] = useState("");
   const [erro, setErro] = useState("");
+  const gerar = useGerarVendaDoOrcamento();
+  const produtos = useProdutos();
 
-  const faltas = orcamento ? itensSemSaldo(orcamento.itens.filter((item) => item.tipo === "produto")) : [];
+  const faltas = orcamento ? itensSemSaldo(orcamento.itens.filter((item) => item.tipo === "produto"), produtos) : [];
 
-  function confirmar() {
+  async function confirmar() {
     if (!orcamento) return;
     if (forma === "") {
       setErro("Escolha a forma de pagamento.");
       return;
     }
-    const venda = gerarVendaDoOrcamento(orcamento, forma);
-    toast.success(`${venda.numero} gerada a partir de ${orcamento.numero}.`);
-    aoGerada?.(venda.numero);
-    aoFechar();
+    try {
+      const venda = await gerar.mutateAsync({ orcamentoId: orcamento.id, formaPagamento: forma });
+      toast.success(`${venda.numero} gerada a partir de ${orcamento.numero}.`);
+      aoGerada?.(venda.numero);
+      aoFechar();
+    } catch (falha) {
+      toast.error(falha instanceof Error ? falha.message : "Não foi possível gerar a venda. Tente de novo.");
+    }
   }
 
   return (
@@ -95,7 +102,7 @@ export function GerarVendaDialog({
           <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
             Voltar
           </Button>
-          <Button type="button" className="flex-1 sm:flex-none" onClick={confirmar}>
+          <Button type="button" className="flex-1 sm:flex-none" onClick={confirmar} disabled={gerar.isPending}>
             Gerar venda
           </Button>
         </DialogFooter>

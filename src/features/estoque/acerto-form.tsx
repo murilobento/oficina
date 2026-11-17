@@ -11,11 +11,11 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { SeletorProduto } from "@/features/produtos/seletor-produto";
-import { formatarQuantidade, mascararQuantidade, proximoCodigo, textoParaNumero } from "@/lib/numeros";
+import { formatarQuantidade, mascararQuantidade, textoParaNumero } from "@/lib/numeros";
 
-import { diferencaAcerto, movimentarEstoque } from "./movimentar";
+import { diferencaAcerto } from "./movimentar";
 import { MOTIVOS_ACERTO } from "./acerto";
-import { useAcertosStore } from "./acerto-store";
+import { useRegistrarAcerto } from "./api";
 
 type Linha = { produtoId: string; contado: string };
 
@@ -26,8 +26,7 @@ type Linha = { produtoId: string; contado: string };
  */
 export function AcertoForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () => void }) {
   const produtos = useProdutos();
-  const acertos = useAcertosStore((estado) => estado.itens);
-  const adicionar = useAcertosStore((estado) => estado.adicionar);
+  const registrar = useRegistrarAcerto();
 
   const [linhas, setLinhas] = useState<Linha[]>([]);
   const [motivo, setMotivo] = useState("");
@@ -61,26 +60,14 @@ export function AcertoForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: ()
       return;
     }
 
-    const numero = proximoCodigo("ACE", acertos.map((item) => item.numero));
-    const itens = linhas.flatMap((linha) => {
-      const produto = produtoDe(linha.produtoId);
-      return produto
-        ? [{ produtoId: produto.id, descricao: produto.descricao, unidade: produto.unidade, saldoSistema: produto.saldo, contado: textoParaNumero(linha.contado) }]
-        : [];
-    });
-    for (const item of itens) {
-      movimentarEstoque({
-        produtoId: item.produtoId,
-        delta: diferencaAcerto(item.saldoSistema, item.contado),
-        origem: "acerto",
-        documento: numero,
-        motivo,
-      });
-    }
-    adicionar({ numero, motivo, observacoes, itens });
-    const ajustados = itens.filter((item) => item.contado !== item.saldoSistema).length;
-    toast.success(`${numero} registrado: ${ajustados} ${ajustados === 1 ? "produto ajustado" : "produtos ajustados"}.`);
-    aoFechar();
+    registrar
+      .mutateAsync({ motivo, observacoes, itens: linhas.map((linha) => ({ produtoId: linha.produtoId, contado: textoParaNumero(linha.contado) })) })
+      .then((acerto) => {
+        const ajustados = acerto.itens.filter((item) => item.contado !== item.saldoSistema).length;
+        toast.success(`${acerto.numero} registrado: ${ajustados} ${ajustados === 1 ? "produto ajustado" : "produtos ajustados"}.`);
+        aoFechar();
+      })
+      .catch((erro: unknown) => toast.error(erro instanceof Error ? erro.message : "Não foi possível registrar o acerto. Tente de novo."));
   }
 
   return (

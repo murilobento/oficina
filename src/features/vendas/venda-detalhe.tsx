@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { subtotalItem } from "@/features/orcamentos/calculo";
 import { ResumoTotais } from "@/features/orcamentos/orcamento-partes";
-import { useOrcamentosStore } from "@/features/orcamentos/store";
+import { useOrcamentos } from "@/features/orcamentos/api";
 import { mascararDocumento, mascararTelefone } from "@/features/pessoas/documento";
 import { mascararPlaca } from "@/features/veiculos/tipos";
 import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
@@ -29,7 +29,7 @@ export function VendaDetalhe({
 }) {
   const clientes = usePessoas("cliente");
   const veiculos = useVeiculos();
-  const orcamentos = useOrcamentosStore((estado) => estado.itens);
+  const orcamentos = useOrcamentos();
   const cliente = clientes.find((item) => item.id === venda?.clienteId);
   const veiculo = veiculos.find((item) => item.id === venda?.veiculoId);
   const orcamento = orcamentos.find((item) => item.id === venda?.orcamentoId);

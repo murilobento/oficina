@@ -1,3 +1,4 @@
+import { useProdutos } from "@/features/produtos/api";
 import { useVeiculos } from "@/features/veiculos/api";
 import { usePessoas } from "@/features/pessoas/api";
 import { useState } from "react";
@@ -23,7 +24,7 @@ import { veiculoEmTexto } from "@/features/veiculos/tipos";
 import { VeiculoRapido } from "@/features/veiculos/veiculo-rapido";
 import { formatarQuantidade, mascararMoeda, mascararQuantidade, textoParaCentavos, textoParaNumero } from "@/lib/numeros";
 
-import { registrarVenda } from "./acoes";
+import { useRegistrarVenda } from "./api";
 import { esquemaVenda, FORM_VAZIO, FORMAS_PAGAMENTO, paraVenda, type VendaFormValores } from "./tipos";
 
 const soDigitos = (limite: number) => (valor: string) => valor.replace(/\D/g, "").slice(0, limite);
@@ -51,8 +52,11 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
     descontoTipo,
     descontoTipo === "valor" ? textoParaCentavos(desconto) : textoParaNumero(desconto) || 0,
   );
+  const registrar = useRegistrarVenda();
+  const produtos = useProdutos();
   const faltas = itensSemSaldo(
     itens.filter((item) => item.tipo === "produto").map((item) => ({ origemId: item.origemId, quantidade: textoParaNumero(item.quantidade) || 0 })),
+    produtos,
   );
 
   const clientesDisponiveis = clientes.filter((c) => c.ativo).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
@@ -80,10 +84,14 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
     form.clearErrors("desconto");
   }
 
-  const enviar = form.handleSubmit((valores) => {
-    const venda = registrarVenda(paraVenda(valores));
-    toast.success(`${venda.numero} lançada.`);
-    aoFechar();
+  const enviar = form.handleSubmit(async (valores) => {
+    try {
+      const venda = await registrar.mutateAsync(paraVenda(valores));
+      toast.success(`${venda.numero} lançada.`);
+      aoFechar();
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível lançar a venda. Tente de novo.");
+    }
   });
 
   const erroItens = formState.errors.itens?.message ?? formState.errors.itens?.root?.message;
@@ -224,7 +232,7 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none">
+            <Button type="submit" className="flex-1 sm:flex-none" disabled={registrar.isPending}>
               Lançar venda
             </Button>
           </SheetFooter>

@@ -18,7 +18,7 @@ import { FORNECEDORES } from "@/features/pessoas/entidades";
 import { SeletorProduto } from "@/features/produtos/seletor-produto";
 import { centavosParaTexto, formatarBRL, mascararMoeda, mascararQuantidade, textoParaCentavos, textoParaNumero } from "@/lib/numeros";
 
-import { registrarCompra } from "./acoes";
+import { useRegistrarCompra } from "./api";
 import { type CompraFormValores, esquemaCompra, FORM_VAZIO, paraCompra, totaisDaCompra } from "./tipos";
 
 /**
@@ -28,6 +28,7 @@ import { type CompraFormValores, esquemaCompra, FORM_VAZIO, paraCompra, totaisDa
  */
 export function CompraForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () => void }) {
   const fornecedores = usePessoas("fornecedor");
+  const registrar = useRegistrarCompra();
   const [seletorAberto, setSeletorAberto] = useState(false);
   const [fornecedorRapido, setFornecedorRapido] = useState({ aberto: false, nome: "", abertura: 0 });
 
@@ -46,10 +47,14 @@ export function CompraForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: ()
 
   const fornecedoresDisponiveis = fornecedores.filter((f) => f.ativo).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
-  const enviar = form.handleSubmit((valores) => {
-    const compra = registrarCompra(paraCompra(valores));
-    toast.success(`${compra.numero} lançada. O estoque já recebeu as peças.`);
-    aoFechar();
+  const enviar = form.handleSubmit(async (valores) => {
+    try {
+      const compra = await registrar.mutateAsync(paraCompra(valores));
+      toast.success(`${compra.numero} lançada. O estoque já recebeu as peças.`);
+      aoFechar();
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível lançar a compra. Tente de novo.");
+    }
   });
 
   const erroItens = formState.errors.itens?.message ?? formState.errors.itens?.root?.message;
@@ -182,7 +187,7 @@ export function CompraForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: ()
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none">
+            <Button type="submit" className="flex-1 sm:flex-none" disabled={registrar.isPending}>
               Lançar compra
             </Button>
           </SheetFooter>
