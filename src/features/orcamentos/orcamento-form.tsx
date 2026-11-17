@@ -1,14 +1,14 @@
 import { useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Trash2 } from "lucide-react";
-import { useFieldArray, useForm, useWatch } from "react-hook-form";
+import { Plus, Trash2, UserPlus } from "lucide-react";
+import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
-import { CampoSelect, CampoTexto, CampoTextarea } from "@/components/layout/campos-form";
+import { CampoTexto, CampoTextarea } from "@/components/layout/campos-form";
 import { SecaoFormulario } from "@/components/layout/registro-partes";
 import { Button } from "@/components/ui/button";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CLIENTES } from "@/features/pessoas/entidades";
 import {
@@ -22,6 +22,8 @@ import {
 } from "@/lib/numeros";
 
 import { calcularTotais, subtotalItem } from "./calculo";
+import { CampoCliente } from "./campo-cliente";
+import { ClienteRapido } from "./cliente-rapido";
 import { ResumoTotais } from "./orcamento-partes";
 import { type ItemEscolhido, SeletorItem } from "./seletor-item";
 import { useOrcamentosStore } from "./store";
@@ -57,6 +59,8 @@ export function OrcamentoForm({
   const clientes = CLIENTES.useStore((estado) => estado.pessoas);
 
   const [seletorAberto, setSeletorAberto] = useState(false);
+  // Cadastro rápido de cliente: `abertura` troca a key para o formulário abrir limpo.
+  const [clienteRapido, setClienteRapido] = useState({ aberto: false, nome: "", abertura: 0 });
   const editando = orcamento !== null;
 
   const form = useForm<OrcamentoFormValores>({
@@ -81,10 +85,13 @@ export function OrcamentoForm({
   );
 
   // Clientes ativos; o já escolhido continua na lista mesmo se foi inativado depois.
-  const opcoesCliente = clientes
+  const clientesDisponiveis = clientes
     .filter((cliente) => cliente.ativo || cliente.id === orcamento?.clienteId)
-    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
-    .map((cliente) => ({ valor: cliente.id, texto: cliente.nome }));
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+  function cadastrarCliente(nome: string) {
+    setClienteRapido((atual) => ({ aberto: true, nome, abertura: atual.abertura + 1 }));
+  }
 
   function adicionarItem(escolhido: ItemEscolhido) {
     append({
@@ -134,14 +141,35 @@ export function OrcamentoForm({
         <form noValidate onSubmit={enviar} className="flex min-h-0 flex-1 flex-col">
           <div className="flex flex-1 flex-col gap-8 overflow-y-auto p-4">
             <SecaoFormulario titulo="Cliente">
-              <CampoSelect
+              <Controller
                 control={control}
-                prefixo={PREFIXO}
-                nome="clienteId"
-                rotulo="Cliente"
-                opcoes={opcoesCliente}
-                placeholder="Selecione o cliente"
-                descricao="Não está na lista? Cadastre em Cadastro > Cliente."
+                name="clienteId"
+                render={({ field, fieldState }) => (
+                  <Field className="gap-1.5" data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="orcamento-clienteId">Cliente</FieldLabel>
+                    <div className="flex gap-2">
+                      <CampoCliente
+                        id="orcamento-clienteId"
+                        valor={field.value}
+                        clientes={clientesDisponiveis}
+                        invalido={fieldState.invalid}
+                        aoMudar={(id) => field.onChange(id)}
+                        aoCadastrar={cadastrarCliente}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        aria-label="Cadastrar novo cliente"
+                        title="Novo cliente"
+                        onClick={() => cadastrarCliente("")}
+                      >
+                        <UserPlus />
+                      </Button>
+                    </div>
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
               />
             </SecaoFormulario>
 
@@ -330,6 +358,13 @@ export function OrcamentoForm({
           </SheetFooter>
         </form>
 
+        <ClienteRapido
+          key={clienteRapido.abertura}
+          aberto={clienteRapido.aberto}
+          nomeInicial={clienteRapido.nome}
+          aoFechar={() => setClienteRapido((atual) => ({ ...atual, aberto: false }))}
+          aoCriado={(id) => form.setValue("clienteId", id, { shouldDirty: true, shouldValidate: true })}
+        />
         <SeletorItem aberto={seletorAberto} aoFechar={() => setSeletorAberto(false)} aoEscolher={adicionarItem} />
       </SheetContent>
     </Sheet>
