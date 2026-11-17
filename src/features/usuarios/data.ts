@@ -1,6 +1,6 @@
 // DADOS DE EXEMPLO. Esta tela é um protótipo para avaliar a listagem e os formulários:
 // os funcionários abaixo são fictícios e as alterações valem só até recarregar a página.
-// Quando o login estiver pronto, este arquivo é substituído pelas consultas ao Supabase.
+// Quando o login estiver pronto, este arquivo é substituído pelas consultas à API (Better Auth).
 
 import { perfisIniciais, type PerfilAcesso } from "@/features/perfis/data";
 

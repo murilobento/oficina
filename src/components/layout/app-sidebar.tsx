@@ -20,10 +20,11 @@ import { useEmpresa } from "@/features/empresa/store";
 import { findModuleByPath, type NavModule, navModules } from "@/navigation/sidebar-items";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
+import { useSessao } from "@/features/auth/sessao";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
 
-// Funcionário de exemplo até o login existir.
+// Funcionário de exemplo enquanto o login não está ativo (VITE_LOGIN_ATIVO).
 const USUARIO_EXEMPLO = { name: "Funcionário de exemplo", email: "login ainda não ativado" };
 
 const PRIMEIRO_MODULO_COM_PAINEL = navModules.find((module) => module.groups) as NavModule;
@@ -38,6 +39,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = useLocation({ select: (location) => location.pathname });
   const navigate = useNavigate();
   const empresa = useEmpresa();
+  const eu = useSessao((estado) => estado.eu);
   const { setOpen, setOpenMobile } = useSidebar();
 
   // O painel mostra o módulo clicado; ao trocar de tela, volta a mostrar o módulo da tela atual.
@@ -128,7 +130,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <NavMain key={moduloAberto.id} module={moduloAberto} />
         </SidebarContent>
         <SidebarFooter>
-          <NavUser user={USUARIO_EXEMPLO} />
+          <NavUser user={eu ? { name: eu.nome, email: eu.email } : USUARIO_EXEMPLO} />
         </SidebarFooter>
       </Sidebar>
     </Sidebar>

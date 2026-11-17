@@ -1,8 +1,8 @@
-import type { Permissao } from "@/features/auth/permissoes";
-import { PERMISSOES } from "@/features/auth/permissoes";
+import type { Permissao } from "../auth/permissoes";
+import { PERMISSOES } from "../auth/permissoes";
 
 // Perfis de acesso. Protótipo em memória: na etapa de login vira a tabela `perfis`
-// com as permissões em `perfil_permissoes`, no Supabase. As permissões iniciais abaixo são
+// com as permissões em `perfil_permissoes`, no Neon. As permissões iniciais abaixo são
 // sugestões para revisar: o Administrador ajusta cada perfil na própria tela.
 
 export type PerfilAcesso = {

@@ -10,7 +10,7 @@ type EmpresaState = {
 
 /**
  * PROTÓTIPO: os dados da empresa (e a logo, como imagem reduzida) ficam guardados só neste
- * navegador (localStorage). Com o Supabase, vira uma linha da tabela `empresa` e a logo vai
+ * navegador (localStorage). Com o banco (Neon), vira uma linha da tabela `empresa` e a logo vai
  * para o Storage, mantendo esta interface.
  */
 export const useEmpresaStore = create<EmpresaState>()(

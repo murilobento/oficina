@@ -12,6 +12,10 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    // A API (pnpm api) roda em outra porta; o navegador fala só com o endereço do site.
+    proxy: { '/api': 'http://localhost:8787' },
+  },
   resolve: {
     alias: { '@': path.resolve(import.meta.dirname, './src') },
   },

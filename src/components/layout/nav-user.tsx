@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { EllipsisVertical, KeyRound, LogOut } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -12,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
+import { LOGIN_ATIVO, useSessao } from "@/features/auth/sessao";
+import { authClient } from "@/lib/auth-client";
 import { getInitials } from "@/lib/utils";
 
 export function NavUser({
@@ -23,6 +25,13 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+  const navigate = useNavigate();
+
+  async function sair() {
+    await authClient.signOut();
+    useSessao.getState().limpar();
+    await navigate({ to: "/login" });
+  }
 
   return (
     <SidebarMenu>
@@ -70,13 +79,19 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            {/* O logout de verdade entra na etapa 1.1; por enquanto só leva à tela de login. */}
-            <DropdownMenuItem asChild>
-              <Link to="/login">
+            {LOGIN_ATIVO ? (
+              <DropdownMenuItem onSelect={() => void sair()}>
                 <LogOut />
                 Sair
-              </Link>
-            </DropdownMenuItem>
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem asChild>
+                <Link to="/login">
+                  <LogOut />
+                  Sair
+                </Link>
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

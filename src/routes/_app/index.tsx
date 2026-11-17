@@ -4,7 +4,6 @@ import { CalendarDays, Car, ClipboardList, FileText, Package, Users } from 'luci
 import { Pagina } from '@/components/layout/pagina'
 import { LogoEmpresa } from '@/features/empresa/logo-empresa'
 import { useEmpresa } from '@/features/empresa/store'
-import { supabaseNaoConfigurado } from '@/lib/supabase'
 
 export const Route = createFileRoute('/_app/')({ component: Inicio })
 
@@ -26,12 +25,6 @@ function Inicio() {
         <LogoEmpresa className="size-12" />
         <p className="min-w-0 truncate text-lg font-semibold">{empresa.nomeFantasia}</p>
       </div>
-      {supabaseNaoConfigurado && (
-        <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-          Supabase ainda não configurado: copie <code>.env.example</code> para <code>.env.local</code> e preencha as
-          duas variáveis.
-        </div>
-      )}
       <nav className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         {ATALHOS.map(({ to, titulo, icone: Icone }) => (
           <Link

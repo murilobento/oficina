@@ -13,7 +13,7 @@ export type CadastroState<T extends Cadastro> = {
 
 /**
  * PROTÓTIPO: os cadastros ficam guardados só neste navegador (localStorage), para as telas
- * poderem ser avaliadas antes de existir banco de dados. Quando o Supabase entrar, este
+ * poderem ser avaliadas antes de existir banco de dados. Quando a API (Neon) entrar, este
  * arquivo é trocado por consultas e mutações (TanStack Query) com a mesma interface.
  */
 export function criarCadastroStore<T extends Cadastro>(chave: string, iniciais: T[]) {

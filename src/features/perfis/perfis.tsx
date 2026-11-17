@@ -11,7 +11,7 @@ import { PerfisCards } from "./perfis-cards";
 
 /**
  * Tela de perfis (protótipo): cartões com os perfis e o formulário para editar nome, descrição
- * e permissões por módulo. Os dados ficam só na memória até a ligação com o Supabase.
+ * e permissões por módulo. Os dados ficam só na memória até a ligação com a API.
  */
 export function Perfis() {
   const [perfis, setPerfis] = useState<PerfilAcesso[]>(perfisIniciais);

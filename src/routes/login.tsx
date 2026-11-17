@@ -1,19 +1,56 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { Building2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { LOGIN_ATIVO, useSessao } from "@/features/auth/sessao";
 import { useEmpresa } from "@/features/empresa/store";
+import { authClient } from "@/lib/auth-client";
 
-export const Route = createFileRoute("/login")({ component: Login });
+export const Route = createFileRoute("/login")({
+  // Quem já está logado não precisa ver o login de novo.
+  beforeLoad: async () => {
+    if (!LOGIN_ATIVO) return;
+    const eu = await useSessao.getState().carregar();
+    if (eu) throw redirect({ to: eu.trocarSenha ? "/trocar-senha" : "/" });
+  },
+  component: Login,
+});
 
 const ANO = new Date().getFullYear();
 
-// Etapa 1.0: apenas o visual (layout "auth v2" do template). O login de verdade entra na etapa 1.1.
 function Login() {
   const empresa = useEmpresa();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [erro, setErro] = useState("");
+  const [entrando, setEntrando] = useState(false);
+
+  async function entrar(evento: React.FormEvent) {
+    evento.preventDefault();
+    if (!LOGIN_ATIVO || entrando) return;
+    if (email.trim() === "" || senha === "") {
+      setErro("Informe o e-mail e a senha.");
+      return;
+    }
+    setEntrando(true);
+    setErro("");
+    const { error } = await authClient.signIn.email({ email: email.trim(), password: senha });
+    if (error) {
+      // Mesma mensagem para e-mail inexistente e senha errada: não revela quem tem cadastro.
+      setErro(error.status === 403 ? "Este acesso está desativado. Fale com o administrador." : "E-mail ou senha incorretos.");
+      setEntrando(false);
+      return;
+    }
+    const eu = await useSessao.getState().carregar();
+    await navigate({ to: eu?.trocarSenha ? "/trocar-senha" : "/" });
+  }
+
   return (
     <main>
       <div className="grid h-dvh justify-center p-2 lg:grid-cols-2">
@@ -47,21 +84,30 @@ function Login() {
               <h1 className="text-3xl font-medium">Entrar</h1>
               <p className="text-muted-foreground text-sm">Informe seu e-mail e sua senha.</p>
             </div>
-            <form noValidate onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-4">
+            <form noValidate onSubmit={entrar} className="flex flex-col gap-4">
               <FieldGroup className="gap-4">
                 <Field className="gap-1.5">
                   <FieldLabel htmlFor="login-email">E-mail</FieldLabel>
-                  <Input id="login-email" type="email" placeholder="voce@dtconstrutora.com" autoComplete="username" />
+                  <Input id="login-email" type="email" placeholder="voce@dtconstrutora.com" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} aria-invalid={erro !== ""} />
                 </Field>
                 <Field className="gap-1.5">
                   <FieldLabel htmlFor="login-senha">Senha</FieldLabel>
-                  <Input id="login-senha" type="password" placeholder="••••••••" autoComplete="current-password" />
+                  <Input id="login-senha" type="password" placeholder="••••••••" autoComplete="current-password" value={senha} onChange={(e) => setSenha(e.target.value)} aria-invalid={erro !== ""} />
                 </Field>
               </FieldGroup>
-              <Button className="w-full" type="submit" disabled>
-                Entrar
+              {erro && (
+                <p role="alert" className="text-destructive text-center text-sm">
+                  {erro}
+                </p>
+              )}
+              <Button className="w-full" type="submit" disabled={!LOGIN_ATIVO || entrando}>
+                {entrando ? "Entrando..." : "Entrar"}
               </Button>
-              <p className="text-muted-foreground text-center text-xs">Login ainda não ativado.</p>
+              {!LOGIN_ATIVO && (
+                <p className="text-muted-foreground text-center text-xs">
+                  Login ainda não ativado neste ambiente. <Link to="/">Abrir o sistema de exemplo</Link>
+                </p>
+              )}
             </form>
           </div>
 

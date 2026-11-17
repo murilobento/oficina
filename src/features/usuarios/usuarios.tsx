@@ -63,7 +63,7 @@ function Identidade({ usuario }: { usuario: Usuario }) {
 
 /**
  * Tela de funcionários (protótipo), no padrão de listagem do sistema. Os dados são de exemplo
- * e ficam só na memória; a ligação com o Supabase entra junto com o login.
+ * e ficam só na memória; a ligação com a API (Better Auth) vem na etapa seguinte.
  */
 export function Usuarios() {
   const [usuarios, setUsuarios] = useState<Usuario[]>(usuariosIniciais);
