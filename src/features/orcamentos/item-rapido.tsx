@@ -15,6 +15,7 @@ import {
 } from "@/features/produtos/tipos";
 import { CATEGORIAS_SERVICO, FORM_VAZIO as SERVICO_VAZIO, paraServico } from "@/features/servicos/tipos";
 import { mascararMoeda, textoParaCentavos } from "@/lib/numeros";
+import { useEnvioUnico } from "@/lib/envio-unico";
 
 import type { TipoItem } from "./calculo";
 import type { ItemEscolhido } from "./seletor-item";
@@ -47,6 +48,7 @@ export function ItemRapido({
   const salvarServico = useSalvarServico();
 
   const ehProduto = tipo === "produto";
+  const { enviando, enviar: enviarUnico } = useEnvioUnico();
   const form = useForm<Valores>({
     resolver: zodResolver(esquema),
     defaultValues: { descricao: descricaoInicial, categoria: "", unidade: "UN", valor: "" },
@@ -57,7 +59,7 @@ export function ItemRapido({
   // "borbulharia" e também enviaria o orçamento.
   const enviar = (evento: React.FormEvent<HTMLFormElement>) => {
     evento.stopPropagation();
-    return form.handleSubmit(async (valores) => {
+    return enviarUnico(form, async (valores) => {
       const valor = textoParaCentavos(valores.valor);
       try {
         if (ehProduto) {
@@ -122,7 +124,7 @@ export function ItemRapido({
         <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoCancelar}>
           Voltar
         </Button>
-        <Button type="submit" className="flex-1 sm:flex-none">
+        <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando}>
           Cadastrar e adicionar
         </Button>
       </div>

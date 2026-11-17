@@ -23,6 +23,7 @@ import { ClienteRapido } from "@/features/pessoas/cliente-rapido";
 import { veiculoEmTexto } from "@/features/veiculos/tipos";
 import { VeiculoRapido } from "@/features/veiculos/veiculo-rapido";
 import { formatarQuantidade, mascararMoeda, mascararQuantidade, textoParaCentavos, textoParaNumero } from "@/lib/numeros";
+import { useEnvioUnico } from "@/lib/envio-unico";
 
 import { useRegistrarVenda } from "./api";
 import { esquemaVenda, FORM_VAZIO, FORMAS_PAGAMENTO, paraVenda, type VendaFormValores } from "./tipos";
@@ -38,6 +39,8 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
   const veiculos = useVeiculos();
   const [clienteRapido, setClienteRapido] = useState({ aberto: false, nome: "", abertura: 0 });
   const [veiculoRapido, setVeiculoRapido] = useState({ aberto: false, abertura: 0 });
+
+  const { enviando, enviar: enviarUnico } = useEnvioUnico();
 
   const form = useForm<VendaFormValores>({ resolver: zodResolver(esquemaVenda), defaultValues: FORM_VAZIO });
   const { control, formState } = form;
@@ -84,7 +87,7 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
     form.clearErrors("desconto");
   }
 
-  const enviar = form.handleSubmit(async (valores) => {
+  const enviar = enviarUnico(form, async (valores) => {
     try {
       const venda = await registrar.mutateAsync(paraVenda(valores));
       toast.success(`${venda.numero} lançada.`);
@@ -232,7 +235,7 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none" disabled={registrar.isPending}>
+            <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando || registrar.isPending}>
               Lançar venda
             </Button>
           </SheetFooter>

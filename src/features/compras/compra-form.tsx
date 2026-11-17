@@ -17,6 +17,7 @@ import { ClienteRapido } from "@/features/pessoas/cliente-rapido";
 import { FORNECEDORES } from "@/features/pessoas/entidades";
 import { SeletorProduto } from "@/features/produtos/seletor-produto";
 import { centavosParaTexto, formatarBRL, mascararMoeda, mascararQuantidade, textoParaCentavos, textoParaNumero } from "@/lib/numeros";
+import { useEnvioUnico } from "@/lib/envio-unico";
 
 import { useRegistrarCompra } from "./api";
 import { type CompraFormValores, esquemaCompra, FORM_VAZIO, paraCompra, totaisDaCompra } from "./tipos";
@@ -31,6 +32,8 @@ export function CompraForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: ()
   const registrar = useRegistrarCompra();
   const [seletorAberto, setSeletorAberto] = useState(false);
   const [fornecedorRapido, setFornecedorRapido] = useState({ aberto: false, nome: "", abertura: 0 });
+
+  const { enviando, enviar: enviarUnico } = useEnvioUnico();
 
   const form = useForm<CompraFormValores>({ resolver: zodResolver(esquemaCompra), defaultValues: FORM_VAZIO });
   const { control, formState } = form;
@@ -47,7 +50,7 @@ export function CompraForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: ()
 
   const fornecedoresDisponiveis = fornecedores.filter((f) => f.ativo).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
 
-  const enviar = form.handleSubmit(async (valores) => {
+  const enviar = enviarUnico(form, async (valores) => {
     try {
       const compra = await registrar.mutateAsync(paraCompra(valores));
       toast.success(`${compra.numero} lançada. O estoque já recebeu as peças.`);
@@ -187,7 +190,7 @@ export function CompraForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: ()
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none" disabled={registrar.isPending}>
+            <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando || registrar.isPending}>
               Lançar compra
             </Button>
           </SheetFooter>

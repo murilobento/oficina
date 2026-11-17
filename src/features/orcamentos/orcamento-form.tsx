@@ -1,4 +1,5 @@
 import { useVeiculos } from "@/features/veiculos/api";
+import { useEnvioUnico } from "@/lib/envio-unico";
 import { usePessoas } from "@/features/pessoas/api";
 import { useState } from "react";
 
@@ -65,6 +66,8 @@ export function OrcamentoForm({
   const [clienteRapido, setClienteRapido] = useState({ aberto: false, nome: "", abertura: 0 });
   const [veiculoRapido, setVeiculoRapido] = useState({ aberto: false, abertura: 0 });
   const editando = orcamento !== null;
+
+  const { enviando, enviar: enviarUnico } = useEnvioUnico();
 
   const form = useForm<OrcamentoFormValores>({
     resolver: zodResolver(esquemaOrcamento),
@@ -137,7 +140,7 @@ export function OrcamentoForm({
     form.clearErrors("desconto");
   }
 
-  const enviar = form.handleSubmit(async (valores) => {
+  const enviar = enviarUnico(form, async (valores) => {
     // A API grava o orçamento e sobe o km do carro quando a visita registra um valor maior.
     try {
       const salvo = await salvar.mutateAsync({ id: orcamento?.id, dados: paraOrcamento(valores) });
@@ -368,7 +371,7 @@ export function OrcamentoForm({
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none" disabled={salvar.isPending}>
+            <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando || salvar.isPending}>
               {editando ? "Salvar alterações" : "Criar orçamento"}
             </Button>
           </SheetFooter>

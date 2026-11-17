@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEnvioUnico } from "@/lib/envio-unico";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -35,6 +36,7 @@ export function VeiculoRapido({
   const salvar = useSalvarVeiculo();
   // O formulário completo roda por baixo (motor e combustível vêm sugeridos pelo modelo escolhido);
   // só os campos principais aparecem aqui.
+  const { enviando, enviar: enviarUnico } = useEnvioUnico();
   const form = useForm<VeiculoFormValores>({
     resolver: zodResolver(esquemaVeiculo),
     defaultValues: { ...FORM_VAZIO, clienteId },
@@ -45,7 +47,7 @@ export function VeiculoRapido({
   // "borbulharia" e também enviaria o orçamento.
   const enviar = (evento: React.FormEvent<HTMLFormElement>) => {
     evento.stopPropagation();
-    return form.handleSubmit(async (valores) => {
+    return enviarUnico(form, async (valores) => {
       let criado;
       try {
         criado = await salvar.mutateAsync({ dados: paraVeiculo({ ...valores, clienteId }) });
@@ -76,7 +78,7 @@ export function VeiculoRapido({
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none">
+            <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando}>
               Cadastrar veículo
             </Button>
           </DialogFooter>

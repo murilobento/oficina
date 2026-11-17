@@ -1,4 +1,5 @@
 import { usePessoas } from "@/features/pessoas/api";
+import { useEnvioUnico } from "@/lib/envio-unico";
 import { useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,6 +55,7 @@ export function VeiculoForm({
   const [clienteRapido, setClienteRapido] = useState({ aberto: false, nome: "", abertura: 0 });
 
   const editando = veiculo !== null;
+  const { enviando, enviar: enviarUnico } = useEnvioUnico();
   const form = useForm<VeiculoFormValores>({
     resolver: zodResolver(esquemaVeiculo),
     defaultValues: veiculo ? paraFormulario(veiculo) : { ...FORM_VAZIO, clienteId: clienteInicial },
@@ -71,7 +73,7 @@ export function VeiculoForm({
     setClienteRapido((atual) => ({ aberto: true, nome, abertura: atual.abertura + 1 }));
   }
 
-  const enviar = form.handleSubmit(async (valores) => {
+  const enviar = enviarUnico(form, async (valores) => {
     try {
       await salvar.mutateAsync({ id: veiculo?.id, dados: paraVeiculo(valores) });
     } catch (erro) {
@@ -182,7 +184,7 @@ export function VeiculoForm({
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none">
+            <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando}>
               {editando ? "Salvar alterações" : "Cadastrar veículo"}
             </Button>
           </SheetFooter>

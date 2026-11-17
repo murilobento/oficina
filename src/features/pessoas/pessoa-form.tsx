@@ -16,6 +16,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useEnvioUnico } from "@/lib/envio-unico";
 
 import { consultarCEP, consultarCNPJ, ErroConsulta } from "./consultas";
 import {
@@ -128,6 +129,8 @@ export function PessoaForm({
 }) {
   const editando = pessoa !== null;
   const salvar = useSalvarPessoa(config.papel);
+
+  const { enviando, enviar: enviarUnico } = useEnvioUnico();
 
   const form = useForm<PessoaFormValores>({
     resolver: zodResolver(esquemaPessoa),
@@ -244,7 +247,7 @@ export function PessoaForm({
     setAvisoCnpj(null);
   }
 
-  const enviar = form.handleSubmit(async (valores) => {
+  const enviar = enviarUnico(form, async (valores) => {
     try {
       await salvar.mutateAsync({ id: pessoa?.id, dados: paraPessoa(valores) });
     } catch (erro) {
@@ -510,7 +513,7 @@ export function PessoaForm({
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none">
+            <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando}>
               {editando ? "Salvar alterações" : `Cadastrar ${config.singular}`}
             </Button>
           </SheetFooter>

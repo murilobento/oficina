@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEnvioUnico } from "@/lib/envio-unico";
 import { BriefcaseBusiness, User } from "lucide-react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -44,6 +45,7 @@ export function ClienteRapido({
   config?: EntidadeConfig;
 }) {
   const salvar = useSalvarPessoa(config.papel);
+  const { enviando, enviar: enviarUnico } = useEnvioUnico();
   const form = useForm<Valores>({
     resolver: zodResolver(esquema),
     defaultValues: { tipo: "PF", nome: nomeInicial, celular: "" },
@@ -55,7 +57,7 @@ export function ClienteRapido({
   // o envio "borbulharia" e também enviaria o orçamento.
   const enviar = (evento: React.FormEvent<HTMLFormElement>) => {
     evento.stopPropagation();
-    return form.handleSubmit(async (valores) => {
+    return enviarUnico(form, async (valores) => {
       let criado;
       try {
         criado = await salvar.mutateAsync({ dados: paraPessoa({ ...FORM_VAZIO, ...valores }) });
@@ -115,7 +117,7 @@ export function ClienteRapido({
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none">
+            <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando}>
               Cadastrar {config.singular}
             </Button>
           </DialogFooter>

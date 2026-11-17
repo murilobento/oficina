@@ -12,6 +12,7 @@ import { itensSemSaldo } from "@/features/estoque/movimentar";
 import type { Orcamento } from "@/features/orcamentos/tipos";
 import { totaisDoOrcamento } from "@/features/orcamentos/tipos";
 import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
+import { useEnvioUnico } from "@/lib/envio-unico";
 
 import { useGerarVendaDoOrcamento } from "./api";
 import { FORMAS_PAGAMENTO } from "./tipos";
@@ -32,11 +33,12 @@ export function GerarVendaDialog({
   const [forma, setForma] = useState("");
   const [erro, setErro] = useState("");
   const gerar = useGerarVendaDoOrcamento();
+  const { proteger } = useEnvioUnico();
   const produtos = useProdutos();
 
   const faltas = orcamento ? itensSemSaldo(orcamento.itens.filter((item) => item.tipo === "produto"), produtos) : [];
 
-  async function confirmar() {
+  const confirmar = proteger(async () => {
     if (!orcamento) return;
     if (forma === "") {
       setErro("Escolha a forma de pagamento.");
@@ -50,7 +52,7 @@ export function GerarVendaDialog({
     } catch (falha) {
       toast.error(falha instanceof Error ? falha.message : "Não foi possível gerar a venda. Tente de novo.");
     }
-  }
+  });
 
   return (
     <Dialog open={orcamento !== null} onOpenChange={(open) => !open && aoFechar()}>

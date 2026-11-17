@@ -12,6 +12,7 @@ import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { SeletorProduto } from "@/features/produtos/seletor-produto";
 import { formatarQuantidade, mascararQuantidade, textoParaNumero } from "@/lib/numeros";
+import { useEnvioUnico } from "@/lib/envio-unico";
 
 import { diferencaAcerto } from "./movimentar";
 import { MOTIVOS_ACERTO } from "./acerto";
@@ -27,6 +28,7 @@ type Linha = { produtoId: string; contado: string };
 export function AcertoForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () => void }) {
   const produtos = useProdutos();
   const registrar = useRegistrarAcerto();
+  const { enviando, proteger } = useEnvioUnico();
 
   const [linhas, setLinhas] = useState<Linha[]>([]);
   const [motivo, setMotivo] = useState("");
@@ -47,7 +49,7 @@ export function AcertoForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: ()
     ]);
   }
 
-  function enviar(evento: React.FormEvent) {
+  const enviar = proteger(async (evento: React.FormEvent) => {
     evento.preventDefault();
     const novos: typeof erros = { linhas: {} };
     if (motivo === "") novos.motivo = "Escolha o motivo.";
@@ -60,7 +62,7 @@ export function AcertoForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: ()
       return;
     }
 
-    registrar
+    await registrar
       .mutateAsync({ motivo, observacoes, itens: linhas.map((linha) => ({ produtoId: linha.produtoId, contado: textoParaNumero(linha.contado) })) })
       .then((acerto) => {
         const ajustados = acerto.itens.filter((item) => item.contado !== item.saldoSistema).length;
@@ -68,7 +70,7 @@ export function AcertoForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: ()
         aoFechar();
       })
       .catch((erro: unknown) => toast.error(erro instanceof Error ? erro.message : "Não foi possível registrar o acerto. Tente de novo."));
-  }
+  });
 
   return (
     <Sheet open={aberto} onOpenChange={(open) => !open && aoFechar()}>
@@ -180,7 +182,7 @@ export function AcertoForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: ()
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none">
+            <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando}>
               Registrar acerto
             </Button>
           </SheetFooter>

@@ -1,4 +1,5 @@
 import { usePessoas } from "@/features/pessoas/api";
+import { useEnvioUnico } from "@/lib/envio-unico";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -55,6 +56,7 @@ export function ProdutoForm({
   const fornecedores = usePessoas("fornecedor");
 
   const editando = produto !== null;
+  const { enviando, enviar: enviarUnico } = useEnvioUnico();
   const form = useForm<ProdutoFormValores>({
     resolver: zodResolver(esquemaProduto),
     defaultValues: produto ? paraFormulario(produto) : FORM_VAZIO,
@@ -69,7 +71,7 @@ export function ProdutoForm({
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
     .map((fornecedor) => ({ valor: fornecedor.id, texto: fornecedor.nome }));
 
-  const enviar = form.handleSubmit(async (valores) => {
+  const enviar = enviarUnico(form, async (valores) => {
     try {
       await salvar.mutateAsync({ id: produto?.id, dados: paraProduto(valores) });
     } catch (erro) {
@@ -252,7 +254,7 @@ export function ProdutoForm({
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none">
+            <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando}>
               {editando ? "Salvar alterações" : "Cadastrar produto"}
             </Button>
           </SheetFooter>

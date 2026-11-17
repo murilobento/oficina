@@ -21,6 +21,7 @@ import {
 } from "@/components/layout/listagem";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
+import { useEnvioUnico } from "@/lib/envio-unico";
 import { formatarBRL } from "@/lib/numeros";
 
 import { useCancelarVenda, useVendas } from "./api";
@@ -37,6 +38,7 @@ export function VendasLista() {
   const vendas = useVendas();
   const podeEditar = usePode("vendas.editar");
   const cancelar = useCancelarVenda();
+  const { proteger } = useEnvioUnico();
   const clientes = usePessoas("cliente");
 
   const [busca, setBusca] = useState("");
@@ -72,7 +74,7 @@ export function VendasLista() {
     setDetalheAberto(true);
   }
 
-  async function confirmarCancelamento() {
+  const confirmarCancelamento = proteger(async () => {
     if (!cancelando) return;
     try {
       await cancelar.mutateAsync(cancelando.id);
@@ -81,7 +83,7 @@ export function VendasLista() {
       toast.error(erro instanceof Error ? erro.message : "Não foi possível cancelar. Tente de novo.");
     }
     setCancelando(null);
-  }
+  });
 
   function filtrar(definir: (valor: string) => void) {
     return (valor: string) => {

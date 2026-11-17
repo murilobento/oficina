@@ -11,6 +11,7 @@ import { SecaoFormulario } from "@/components/layout/registro-partes";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { mascararMoeda, mascararQuantidade } from "@/lib/numeros";
+import { useEnvioUnico } from "@/lib/envio-unico";
 
 import {
   CATEGORIAS_SERVICO,
@@ -42,13 +43,14 @@ export function ServicoForm({
   const podeVerValores = usePode("valores.ver");
 
   const editando = servico !== null;
+  const { enviando, enviar: enviarUnico } = useEnvioUnico();
   const form = useForm<ServicoFormValores>({
     resolver: zodResolver(esquemaServico),
     defaultValues: servico ? paraFormulario(servico) : FORM_VAZIO,
   });
   const { control } = form;
 
-  const enviar = form.handleSubmit(async (valores) => {
+  const enviar = enviarUnico(form, async (valores) => {
     try {
       await salvar.mutateAsync({ id: servico?.id, dados: paraServico(valores) });
     } catch (erro) {
@@ -174,7 +176,7 @@ export function ServicoForm({
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none">
+            <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando}>
               {editando ? "Salvar alterações" : "Cadastrar serviço"}
             </Button>
           </SheetFooter>

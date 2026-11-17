@@ -23,6 +23,7 @@ import { ConfirmarExclusaoRegistro } from "@/components/layout/registro-partes";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { veiculoEmTexto } from "@/features/veiculos/tipos";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
+import { useEnvioUnico } from "@/lib/envio-unico";
 import { formatarBRL } from "@/lib/numeros";
 
 import { validoAte } from "./calculo";
@@ -63,6 +64,7 @@ export function OrcamentosLista() {
   const mudarStatus = useMudarStatusOrcamento();
   const renovar = useRenovarOrcamento();
   const remover = useExcluirOrcamento();
+  const { proteger } = useEnvioUnico();
   const clientes = usePessoas("cliente");
   const veiculos = useVeiculos();
   const vendas = useVendas();
@@ -147,7 +149,7 @@ export function OrcamentosLista() {
     }
   }
 
-  async function confirmarExclusao() {
+  const confirmarExclusao = proteger(async () => {
     if (!excluindo) return;
     try {
       await remover.mutateAsync(excluindo.id);
@@ -158,7 +160,7 @@ export function OrcamentosLista() {
       toast.error(erro instanceof Error ? erro.message : "Não foi possível excluir. Tente de novo.");
       setExcluindo(null);
     }
-  }
+  });
 
   function pedirExclusao(orcamento: Orcamento) {
     // A venda guarda o vínculo com o orçamento de origem: com venda, o orçamento fica no histórico.

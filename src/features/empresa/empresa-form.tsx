@@ -21,6 +21,7 @@ import {
 } from "@/features/pessoas/documento";
 import { UFS } from "@/features/pessoas/tipos";
 import { cn } from "@/lib/utils";
+import { useEnvioUnico } from "@/lib/envio-unico";
 
 import { ErroLogo, processarLogo, TIPOS_ACEITOS } from "./logo";
 import { useEmpresaConsulta, useSalvarEmpresa } from "./api";
@@ -66,6 +67,8 @@ export function EmpresaForm() {
 
 function EmpresaFormulario({ empresa }: { empresa: Empresa }) {
   const salvar = useSalvarEmpresa();
+
+  const { enviando, enviar: enviarUnico } = useEnvioUnico();
 
   const form = useForm<EmpresaFormValores>({
     resolver: zodResolver(esquemaEmpresa),
@@ -185,7 +188,7 @@ function EmpresaFormulario({ empresa }: { empresa: Empresa }) {
     }
   }
 
-  const enviar = form.handleSubmit(async (valores) => {
+  const enviar = enviarUnico(form, async (valores) => {
     try {
       await salvar.mutateAsync(paraEmpresa(valores));
     } catch (erro) {
@@ -421,7 +424,7 @@ function EmpresaFormulario({ empresa }: { empresa: Empresa }) {
           >
             Descartar
           </Button>
-          <Button type="submit" className="flex-1 sm:flex-none" disabled={!formState.isDirty}>
+          <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando || !formState.isDirty}>
             Salvar
           </Button>
         </div>
