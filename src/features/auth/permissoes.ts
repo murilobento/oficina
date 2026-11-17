@@ -17,6 +17,8 @@ export const PERMISSOES = {
   'agenda.editar': 'Marcar e remarcar atendimentos',
   'estoque.ver': 'Ver peças e saldos',
   'estoque.editar': 'Dar entrada e baixa de peças',
+  'servicos.ver': 'Ver serviços',
+  'servicos.editar': 'Cadastrar e editar serviços',
   'valores.ver': 'Ver preços e valores',
   'funcionarios.gerenciar': 'Gerenciar funcionários',
   'perfis.gerenciar': 'Gerenciar perfis e permissões',

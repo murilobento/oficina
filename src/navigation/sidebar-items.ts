@@ -66,8 +66,8 @@ export const navModules: NavModule[] = [
         items: [
           { id: "clientes", title: "Cliente", url: "/clientes" },
           { id: "fornecedores", title: "Fornecedor", url: "/fornecedores" },
-          { id: "produtos", title: "Produto", url: "/estoque" },
-          { id: "servicos", title: "Serviço" },
+          { id: "produtos", title: "Produto", url: "/produtos" },
+          { id: "servicos", title: "Serviço", url: "/servicos" },
         ],
       },
     ],

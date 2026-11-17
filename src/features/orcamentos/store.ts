@@ -1,0 +1,102 @@
+import { criarCadastroStore } from "@/lib/cadastro-store";
+
+import type { ItemOrcamento, Orcamento } from "./tipos";
+
+// DADOS DE EXEMPLO (fictícios), só para a tela não abrir vazia no protótipo. Os ids de cliente,
+// produto e serviço são os dos dados de exemplo dos outros cadastros.
+function item(
+  id: string,
+  tipo: ItemOrcamento["tipo"],
+  origemId: string,
+  descricao: string,
+  unidade: string,
+  quantidade: number,
+  valor: number,
+): ItemOrcamento {
+  return { id, tipo, origemId, descricao, unidade, quantidade, valor };
+}
+
+const iniciais: Orcamento[] = [
+  {
+    id: "o1",
+    numero: "ORC-0001",
+    clienteId: "c1",
+    veiculo: { placa: "ABC1D23", modelo: "Hyundai HB20 1.0", ano: "2019", cor: "Prata", km: 48200 },
+    problema: "Revisão dos 50 mil km e barulho ao frear.",
+    itens: [
+      item("o1i1", "servico", "s1", "Troca de óleo e filtro", "UN", 1, 6000),
+      item("o1i2", "produto", "p1", "Óleo 5W30 sintético", "L", 4, 5290),
+      item("o1i3", "produto", "p2", "Filtro de óleo", "UN", 1, 2490),
+    ],
+    descontoTipo: "percentual",
+    desconto: 0,
+    validadeDias: 7,
+    observacoes: "Prazo de execução: 1 dia útil após a aprovação.",
+    status: "enviado",
+    criadoEm: "2026-11-15T14:30:00.000Z",
+  },
+  {
+    id: "o2",
+    numero: "ORC-0002",
+    clienteId: "c3",
+    veiculo: { placa: "FRT4G56", modelo: "Fiat Fiorino", ano: "2017", cor: "Branca", km: 132000 },
+    problema: "Pastilhas gastas.",
+    itens: [
+      item("o2i1", "servico", "s3", "Troca de pastilhas de freio", "UN", 1, 12000),
+      item("o2i2", "produto", "p3", "Pastilha de freio dianteira", "JG", 1, 16900),
+    ],
+    descontoTipo: "percentual",
+    desconto: 10,
+    validadeDias: 7,
+    observacoes: "",
+    status: "aprovado",
+    criadoEm: "2026-11-12T09:10:00.000Z",
+  },
+  {
+    id: "o3",
+    numero: "ORC-0003",
+    clienteId: "c2",
+    veiculo: { placa: "", modelo: "VW Gol 1.6", ano: "2012", cor: "Preto", km: 0 },
+    problema: "Luz da injeção acesa.",
+    itens: [item("o3i1", "servico", "s5", "Diagnóstico com scanner", "UN", 1, 15000)],
+    descontoTipo: "valor",
+    desconto: 0,
+    validadeDias: 7,
+    observacoes: "",
+    status: "rascunho",
+    criadoEm: "2026-11-16T16:45:00.000Z",
+  },
+  {
+    id: "o4",
+    numero: "ORC-0004",
+    clienteId: "c1",
+    veiculo: { placa: "KLM2N34", modelo: "Chevrolet Onix", ano: "2021", cor: "Vermelho", km: 30500 },
+    problema: "",
+    itens: [item("o4i1", "servico", "s2", "Revisão completa", "UN", 1, 35000)],
+    descontoTipo: "percentual",
+    desconto: 0,
+    validadeDias: 7,
+    observacoes: "",
+    status: "recusado",
+    criadoEm: "2026-11-05T11:00:00.000Z",
+  },
+  {
+    id: "o5",
+    numero: "ORC-0005",
+    clienteId: "c2",
+    veiculo: { placa: "QWE5R67", modelo: "Renault Sandero", ano: "2015", cor: "Cinza", km: 98000 },
+    problema: "Troca da correia dentada preventiva.",
+    itens: [
+      item("o5i1", "servico", "s7", "Troca de correia dentada", "UN", 1, 45000),
+      item("o5i2", "produto", "p5", "Correia dentada", "UN", 1, 11900),
+    ],
+    descontoTipo: "percentual",
+    desconto: 0,
+    validadeDias: 7,
+    observacoes: "",
+    status: "enviado",
+    criadoEm: "2026-11-02T10:20:00.000Z",
+  },
+];
+
+export const useOrcamentosStore = criarCadastroStore<Orcamento>("orcamentos", iniciais);

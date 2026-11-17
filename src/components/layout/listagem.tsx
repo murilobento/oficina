@@ -76,7 +76,8 @@ export function ListagemBusca({
 }
 
 export function ListagemGrupoFiltros({ children }: { children: ReactNode }) {
-  return <div className="flex gap-2">{children}</div>;
+  // Duas colunas no celular: com três filtros, o terceiro desce para a linha de baixo.
+  return <div className="grid grid-cols-2 gap-2 @2xl:flex">{children}</div>;
 }
 
 export function ListagemFiltro({

@@ -207,46 +207,30 @@ html {
   transition: none !important;
 }
 
-[data-print-root] {
+/* Impressão de documentos (ex.: orçamento): o componente se coloca direto no <body> com
+   data-impressao e, ao imprimir, só ele aparece. A folha é A4 e continua em várias páginas. */
+[data-impressao] {
   display: none;
 }
 
 @media print {
   @page {
-    size: Letter;
-    margin: 0;
+    size: A4;
+    margin: 14mm;
   }
 
-  html,
-  body {
-    width: 8.5in !important;
-    height: 11in !important;
-    margin: 0 !important;
-    overflow: hidden !important;
-  }
-
-  body > *:not([data-print-root]) {
+  body > *:not([data-impressao]) {
     display: none !important;
   }
 
-  [data-print-root] {
+  [data-impressao] {
     display: block !important;
-    width: 8.5in !important;
-    height: 11in !important;
-    margin: 0 !important;
-    overflow: hidden !important;
     background: white !important;
+    color: black !important;
   }
 
-  [data-print-root] [data-print-paper] {
-    width: 8.5in !important;
-    height: 11in !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-  }
-
-  [data-print-root] [data-print-paper],
-  [data-print-root] [data-print-paper] * {
+  [data-impressao],
+  [data-impressao] * {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }

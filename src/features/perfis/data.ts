@@ -22,6 +22,7 @@ export const MODULOS: { id: string; nome: string }[] = [
   { id: "ordens", nome: "Ordens de serviço" },
   { id: "agenda", nome: "Agenda" },
   { id: "estoque", nome: "Peças e estoque" },
+  { id: "servicos", nome: "Serviços" },
   { id: "valores", nome: "Valores" },
   { id: "funcionarios", nome: "Funcionários" },
   { id: "perfis", nome: "Perfis" },
@@ -66,6 +67,7 @@ export const perfisIniciais: PerfilAcesso[] = [
       "agenda.ver",
       "agenda.editar",
       "estoque.ver",
+      "servicos.ver",
       "valores.ver",
     ],
   },
@@ -83,6 +85,7 @@ export const perfisIniciais: PerfilAcesso[] = [
       "agenda.ver",
       "estoque.ver",
       "estoque.editar",
+      "servicos.ver",
     ],
   },
 ];

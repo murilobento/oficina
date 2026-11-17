@@ -13,7 +13,7 @@ const ATALHOS = [
   { to: '/agenda', titulo: 'Agenda', icone: CalendarDays },
   { to: '/clientes', titulo: 'Clientes', icone: Users },
   { to: '/veiculos', titulo: 'Veículos', icone: Car },
-  { to: '/estoque', titulo: 'Peças', icone: Package },
+  { to: '/produtos', titulo: 'Produtos', icone: Package },
 ] as const
 
 function Inicio() {

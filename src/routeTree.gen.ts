@@ -14,8 +14,6 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as TrocarSenhaRouteImport } from './routes/trocar-senha'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppAgendaRouteImport } from './routes/_app/agenda'
-import { Route as AppEstoqueRouteImport } from './routes/_app/estoque'
-import { Route as AppOrcamentosRouteImport } from './routes/_app/orcamentos'
 import { Route as AppOrdensRouteImport } from './routes/_app/ordens'
 import { Route as AppVeiculosRouteImport } from './routes/_app/veiculos'
 import { Route as AppAdminAuditoriaRouteImport } from './routes/_app/admin/auditoria'
@@ -23,6 +21,9 @@ import { Route as AppAdminPerfisRouteImport } from './routes/_app/admin/perfis'
 import { Route as AppAdminUsuariosRouteImport } from './routes/_app/admin/usuarios'
 import { Route as AppClientesIndexRouteImport } from './routes/_app/clientes.index'
 import { Route as AppFornecedoresIndexRouteImport } from './routes/_app/fornecedores.index'
+import { Route as AppOrcamentosIndexRouteImport } from './routes/_app/orcamentos.index'
+import { Route as AppProdutosIndexRouteImport } from './routes/_app/produtos.index'
+import { Route as AppServicosIndexRouteImport } from './routes/_app/servicos.index'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
@@ -46,16 +47,6 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppAgendaRoute = AppAgendaRouteImport.update({
   id: '/agenda',
   path: '/agenda',
-  getParentRoute: () => AppRouteRoute,
-} as any)
-const AppEstoqueRoute = AppEstoqueRouteImport.update({
-  id: '/estoque',
-  path: '/estoque',
-  getParentRoute: () => AppRouteRoute,
-} as any)
-const AppOrcamentosRoute = AppOrcamentosRouteImport.update({
-  id: '/orcamentos',
-  path: '/orcamentos',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppOrdensRoute = AppOrdensRouteImport.update({
@@ -93,14 +84,27 @@ const AppFornecedoresIndexRoute = AppFornecedoresIndexRouteImport.update({
   path: '/fornecedores/',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppOrcamentosIndexRoute = AppOrcamentosIndexRouteImport.update({
+  id: '/orcamentos/',
+  path: '/orcamentos/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppProdutosIndexRoute = AppProdutosIndexRouteImport.update({
+  id: '/produtos/',
+  path: '/produtos/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppServicosIndexRoute = AppServicosIndexRouteImport.update({
+  id: '/servicos/',
+  path: '/servicos/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/login': typeof LoginRoute
   '/trocar-senha': typeof TrocarSenhaRoute
   '/agenda': typeof AppAgendaRoute
-  '/estoque': typeof AppEstoqueRoute
-  '/orcamentos': typeof AppOrcamentosRoute
   '/ordens': typeof AppOrdensRoute
   '/veiculos': typeof AppVeiculosRoute
   '/admin/auditoria': typeof AppAdminAuditoriaRoute
@@ -108,13 +112,14 @@ export interface FileRoutesByFullPath {
   '/admin/usuarios': typeof AppAdminUsuariosRoute
   '/clientes/': typeof AppClientesIndexRoute
   '/fornecedores/': typeof AppFornecedoresIndexRoute
+  '/orcamentos/': typeof AppOrcamentosIndexRoute
+  '/produtos/': typeof AppProdutosIndexRoute
+  '/servicos/': typeof AppServicosIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/trocar-senha': typeof TrocarSenhaRoute
   '/agenda': typeof AppAgendaRoute
-  '/estoque': typeof AppEstoqueRoute
-  '/orcamentos': typeof AppOrcamentosRoute
   '/ordens': typeof AppOrdensRoute
   '/veiculos': typeof AppVeiculosRoute
   '/': typeof AppIndexRoute
@@ -123,6 +128,9 @@ export interface FileRoutesByTo {
   '/admin/usuarios': typeof AppAdminUsuariosRoute
   '/clientes': typeof AppClientesIndexRoute
   '/fornecedores': typeof AppFornecedoresIndexRoute
+  '/orcamentos': typeof AppOrcamentosIndexRoute
+  '/produtos': typeof AppProdutosIndexRoute
+  '/servicos': typeof AppServicosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -130,8 +138,6 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/trocar-senha': typeof TrocarSenhaRoute
   '/_app/agenda': typeof AppAgendaRoute
-  '/_app/estoque': typeof AppEstoqueRoute
-  '/_app/orcamentos': typeof AppOrcamentosRoute
   '/_app/ordens': typeof AppOrdensRoute
   '/_app/veiculos': typeof AppVeiculosRoute
   '/_app/': typeof AppIndexRoute
@@ -140,6 +146,9 @@ export interface FileRoutesById {
   '/_app/admin/usuarios': typeof AppAdminUsuariosRoute
   '/_app/clientes/': typeof AppClientesIndexRoute
   '/_app/fornecedores/': typeof AppFornecedoresIndexRoute
+  '/_app/orcamentos/': typeof AppOrcamentosIndexRoute
+  '/_app/produtos/': typeof AppProdutosIndexRoute
+  '/_app/servicos/': typeof AppServicosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -148,8 +157,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/trocar-senha'
     | '/agenda'
-    | '/estoque'
-    | '/orcamentos'
     | '/ordens'
     | '/veiculos'
     | '/admin/auditoria'
@@ -157,13 +164,14 @@ export interface FileRouteTypes {
     | '/admin/usuarios'
     | '/clientes/'
     | '/fornecedores/'
+    | '/orcamentos/'
+    | '/produtos/'
+    | '/servicos/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
     | '/trocar-senha'
     | '/agenda'
-    | '/estoque'
-    | '/orcamentos'
     | '/ordens'
     | '/veiculos'
     | '/'
@@ -172,14 +180,15 @@ export interface FileRouteTypes {
     | '/admin/usuarios'
     | '/clientes'
     | '/fornecedores'
+    | '/orcamentos'
+    | '/produtos'
+    | '/servicos'
   id:
     | '__root__'
     | '/_app'
     | '/login'
     | '/trocar-senha'
     | '/_app/agenda'
-    | '/_app/estoque'
-    | '/_app/orcamentos'
     | '/_app/ordens'
     | '/_app/veiculos'
     | '/_app/'
@@ -188,6 +197,9 @@ export interface FileRouteTypes {
     | '/_app/admin/usuarios'
     | '/_app/clientes/'
     | '/_app/fornecedores/'
+    | '/_app/orcamentos/'
+    | '/_app/produtos/'
+    | '/_app/servicos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -231,20 +243,6 @@ declare module '@tanstack/react-router' {
       path: '/agenda'
       fullPath: '/agenda'
       preLoaderRoute: typeof AppAgendaRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
-    '/_app/estoque': {
-      id: '/_app/estoque'
-      path: '/estoque'
-      fullPath: '/estoque'
-      preLoaderRoute: typeof AppEstoqueRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
-    '/_app/orcamentos': {
-      id: '/_app/orcamentos'
-      path: '/orcamentos'
-      fullPath: '/orcamentos'
-      preLoaderRoute: typeof AppOrcamentosRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/_app/ordens': {
@@ -296,13 +294,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppFornecedoresIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/orcamentos/': {
+      id: '/_app/orcamentos/'
+      path: '/orcamentos'
+      fullPath: '/orcamentos/'
+      preLoaderRoute: typeof AppOrcamentosIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/produtos/': {
+      id: '/_app/produtos/'
+      path: '/produtos'
+      fullPath: '/produtos/'
+      preLoaderRoute: typeof AppProdutosIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/servicos/': {
+      id: '/_app/servicos/'
+      path: '/servicos'
+      fullPath: '/servicos/'
+      preLoaderRoute: typeof AppServicosIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
   }
 }
 
 interface AppRouteRouteChildren {
   AppAgendaRoute: typeof AppAgendaRoute
-  AppEstoqueRoute: typeof AppEstoqueRoute
-  AppOrcamentosRoute: typeof AppOrcamentosRoute
   AppOrdensRoute: typeof AppOrdensRoute
   AppVeiculosRoute: typeof AppVeiculosRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -311,12 +328,13 @@ interface AppRouteRouteChildren {
   AppAdminUsuariosRoute: typeof AppAdminUsuariosRoute
   AppClientesIndexRoute: typeof AppClientesIndexRoute
   AppFornecedoresIndexRoute: typeof AppFornecedoresIndexRoute
+  AppOrcamentosIndexRoute: typeof AppOrcamentosIndexRoute
+  AppProdutosIndexRoute: typeof AppProdutosIndexRoute
+  AppServicosIndexRoute: typeof AppServicosIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppAgendaRoute: AppAgendaRoute,
-  AppEstoqueRoute: AppEstoqueRoute,
-  AppOrcamentosRoute: AppOrcamentosRoute,
   AppOrdensRoute: AppOrdensRoute,
   AppVeiculosRoute: AppVeiculosRoute,
   AppIndexRoute: AppIndexRoute,
@@ -325,6 +343,9 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppAdminUsuariosRoute: AppAdminUsuariosRoute,
   AppClientesIndexRoute: AppClientesIndexRoute,
   AppFornecedoresIndexRoute: AppFornecedoresIndexRoute,
+  AppOrcamentosIndexRoute: AppOrcamentosIndexRoute,
+  AppProdutosIndexRoute: AppProdutosIndexRoute,
+  AppServicosIndexRoute: AppServicosIndexRoute,
 }
 
 const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
