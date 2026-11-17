@@ -69,7 +69,7 @@ export function AcoesOrcamento({
           </DropdownMenuItem>
         )}
         <DropdownMenuItem onSelect={() => aoImprimir(orcamento)}>
-          <Printer /> Imprimir
+          <Printer /> Gerar PDF
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onSelect={() => aoExcluir(orcamento)}>

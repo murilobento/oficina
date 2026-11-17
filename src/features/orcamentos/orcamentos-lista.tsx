@@ -1,9 +1,10 @@
 import { useVeiculos } from "@/features/veiculos/api";
 import { usePessoas } from "@/features/pessoas/api";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { toast } from "sonner";
 
+import { useEmpresa } from "@/features/empresa/api";
 import { usePode } from "@/features/auth/sessao";
 
 import {
@@ -31,7 +32,7 @@ import { GerarVendaDialog } from "@/features/vendas/gerar-venda-dialog";
 import { useVendas } from "@/features/vendas/api";
 import { useExcluirOrcamento, useMudarStatusOrcamento, useOrcamentos, useRenovarOrcamento } from "./api";
 import { OrcamentoDetalhe, type MudancaStatus } from "./orcamento-detalhe";
-import { OrcamentoDocumento } from "./orcamento-documento";
+import { gerarPdfOrcamento, entregarPdf } from "./orcamento-pdf";
 import { OrcamentoForm } from "./orcamento-form";
 import { AcoesOrcamento, StatusOrcamentoBadge } from "./orcamento-partes";
 
@@ -66,6 +67,7 @@ export function OrcamentosLista() {
   const remover = useExcluirOrcamento();
   const { proteger } = useEnvioUnico();
   const clientes = usePessoas("cliente");
+  const empresa = useEmpresa();
   const veiculos = useVeiculos();
   const vendas = useVendas();
   const [gerandoVenda, setGerandoVenda] = useState<Orcamento | null>(null);
@@ -81,7 +83,6 @@ export function OrcamentosLista() {
   const [detalheAberto, setDetalheAberto] = useState(false);
   const [visualizandoId, setVisualizandoId] = useState<string | null>(null);
   const [excluindo, setExcluindo] = useState<Orcamento | null>(null);
-  const [imprimindo, setImprimindo] = useState<Orcamento | null>(null);
 
   const visualizando = orcamentos.find((item) => item.id === visualizandoId) ?? null;
   const veiculoDe = (orcamento: Orcamento) => veiculos.find((item) => item.id === orcamento.veiculoId) ?? null;
@@ -110,17 +111,22 @@ export function OrcamentosLista() {
 
   const { visiveis, paginaAtual, totalPaginas } = paginar(filtrados, pagina);
 
-  // Imprimir: monta a folha na página, abre o diálogo de impressão e desmonta ao terminar.
-  useEffect(() => {
-    if (!imprimindo) return;
-    const terminar = () => setImprimindo(null);
-    window.addEventListener("afterprint", terminar);
-    const espera = setTimeout(() => window.print(), 100);
-    return () => {
-      clearTimeout(espera);
-      window.removeEventListener("afterprint", terminar);
-    };
-  }, [imprimindo]);
+  // PDF: gera o arquivo do orçamento e baixa (ou abre o compartilhar, no celular).
+  async function gerarPdf(orcamento: Orcamento) {
+    const aviso = toast.loading(`Gerando o PDF de ${orcamento.numero}...`);
+    try {
+      const blob = await gerarPdfOrcamento({
+        orcamento,
+        cliente: clientes.find((cliente) => cliente.id === orcamento.clienteId) ?? null,
+        veiculo: veiculoDe(orcamento),
+        empresa,
+      });
+      toast.dismiss(aviso);
+      await entregarPdf(blob, `${orcamento.numero}.pdf`);
+    } catch {
+      toast.error("Não foi possível gerar o PDF. Tente de novo.", { id: aviso });
+    }
+  }
 
   function abrirForm(orcamento: Orcamento | null) {
     setDetalheAberto(false);
@@ -177,7 +183,7 @@ export function OrcamentosLista() {
     setGerandoVenda(orcamento);
   }
 
-  const acoes = { aoVisualizar: abrirDetalhe, aoEditar: abrirForm, aoImprimir: setImprimindo, aoExcluir: pedirExclusao };
+  const acoes = { aoVisualizar: abrirDetalhe, aoEditar: abrirForm, aoImprimir: gerarPdf, aoExcluir: pedirExclusao };
   const vazio = (
     <ListagemVazia>
       {orcamentos.length === 0 ? "Nenhum orçamento criado ainda." : "Nenhum orçamento encontrado com esses filtros."}
@@ -306,7 +312,7 @@ export function OrcamentosLista() {
         orcamento={visualizando}
         aoFechar={() => setDetalheAberto(false)}
         aoEditar={abrirForm}
-        aoImprimir={setImprimindo}
+        aoImprimir={gerarPdf}
         aoExcluir={pedirExclusao}
         aoMudar={mudar}
         aoGerarVenda={gerarVenda}
@@ -318,13 +324,6 @@ export function OrcamentosLista() {
         aoCancelar={() => setExcluindo(null)}
         aoConfirmar={confirmarExclusao}
       />
-      {imprimindo && (
-        <OrcamentoDocumento
-          orcamento={imprimindo}
-          cliente={clientes.find((cliente) => cliente.id === imprimindo.clienteId) ?? null}
-          veiculo={veiculoDe(imprimindo)}
-        />
-      )}
     </Listagem>
   );
 }

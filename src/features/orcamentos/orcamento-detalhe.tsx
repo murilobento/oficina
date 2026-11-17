@@ -129,7 +129,7 @@ export function OrcamentoDetalhe({
             <Trash2 />
           </Button>
           <Button variant="outline" onClick={() => aoImprimir(atual)}>
-            <Printer /> Imprimir
+            <Printer /> Gerar PDF
           </Button>
           {podeEditar(atual) && (
             <Button variant="outline" onClick={() => aoEditar(atual)}>

@@ -33,6 +33,8 @@
     "embla-carousel-react": "^8.6.0",
     "hono": "^4.13.19",
     "input-otp": "^1.5.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.9",
     "lucide-react": "^1.72.0",
     "radix-ui": "^1.8.1",
     "react": "^19.3.1",
