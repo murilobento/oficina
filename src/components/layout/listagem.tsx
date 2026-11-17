@@ -25,8 +25,9 @@ export function ListagemCabecalho({
   titulo: string;
   descricao: string;
   /** Texto do botão no computador, ex.: "Novo cliente". No celular aparece só "Novo". */
-  rotuloNovo: string;
-  aoNovo: () => void;
+  rotuloNovo?: string;
+  /** Sem `aoNovo` o botão não aparece (listagens só de consulta). */
+  aoNovo?: () => void;
 }) {
   return (
     <div className="flex items-start justify-between gap-3">
@@ -34,10 +35,12 @@ export function ListagemCabecalho({
         <h1 className="text-2xl font-semibold tracking-tight">{titulo}</h1>
         <p className="text-muted-foreground text-sm">{descricao}</p>
       </div>
-      <Button className="shrink-0" aria-label={rotuloNovo} onClick={aoNovo}>
-        <Plus /> <span className="hidden sm:inline">{rotuloNovo}</span>
-        <span className="sm:hidden">Novo</span>
-      </Button>
+      {aoNovo && (
+        <Button className="shrink-0" aria-label={rotuloNovo} onClick={aoNovo}>
+          <Plus /> <span className="hidden sm:inline">{rotuloNovo}</span>
+          <span className="sm:hidden">Novo</span>
+        </Button>
+      )}
     </div>
   );
 }

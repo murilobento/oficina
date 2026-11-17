@@ -20,7 +20,6 @@ import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 import { formatarQuantidade } from "@/lib/numeros";
 import { cn } from "@/lib/utils";
 
-import { MovimentacaoForm } from "./movimentacao-form";
 import { useMovimentosStore } from "./store";
 import { type Movimento, ROTULO_ORIGEM } from "./tipos";
 
@@ -53,7 +52,7 @@ function TipoBadge({ tipo }: { tipo: Movimento["tipo"] }) {
   );
 }
 
-/** Histórico de movimentações do estoque (somente leitura) e lançamento de entrada/saída manual. */
+/** Histórico de movimentações do estoque (somente consulta): quem lança são compras, vendas e acertos. */
 export function MovimentacoesLista() {
   const movimentos = useMovimentosStore((estado) => estado.itens);
   const produtos = useProdutosStore((estado) => estado.itens);
@@ -62,8 +61,6 @@ export function MovimentacoesLista() {
   const [filtroTipo, setFiltroTipo] = useState("todos");
   const [filtroOrigem, setFiltroOrigem] = useState("todos");
   const [pagina, setPagina] = useState(1);
-  const [formAberto, setFormAberto] = useState(false);
-  const [abertura, setAbertura] = useState(0);
 
   const produtoDe = (movimento: Movimento) => produtos.find((item) => item.id === movimento.produtoId);
   const nomeProduto = (movimento: Movimento) => produtoDe(movimento)?.descricao ?? "Produto removido";
@@ -102,12 +99,7 @@ export function MovimentacoesLista() {
     <Listagem>
       <ListagemCabecalho
         titulo="Movimentação de estoque"
-        descricao="Tudo que entrou e saiu das peças: compras, vendas, acertos e lançamentos manuais."
-        rotuloNovo="Nova movimentação"
-        aoNovo={() => {
-          setAbertura((numero) => numero + 1);
-          setFormAberto(true);
-        }}
+        descricao="Consulta de tudo que entrou e saiu das peças. Os registros vêm das compras, vendas e acertos."
       />
 
       <ListagemFiltros>
@@ -189,8 +181,6 @@ export function MovimentacoesLista() {
         totalPaginas={totalPaginas}
         aoMudarPagina={setPagina}
       />
-
-      <MovimentacaoForm key={abertura} aberto={formAberto} aoFechar={() => setFormAberto(false)} />
     </Listagem>
   );
 }

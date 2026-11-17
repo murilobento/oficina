@@ -17,9 +17,9 @@ beforeEach(() => {
 
 describe("movimentarEstoque", () => {
   it("entrada soma ao saldo e registra o saldo depois da movimentação", () => {
-    const mov = movimentarEstoque({ produtoId: PRODUTO, delta: 5, origem: "manual", documento: "", motivo: "Devolução" });
+    const mov = movimentarEstoque({ produtoId: PRODUTO, delta: 5, origem: "acerto", documento: "", motivo: "Devolução" });
     expect(saldoDe(PRODUTO)).toBe(15);
-    expect(mov).toMatchObject({ tipo: "entrada", quantidade: 5, saldoApos: 15, origem: "manual", motivo: "Devolução" });
+    expect(mov).toMatchObject({ tipo: "entrada", quantidade: 5, saldoApos: 15, origem: "acerto", motivo: "Devolução" });
     expect(useMovimentosStore.getState().itens).toHaveLength(1);
   });
 
@@ -35,7 +35,7 @@ describe("movimentarEstoque", () => {
   });
 
   it("produto inexistente é ignorado", () => {
-    expect(movimentarEstoque({ produtoId: "nao-existe", delta: 1, origem: "manual", documento: "", motivo: "" })).toBeNull();
+    expect(movimentarEstoque({ produtoId: "nao-existe", delta: 1, origem: "acerto", documento: "", motivo: "" })).toBeNull();
   });
 });
 
