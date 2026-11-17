@@ -1,7 +1,7 @@
 import { movimentarItens } from "@/features/estoque/movimentar";
 import { useOrcamentosStore } from "@/features/orcamentos/store";
 import type { Orcamento } from "@/features/orcamentos/tipos";
-import { useVeiculosStore } from "@/features/veiculos/store";
+import { subirKmDoVeiculo } from "@/features/veiculos/api";
 import { proximoCodigo } from "@/lib/numeros";
 
 import { useVendasStore } from "./store";
@@ -16,9 +16,7 @@ export function registrarVenda(dados: DadosVenda): Venda {
   const venda = vendas.adicionar({ ...dados, numero, status: "concluida" });
   movimentarItens(dados.itens, -1, { origem: "venda", documento: numero, motivo: "" });
 
-  const veiculos = useVeiculosStore.getState();
-  const veiculo = veiculos.itens.find((item) => item.id === dados.veiculoId);
-  if (veiculo && dados.km > veiculo.km) veiculos.atualizar(veiculo.id, { km: dados.km });
+  void subirKmDoVeiculo(dados.veiculoId, dados.km);
   return venda;
 }
 

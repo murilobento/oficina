@@ -1,6 +1,11 @@
+import { usePessoas } from "@/features/pessoas/api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
+
+import { usePode } from "@/features/auth/sessao";
+
+import { useSalvarProduto } from "./api";
 
 import {
   CampoAtivo,
@@ -11,16 +16,13 @@ import {
 import { SecaoFormulario } from "@/components/layout/registro-partes";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { FORNECEDORES } from "@/features/pessoas/entidades";
 import {
   margemSobreCusto,
   mascararMoeda,
   mascararQuantidade,
-  proximoCodigo,
   textoParaCentavos,
 } from "@/lib/numeros";
 
-import { useProdutosStore } from "./store";
 import {
   CATEGORIAS_PRODUTO,
   esquemaProduto,
@@ -48,10 +50,9 @@ export function ProdutoForm({
   produto: Produto | null;
   aoFechar: () => void;
 }) {
-  const produtos = useProdutosStore((estado) => estado.itens);
-  const adicionar = useProdutosStore((estado) => estado.adicionar);
-  const atualizar = useProdutosStore((estado) => estado.atualizar);
-  const fornecedores = FORNECEDORES.useStore((estado) => estado.pessoas);
+  const salvar = useSalvarProduto();
+  const podeVerValores = usePode("valores.ver");
+  const fornecedores = usePessoas("fornecedor");
 
   const editando = produto !== null;
   const form = useForm<ProdutoFormValores>({
@@ -68,23 +69,19 @@ export function ProdutoForm({
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
     .map((fornecedor) => ({ valor: fornecedor.id, texto: fornecedor.nome }));
 
-  const enviar = form.handleSubmit((valores) => {
-    const dados = paraProduto(valores);
-    if (dados.codigo === "") dados.codigo = proximoCodigo("PRD", produtos.map((item) => item.codigo));
-
-    const outroComCodigo = produtos.find((item) => item.id !== produto?.id && item.codigo === dados.codigo);
-    if (outroComCodigo) {
-      form.setError("codigo", { message: `Este código já é do produto ${outroComCodigo.descricao}.` }, { shouldFocus: true });
+  const enviar = form.handleSubmit(async (valores) => {
+    try {
+      await salvar.mutateAsync({ id: produto?.id, dados: paraProduto(valores) });
+    } catch (erro) {
+      const campos = (erro as { campos?: Record<string, string> }).campos ?? {};
+      const primeiro = Object.keys(campos)[0];
+      for (const [campo, texto] of Object.entries(campos)) {
+        form.setError(campo as keyof ProdutoFormValores, { message: texto }, { shouldFocus: campo === primeiro });
+      }
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível salvar. Tente de novo.");
       return;
     }
-
-    if (produto) {
-      atualizar(produto.id, dados);
-      toast.success("Produto atualizado.");
-    } else {
-      adicionar({ ...dados, saldo: 0 });
-      toast.success("Produto cadastrado.");
-    }
+    toast.success(produto ? "Produto atualizado." : "Produto cadastrado.");
     aoFechar();
   });
 
@@ -159,31 +156,33 @@ export function ProdutoForm({
               </div>
             </SecaoFormulario>
 
-            <SecaoFormulario titulo="Preço">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <CampoTexto
-                  control={control}
-                  prefixo={PREFIXO}
-                  nome="custo"
-                  rotulo="Preço de custo (R$)"
-                  inputMode="numeric"
-                  placeholder="0,00"
-                  mascara={mascararMoeda}
-                />
-                <CampoTexto
-                  control={control}
-                  prefixo={PREFIXO}
-                  nome="venda"
-                  rotulo="Preço de venda (R$)"
-                  inputMode="numeric"
-                  placeholder="0,00"
-                  mascara={mascararMoeda}
-                />
-              </div>
-              <p className="text-muted-foreground text-sm" aria-live="polite">
-                {margem === null ? "A margem aparece quando custo e venda estão preenchidos." : `Margem sobre o custo: ${margem}%`}
-              </p>
-            </SecaoFormulario>
+            {podeVerValores && (
+              <SecaoFormulario titulo="Preço">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <CampoTexto
+                    control={control}
+                    prefixo={PREFIXO}
+                    nome="custo"
+                    rotulo="Preço de custo (R$)"
+                    inputMode="numeric"
+                    placeholder="0,00"
+                    mascara={mascararMoeda}
+                  />
+                  <CampoTexto
+                    control={control}
+                    prefixo={PREFIXO}
+                    nome="venda"
+                    rotulo="Preço de venda (R$)"
+                    inputMode="numeric"
+                    placeholder="0,00"
+                    mascara={mascararMoeda}
+                  />
+                </div>
+                <p className="text-muted-foreground text-sm" aria-live="polite">
+                  {margem === null ? "A margem aparece quando custo e venda estão preenchidos." : `Margem sobre o custo: ${margem}%`}
+                </p>
+              </SecaoFormulario>
+            )}
 
             <SecaoFormulario
               titulo="Estoque"

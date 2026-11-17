@@ -1,3 +1,5 @@
+import { AvisoEstoque } from "@/features/estoque/aviso-estoque";
+import { usePessoas } from "@/features/pessoas/api";
 import { useMemo, useState } from "react";
 
 import { toast } from "sonner";
@@ -17,7 +19,6 @@ import {
   ListagemVazia,
 } from "@/components/layout/listagem";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CLIENTES } from "@/features/pessoas/entidades";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 import { formatarBRL } from "@/lib/numeros";
 
@@ -34,7 +35,7 @@ const data = (valor: string) => new Date(valor).toLocaleDateString("pt-BR");
 /** Listagem de vendas. Orçamento aprovado vira venda no próprio orçamento; aqui também se lança venda manual. */
 export function VendasLista() {
   const vendas = useVendasStore((estado) => estado.itens);
-  const clientes = CLIENTES.useStore((estado) => estado.pessoas);
+  const clientes = usePessoas("cliente");
 
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("todos");
@@ -90,6 +91,7 @@ export function VendasLista() {
 
   return (
     <Listagem>
+      <AvisoEstoque />
       <ListagemCabecalho
         titulo="Vendas"
         descricao="Vendas concluídas: de orçamentos aprovados ou lançadas direto no balcão."

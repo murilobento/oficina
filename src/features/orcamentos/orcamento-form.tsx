@@ -1,3 +1,5 @@
+import { subirKmDoVeiculo, useVeiculos } from "@/features/veiculos/api";
+import { usePessoas } from "@/features/pessoas/api";
 import { useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,12 +13,10 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useEmpresa } from "@/features/empresa/store";
+import { useEmpresa } from "@/features/empresa/api";
 import { CampoCliente } from "@/features/pessoas/campo-cliente";
 import { ClienteRapido } from "@/features/pessoas/cliente-rapido";
-import { CLIENTES } from "@/features/pessoas/entidades";
 import { historicoDoVeiculo, kmAbaixoDoUltimo } from "@/features/veiculos/historico";
-import { useVeiculosStore } from "@/features/veiculos/store";
 import { veiculoEmTexto } from "@/features/veiculos/tipos";
 import { VeiculoRapido } from "@/features/veiculos/veiculo-rapido";
 import {
@@ -59,9 +59,8 @@ export function OrcamentoForm({
   const orcamentos = useOrcamentosStore((estado) => estado.itens);
   const adicionar = useOrcamentosStore((estado) => estado.adicionar);
   const atualizar = useOrcamentosStore((estado) => estado.atualizar);
-  const clientes = CLIENTES.useStore((estado) => estado.pessoas);
-  const veiculos = useVeiculosStore((estado) => estado.itens);
-  const atualizarVeiculo = useVeiculosStore((estado) => estado.atualizar);
+  const clientes = usePessoas("cliente");
+  const veiculos = useVeiculos();
   const empresa = useEmpresa();
 
   // Cadastro rápido de cliente: `abertura` troca a key para o formulário abrir limpo.
@@ -144,7 +143,7 @@ export function OrcamentoForm({
     const dados = paraOrcamento(valores);
     // O carro guarda o km mais recente: sobe quando a visita registra um valor maior.
     const alvo = veiculos.find((v) => v.id === dados.veiculoId);
-    if (alvo && dados.km > alvo.km) atualizarVeiculo(alvo.id, { km: dados.km });
+    if (alvo && dados.km > alvo.km) void subirKmDoVeiculo(alvo.id, dados.km);
     if (orcamento) {
       atualizar(orcamento.id, dados);
       toast.success(`${orcamento.numero} atualizado.`);

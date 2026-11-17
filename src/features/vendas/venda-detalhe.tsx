@@ -1,3 +1,5 @@
+import { useVeiculos } from "@/features/veiculos/api";
+import { usePessoas } from "@/features/pessoas/api";
 import { Ban } from "lucide-react";
 
 import { StatusDocumentoBadge } from "@/components/layout/documento-partes";
@@ -8,8 +10,6 @@ import { subtotalItem } from "@/features/orcamentos/calculo";
 import { ResumoTotais } from "@/features/orcamentos/orcamento-partes";
 import { useOrcamentosStore } from "@/features/orcamentos/store";
 import { mascararDocumento, mascararTelefone } from "@/features/pessoas/documento";
-import { CLIENTES } from "@/features/pessoas/entidades";
-import { useVeiculosStore } from "@/features/veiculos/store";
 import { mascararPlaca } from "@/features/veiculos/tipos";
 import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
 
@@ -27,8 +27,8 @@ export function VendaDetalhe({
   aoFechar: () => void;
   aoCancelar: (venda: Venda) => void;
 }) {
-  const clientes = CLIENTES.useStore((estado) => estado.pessoas);
-  const veiculos = useVeiculosStore((estado) => estado.itens);
+  const clientes = usePessoas("cliente");
+  const veiculos = useVeiculos();
   const orcamentos = useOrcamentosStore((estado) => estado.itens);
   const cliente = clientes.find((item) => item.id === venda?.clienteId);
   const veiculo = veiculos.find((item) => item.id === venda?.veiculoId);

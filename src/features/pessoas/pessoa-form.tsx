@@ -5,6 +5,8 @@ import { BriefcaseBusiness, Search, User } from "lucide-react";
 import { type Control, Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
+import { useSalvarPessoa } from "./api";
+
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -125,9 +127,7 @@ export function PessoaForm({
   aoFechar: () => void;
 }) {
   const editando = pessoa !== null;
-  const pessoas = config.useStore((estado) => estado.pessoas);
-  const adicionar = config.useStore((estado) => estado.adicionar);
-  const atualizar = config.useStore((estado) => estado.atualizar);
+  const salvar = useSalvarPessoa(config.papel);
 
   const form = useForm<PessoaFormValores>({
     resolver: zodResolver(esquemaPessoa),
@@ -244,27 +244,19 @@ export function PessoaForm({
     setAvisoCnpj(null);
   }
 
-  const enviar = form.handleSubmit((valores) => {
-    const dados = paraPessoa(valores);
-    const repetido =
-      dados.documento !== "" &&
-      pessoas.find((outra) => outra.id !== pessoa?.id && outra.documento === dados.documento);
-    if (repetido) {
-      form.setError(
-        "documento",
-        { message: `Este ${rotuloDocumento(dados.tipo)} já está no cadastro de ${repetido.nome}.` },
-        { shouldFocus: true },
-      );
+  const enviar = form.handleSubmit(async (valores) => {
+    try {
+      await salvar.mutateAsync({ id: pessoa?.id, dados: paraPessoa(valores) });
+    } catch (erro) {
+      const campos = (erro as { campos?: Record<string, string> }).campos ?? {};
+      const primeiro = Object.keys(campos)[0];
+      for (const [campo, texto] of Object.entries(campos)) {
+        form.setError(campo as keyof PessoaFormValores, { message: texto }, { shouldFocus: campo === primeiro });
+      }
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível salvar. Tente de novo.");
       return;
     }
-
-    if (pessoa) {
-      atualizar(pessoa.id, dados);
-      toast.success(`${capitalizar(config.singular)} atualizado.`);
-    } else {
-      adicionar(dados);
-      toast.success(`${capitalizar(config.singular)} cadastrado.`);
-    }
+    toast.success(`${capitalizar(config.singular)} ${pessoa ? "atualizado" : "cadastrado"}.`);
     aoFechar();
   });
 

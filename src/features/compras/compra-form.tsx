@@ -1,3 +1,4 @@
+import { usePessoas } from "@/features/pessoas/api";
 import { useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,7 +27,7 @@ import { type CompraFormValores, esquemaCompra, FORM_VAZIO, paraCompra, totaisDa
  * a cada abertura, para o formulário começar limpo.
  */
 export function CompraForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () => void }) {
-  const fornecedores = FORNECEDORES.useStore((estado) => estado.pessoas);
+  const fornecedores = usePessoas("fornecedor");
   const [seletorAberto, setSeletorAberto] = useState(false);
   const [fornecedorRapido, setFornecedorRapido] = useState({ aberto: false, nome: "", abertura: 0 });
 

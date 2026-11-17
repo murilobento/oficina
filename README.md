@@ -14,7 +14,7 @@ pnpm api                     # API local (porta 8787; o Vite repassa /api)
 ```
 
 Sem `DATABASE_URL`, a API sobe com um banco em memória (os dados somem ao reiniciar). Serve para testar.
-Por enquanto as telas ainda guardam os dados no navegador (localStorage); a ligação delas com a API é a próxima etapa.
+Empresa, clientes, fornecedores, produtos, serviços e veículos já ficam no banco (via API). Orçamentos, vendas, compras, estoque, funcionários e perfis ainda guardam os dados no navegador (localStorage); a ligação deles é a próxima etapa. Enquanto isso, vendas, compras e acertos não alteram o saldo dos produtos.
 
 Comandos: `pnpm build`, `pnpm lint`, `pnpm test`.
 
@@ -26,7 +26,7 @@ Comandos: `pnpm build`, `pnpm lint`, `pnpm test`.
 4. Crie o primeiro administrador:
    `ADMIN_EMAIL=voce@exemplo.com ADMIN_NOME="Seu Nome" ADMIN_SENHA=senha-provisoria pnpm db:admin`
    Ele será obrigado a trocar a senha no primeiro acesso.
-5. Para exigir login nas telas, use `VITE_LOGIN_ATIVO=true`. Desligado, o sistema abre com um usuário de exemplo.
+5. Use `VITE_LOGIN_ATIVO=true`: as telas de cadastro precisam de login para falar com a API.
 
 Não há cadastro público: só o administrador cria funcionários e redefine senhas (nova senha provisória).
 

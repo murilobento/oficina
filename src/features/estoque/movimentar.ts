@@ -1,51 +1,38 @@
-import { useProdutosStore } from "@/features/produtos/store";
+import { produtosDoCache } from "@/features/produtos/api";
 
-import { useMovimentosStore } from "./store";
 import type { Movimento, OrigemMovimento } from "./tipos";
+
+/** Etapa 1: vendas, compras e acertos ainda não alteram o saldo. Vira `true` quando o estoque for ligado à API. */
+export const ESTOQUE_MOVIMENTADO = false;
 
 type Contexto = { origem: OrigemMovimento; documento: string; motivo: string };
 
 /**
- * Único caminho para mexer no saldo: atualiza o produto e grava a movimentação no histórico.
- * `delta` positivo = entrada, negativo = saída. O saldo pode ficar negativo (peça vendida antes
- * de dar entrada); as telas avisam quando isso vai acontecer. Devolve nulo se não mexeu em nada.
+ * ETAPA 1 DA LIGAÇÃO COM O BANCO: o saldo dos produtos mora no Neon e só a API de estoque
+ * (etapa 2, junto com vendas e compras) poderá alterá-lo. Até lá, vendas, compras e acertos não
+ * mexem no saldo: estas funções não fazem nada e devolvem nulo/lista vazia.
  */
-export function movimentarEstoque({ produtoId, delta, ...contexto }: { produtoId: string; delta: number } & Contexto): Movimento | null {
-  if (delta === 0) return null;
-  const produtos = useProdutosStore.getState();
-  const produto = produtos.itens.find((item) => item.id === produtoId);
-  if (!produto) return null;
-
-  // Soma em milésimos para não acumular erro de ponto flutuante (0,1 + 0,2).
-  const saldoApos = Math.round((produto.saldo + delta) * 1000) / 1000;
-  produtos.atualizar(produtoId, { saldo: saldoApos });
-  return useMovimentosStore.getState().adicionar({
-    produtoId,
-    tipo: delta > 0 ? "entrada" : "saida",
-    quantidade: Math.abs(delta),
-    saldoApos,
-    ...contexto,
-  });
+export function movimentarEstoque(_pedido: { produtoId: string; delta: number } & Contexto): Movimento | null {
+  return null;
 }
 
 type ItemDeEstoque = { origemId: string; quantidade: number };
 
-/**
- * Movimenta os itens de um documento (venda, compra...). `sinal` -1 dá baixa, +1 dá entrada.
- * Só mexe em itens ligados a um produto cadastrado: serviços e itens avulsos são ignorados.
- */
-export function movimentarItens(itens: ItemDeEstoque[], sinal: 1 | -1, contexto: Contexto): Movimento[] {
-  const existentes = new Set(useProdutosStore.getState().itens.map((produto) => produto.id));
-  return itens
-    .filter((item) => item.origemId !== "" && existentes.has(item.origemId))
-    .flatMap((item) => movimentarEstoque({ produtoId: item.origemId, delta: sinal * item.quantidade, ...contexto }) ?? []);
+/** Ver `movimentarEstoque`: sem efeito na etapa 1. */
+export function movimentarItens(_itens: ItemDeEstoque[], _sinal: 1 | -1, _contexto: Contexto): Movimento[] {
+  return [];
 }
 
 export type FaltaDeSaldo = { produtoId: string; descricao: string; pedido: number; saldo: number };
 
-/** Produtos cuja soma das quantidades pedidas passa do saldo atual (para avisar antes de vender). */
+/**
+ * Produtos cuja soma das quantidades pedidas passa do saldo atual (para avisar antes de vender).
+ * Etapa 1: o saldo no banco não é movimentado por vendas e compras, então o aviso ficaria sempre
+ * falso (todo produto com saldo 0): fica desligado até o estoque ir para a API.
+ */
 export function itensSemSaldo(itens: ItemDeEstoque[]): FaltaDeSaldo[] {
-  const produtos = useProdutosStore.getState().itens;
+  if (!ESTOQUE_MOVIMENTADO) return [];
+  const produtos = produtosDoCache();
   const pedido = new Map<string, number>();
   for (const item of itens) {
     if (item.origemId === "") continue;

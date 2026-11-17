@@ -8,7 +8,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { LOGIN_ATIVO, useSessao } from "@/features/auth/sessao";
-import { useEmpresa } from "@/features/empresa/store";
+import { useEmpresa } from "@/features/empresa/api";
 import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/login")({

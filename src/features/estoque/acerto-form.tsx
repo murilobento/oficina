@@ -1,3 +1,4 @@
+import { useProdutos } from "@/features/produtos/api";
 import { useState } from "react";
 
 import { ListPlus, Plus, Trash2 } from "lucide-react";
@@ -10,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { SeletorProduto } from "@/features/produtos/seletor-produto";
-import { useProdutosStore } from "@/features/produtos/store";
 import { formatarQuantidade, mascararQuantidade, proximoCodigo, textoParaNumero } from "@/lib/numeros";
 
 import { diferencaAcerto, movimentarEstoque } from "./movimentar";
@@ -25,7 +25,7 @@ type Linha = { produtoId: string; contado: string };
  * o histórico fica na Movimentação de estoque. Quem usa deve trocar a `key` a cada abertura.
  */
 export function AcertoForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () => void }) {
-  const produtos = useProdutosStore((estado) => estado.itens);
+  const produtos = useProdutos();
   const acertos = useAcertosStore((estado) => estado.itens);
   const adicionar = useAcertosStore((estado) => estado.adicionar);
 

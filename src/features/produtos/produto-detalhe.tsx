@@ -1,10 +1,10 @@
+import { usePessoas } from "@/features/pessoas/api";
 import { Pencil, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 
 import { Dado, SecaoDados } from "@/components/layout/registro-partes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { FORNECEDORES } from "@/features/pessoas/entidades";
 import { StatusBadge } from "@/features/pessoas/pessoa-partes";
 import { formatarBRL, formatarQuantidade, margemSobreCusto } from "@/lib/numeros";
 
@@ -27,7 +27,7 @@ export function ProdutoDetalhe({
   aoAlternarAtivo: (produto: Produto) => void;
   aoExcluir: (produto: Produto) => void;
 }) {
-  const fornecedores = FORNECEDORES.useStore((estado) => estado.pessoas);
+  const fornecedores = usePessoas("fornecedor");
   const fornecedor = fornecedores.find((item) => item.id === produto?.fornecedorId);
   const margem = produto ? margemSobreCusto(produto.custo, produto.venda) : null;
 

@@ -51,7 +51,7 @@ export function GerarVendaDialog({
         <DialogHeader>
           <DialogTitle>Gerar venda de {orcamento?.numero}</DialogTitle>
           <DialogDescription>
-            {orcamento && `Total de ${formatarBRL(totaisDoOrcamento(orcamento).total)}. As peças saem do estoque.`}
+            {orcamento && `Total de ${formatarBRL(totaisDoOrcamento(orcamento).total)}.`}
           </DialogDescription>
         </DialogHeader>
         <Field className="gap-1.5" data-invalid={erro !== ""}>

@@ -2,6 +2,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { BriefcaseBusiness, User } from "lucide-react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
+
+import { useSalvarPessoa } from "@/features/pessoas/api";
 import { z } from "zod";
 
 import { CampoTexto } from "@/components/layout/campos-form";
@@ -41,7 +43,7 @@ export function ClienteRapido({
   /** Cliente (padrão) ou fornecedor. */
   config?: EntidadeConfig;
 }) {
-  const adicionar = config.useStore((estado) => estado.adicionar);
+  const salvar = useSalvarPessoa(config.papel);
   const form = useForm<Valores>({
     resolver: zodResolver(esquema),
     defaultValues: { tipo: "PF", nome: nomeInicial, celular: "" },
@@ -53,8 +55,14 @@ export function ClienteRapido({
   // o envio "borbulharia" e também enviaria o orçamento.
   const enviar = (evento: React.FormEvent<HTMLFormElement>) => {
     evento.stopPropagation();
-    return form.handleSubmit((valores) => {
-      const criado = adicionar(paraPessoa({ ...FORM_VAZIO, ...valores }));
+    return form.handleSubmit(async (valores) => {
+      let criado;
+      try {
+        criado = await salvar.mutateAsync({ dados: paraPessoa({ ...FORM_VAZIO, ...valores }) });
+      } catch (erro) {
+        toast.error(erro instanceof Error ? erro.message : "Não foi possível cadastrar. Tente de novo.");
+        return;
+      }
       toast.success(`${config.singular[0].toUpperCase()}${config.singular.slice(1)} cadastrado. Complete os dados depois em Cadastro > ${config.singular[0].toUpperCase()}${config.singular.slice(1)}.`);
       aoCriado(criado.id);
       aoFechar();

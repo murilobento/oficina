@@ -1,11 +1,11 @@
+import { useVeiculos } from "@/features/veiculos/api";
+import { usePessoas } from "@/features/pessoas/api";
 import { CheckCircle2, Pencil, Printer, RefreshCw, RotateCcw, Send, ShoppingCart, Trash2, XCircle } from "lucide-react";
 
 import { Dado, SecaoDados } from "@/components/layout/registro-partes";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { CLIENTES } from "@/features/pessoas/entidades";
 import { mascararDocumento, mascararTelefone } from "@/features/pessoas/documento";
-import { useVeiculosStore } from "@/features/veiculos/store";
 import { mascararPlaca } from "@/features/veiculos/tipos";
 import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
 
@@ -41,9 +41,9 @@ export function OrcamentoDetalhe({
   aoMudar: (orcamento: Orcamento, mudanca: MudancaStatus) => void;
   aoGerarVenda: (orcamento: Orcamento) => void;
 }) {
-  const clientes = CLIENTES.useStore((estado) => estado.pessoas);
+  const clientes = usePessoas("cliente");
   const cliente = clientes.find((item) => item.id === orcamento?.clienteId) ?? null;
-  const veiculos = useVeiculosStore((estado) => estado.itens);
+  const veiculos = useVeiculos();
   const veiculo = veiculos.find((item) => item.id === orcamento?.veiculoId) ?? null;
 
   return (

@@ -16,7 +16,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { LogoEmpresa } from "@/features/empresa/logo-empresa";
-import { useEmpresa } from "@/features/empresa/store";
+import { useEmpresa } from "@/features/empresa/api";
 import { findModuleByPath, type NavModule, navModules } from "@/navigation/sidebar-items";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 

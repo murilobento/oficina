@@ -6,6 +6,12 @@ import type { Permissao } from "../src/features/auth/permissoes";
 import type { Auth } from "./auth";
 import type { Banco } from "./banco";
 import { permissoesDoPerfil } from "./perfis";
+import { registrarRotasEmpresa } from "./rotas/empresa";
+import { registrarRotasPessoas } from "./rotas/pessoas";
+import { registrarRotasProdutos } from "./rotas/produtos";
+import { registrarRotasServicos } from "./rotas/servicos";
+import { registrarRotasVeiculos } from "./rotas/veiculos";
+import { ErroApi } from "./rotas/util";
 
 type Sessao = NonNullable<Awaited<ReturnType<Auth["api"]["getSession"]>>>;
 type Variaveis = { sessao: Sessao; permissoes: Permissao[] };
@@ -70,8 +76,16 @@ export function criarApp(banco: Banco, auth: Auth) {
     });
   });
 
+  const contexto = { app, banco, exigirSessao, exigirPermissao } as unknown as Parameters<typeof registrarRotasEmpresa>[0];
+  registrarRotasEmpresa(contexto);
+  registrarRotasPessoas(contexto);
+  registrarRotasProdutos(contexto);
+  registrarRotasServicos(contexto);
+  registrarRotasVeiculos(contexto);
+
   app.notFound((c) => c.json({ erro: "Rota não encontrada." }, 404));
   app.onError((erro, c) => {
+    if (erro instanceof ErroApi) return c.json({ erro: erro.message, campos: erro.campos }, erro.status);
     console.error(erro);
     return c.json({ erro: "Erro interno." }, 500);
   });

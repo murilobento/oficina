@@ -1,41 +1,22 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { criarAdministrador } from "./admin";
-import { criarApp } from "./app";
-import { criarAuth } from "./auth";
-import { type Banco, criarBanco } from "./banco";
+import { type Banco } from "./banco";
 import { migrar } from "./migrar";
-
-const SEGREDO = "segredo-de-teste-com-mais-de-32-caracteres!!";
-const ORIGEM = "http://localhost:5173";
+import { iniciarAppDeTeste } from "./teste-util";
 
 let banco: Banco;
-let app: ReturnType<typeof criarApp>;
+let chamar: Awaited<ReturnType<typeof iniciarAppDeTeste>>["chamar"];
+let entrar: Awaited<ReturnType<typeof iniciarAppDeTeste>>["entrar"];
+let fechar: () => Promise<void>;
 
 beforeAll(async () => {
-  banco = await criarBanco(""); // PGlite em memória
-  await migrar(banco);
-  await criarAdministrador(banco, { email: "Admin@Oficina.com", nome: "Admin", senha: "senha-provisoria-1", segredo: SEGREDO });
-  app = criarApp(banco, criarAuth(banco, { segredo: SEGREDO, urlBase: ORIGEM, origensConfiaveis: [ORIGEM] }));
+  const ctx = await iniciarAppDeTeste();
+  ({ banco, chamar, entrar, fechar } = ctx);
 }, 60_000);
 
 afterAll(async () => {
-  await banco.fechar();
+  await fechar();
 });
-
-async function chamar(caminho: string, opcoes: { metodo?: string; corpo?: unknown; cookie?: string } = {}) {
-  return app.request(caminho, {
-    method: opcoes.metodo ?? (opcoes.corpo ? "POST" : "GET"),
-    headers: { "content-type": "application/json", origin: ORIGEM, ...(opcoes.cookie ? { cookie: opcoes.cookie } : {}) },
-    body: opcoes.corpo ? JSON.stringify(opcoes.corpo) : undefined,
-  });
-}
-
-async function entrar(email: string, senha: string): Promise<string> {
-  const resposta = await chamar("/api/auth/sign-in/email", { corpo: { email, password: senha } });
-  expect(resposta.status).toBe(200);
-  return resposta.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
-}
 
 describe("banco", () => {
   it("cria as tabelas do domínio e as do Better Auth", async () => {

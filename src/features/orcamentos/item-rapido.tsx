@@ -1,3 +1,5 @@
+import { useSalvarProduto } from "@/features/produtos/api";
+import { useSalvarServico } from "@/features/servicos/api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -5,16 +7,14 @@ import { z } from "zod";
 
 import { CampoSelect, CampoTexto } from "@/components/layout/campos-form";
 import { Button } from "@/components/ui/button";
-import { useProdutosStore } from "@/features/produtos/store";
 import {
   CATEGORIAS_PRODUTO,
   FORM_VAZIO as PRODUTO_VAZIO,
   paraProduto,
   UNIDADES,
 } from "@/features/produtos/tipos";
-import { useServicosStore } from "@/features/servicos/store";
 import { CATEGORIAS_SERVICO, FORM_VAZIO as SERVICO_VAZIO, paraServico } from "@/features/servicos/tipos";
-import { mascararMoeda, proximoCodigo, textoParaCentavos } from "@/lib/numeros";
+import { mascararMoeda, textoParaCentavos } from "@/lib/numeros";
 
 import type { TipoItem } from "./calculo";
 import type { ItemEscolhido } from "./seletor-item";
@@ -43,10 +43,8 @@ export function ItemRapido({
   aoCancelar: () => void;
   aoCriado: (item: ItemEscolhido) => void;
 }) {
-  const produtos = useProdutosStore((estado) => estado.itens);
-  const servicos = useServicosStore((estado) => estado.itens);
-  const adicionarProduto = useProdutosStore((estado) => estado.adicionar);
-  const adicionarServico = useServicosStore((estado) => estado.adicionar);
+  const salvarProduto = useSalvarProduto();
+  const salvarServico = useSalvarServico();
 
   const ehProduto = tipo === "produto";
   const form = useForm<Valores>({
@@ -59,31 +57,33 @@ export function ItemRapido({
   // "borbulharia" e também enviaria o orçamento.
   const enviar = (evento: React.FormEvent<HTMLFormElement>) => {
     evento.stopPropagation();
-    return form.handleSubmit((valores) => {
+    return form.handleSubmit(async (valores) => {
       const valor = textoParaCentavos(valores.valor);
-      if (ehProduto) {
-        const dados = paraProduto({
-          ...PRODUTO_VAZIO,
-          descricao: valores.descricao,
-          categoria: valores.categoria,
-          unidade: valores.unidade,
-          venda: valores.valor,
-        });
-        dados.codigo = proximoCodigo("PRD", produtos.map((item) => item.codigo));
-        const criado = adicionarProduto({ ...dados, saldo: 0 });
-        toast.success(`Produto cadastrado (${criado.codigo}). Complete os dados depois em Cadastro > Produto.`);
-        aoCriado({ tipo, origemId: criado.id, descricao: criado.descricao, unidade: criado.unidade, valor });
-      } else {
-        const dados = paraServico({
-          ...SERVICO_VAZIO,
-          descricao: valores.descricao,
-          categoria: valores.categoria,
-          valor: valores.valor,
-        });
-        dados.codigo = proximoCodigo("SRV", servicos.map((item) => item.codigo), 3);
-        const criado = adicionarServico(dados);
-        toast.success(`Serviço cadastrado (${criado.codigo}). Complete os dados depois em Cadastro > Serviço.`);
-        aoCriado({ tipo, origemId: criado.id, descricao: criado.descricao, unidade: "UN", valor });
+      try {
+        if (ehProduto) {
+          const dados = paraProduto({
+            ...PRODUTO_VAZIO,
+            descricao: valores.descricao,
+            categoria: valores.categoria,
+            unidade: valores.unidade,
+            venda: valores.valor,
+          });
+          const criado = await salvarProduto.mutateAsync({ dados });
+          toast.success(`Produto cadastrado (${criado.codigo}). Complete os dados depois em Cadastro > Produto.`);
+          aoCriado({ tipo, origemId: criado.id, descricao: criado.descricao, unidade: criado.unidade, valor });
+        } else {
+          const dados = paraServico({
+            ...SERVICO_VAZIO,
+            descricao: valores.descricao,
+            categoria: valores.categoria,
+            valor: valores.valor,
+          });
+          const criado = await salvarServico.mutateAsync({ dados });
+          toast.success(`Serviço cadastrado (${criado.codigo}). Complete os dados depois em Cadastro > Serviço.`);
+          aoCriado({ tipo, origemId: criado.id, descricao: criado.descricao, unidade: "UN", valor });
+        }
+      } catch (erro) {
+        toast.error(erro instanceof Error ? erro.message : "Não foi possível cadastrar. Tente de novo.");
       }
     })(evento);
   };

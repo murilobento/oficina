@@ -1,9 +1,12 @@
+import { usePessoas } from "@/features/pessoas/api";
 import { useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { UserPlus } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
+
+import { useSalvarVeiculo } from "./api";
 
 import { CampoAtivo, CampoSelect, CampoTexto, CampoTextarea } from "@/components/layout/campos-form";
 import { SecaoFormulario } from "@/components/layout/registro-partes";
@@ -12,9 +15,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CampoCliente } from "@/features/pessoas/campo-cliente";
 import { ClienteRapido } from "@/features/pessoas/cliente-rapido";
-import { CLIENTES } from "@/features/pessoas/entidades";
 
-import { useVeiculosStore } from "./store";
 import {
   CAMBIOS,
   COMBUSTIVEIS,
@@ -46,10 +47,8 @@ export function VeiculoForm({
   clienteInicial?: string;
   aoFechar: () => void;
 }) {
-  const adicionar = useVeiculosStore((estado) => estado.adicionar);
-  const atualizar = useVeiculosStore((estado) => estado.atualizar);
-  const veiculos = useVeiculosStore((estado) => estado.itens);
-  const clientes = CLIENTES.useStore((estado) => estado.pessoas);
+  const salvar = useSalvarVeiculo();
+  const clientes = usePessoas("cliente");
   const [clienteRapido, setClienteRapido] = useState({ aberto: false, nome: "", abertura: 0 });
 
   const editando = veiculo !== null;
@@ -67,21 +66,19 @@ export function VeiculoForm({
     setClienteRapido((atual) => ({ aberto: true, nome, abertura: atual.abertura + 1 }));
   }
 
-  const enviar = form.handleSubmit((valores) => {
-    const dados = paraVeiculo(valores);
-    const placaRepetida =
-      dados.placa !== "" && veiculos.find((item) => item.id !== veiculo?.id && item.placa === dados.placa);
-    if (placaRepetida) {
-      form.setError("placa", { message: `Esta placa já é do veículo ${placaRepetida.modelo}.` }, { shouldFocus: true });
+  const enviar = form.handleSubmit(async (valores) => {
+    try {
+      await salvar.mutateAsync({ id: veiculo?.id, dados: paraVeiculo(valores) });
+    } catch (erro) {
+      const campos = (erro as { campos?: Record<string, string> }).campos ?? {};
+      const primeiro = Object.keys(campos)[0];
+      for (const [campo, texto] of Object.entries(campos)) {
+        form.setError(campo as keyof VeiculoFormValores, { message: texto }, { shouldFocus: campo === primeiro });
+      }
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível salvar. Tente de novo.");
       return;
     }
-    if (veiculo) {
-      atualizar(veiculo.id, dados);
-      toast.success("Veículo atualizado.");
-    } else {
-      adicionar(dados);
-      toast.success("Veículo cadastrado.");
-    }
+    toast.success(veiculo ? "Veículo atualizado." : "Veículo cadastrado.");
     aoFechar();
   });
 

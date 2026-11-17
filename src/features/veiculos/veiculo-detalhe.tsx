@@ -1,3 +1,4 @@
+import { usePessoas } from "@/features/pessoas/api";
 import { AlertTriangle, Pencil, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 
 import { Dado, SecaoDados } from "@/components/layout/registro-partes";
@@ -7,7 +8,6 @@ import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetT
 import { useOrcamentosStore } from "@/features/orcamentos/store";
 import { statusExibido, totaisDoOrcamento } from "@/features/orcamentos/tipos";
 import { StatusOrcamentoBadge } from "@/features/orcamentos/orcamento-partes";
-import { CLIENTES } from "@/features/pessoas/entidades";
 import { StatusBadge } from "@/features/pessoas/pessoa-partes";
 import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
 
@@ -33,7 +33,7 @@ export function VeiculoDetalhe({
   aoExcluir: (veiculo: Veiculo) => void;
 }) {
   const orcamentos = useOrcamentosStore((estado) => estado.itens);
-  const clientes = CLIENTES.useStore((estado) => estado.pessoas);
+  const clientes = usePessoas("cliente");
   const cliente = clientes.find((item) => item.id === veiculo?.clienteId);
 
   return (

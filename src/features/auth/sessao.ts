@@ -1,5 +1,7 @@
 import { create } from "zustand";
 
+import { queryClient } from "@/lib/query-client";
+
 import type { Permissao } from "./permissoes";
 
 /**
@@ -40,5 +42,14 @@ export const useSessao = create<SessaoState>()((set) => ({
       return null;
     }
   },
-  limpar: () => set({ eu: null }),
+  // Ao sair, o cache de consultas também vai embora: o próximo usuário não pode ver dados do anterior.
+  limpar: () => {
+    queryClient.clear();
+    set({ eu: null });
+  },
 }));
+
+/** O funcionário logado tem esta permissão? (Sem login ativo, ninguém tem: as telas de dados exigem login.) */
+export function usePode(permissao: Permissao): boolean {
+  return useSessao((estado) => estado.eu?.permissoes.includes(permissao) ?? false);
+}

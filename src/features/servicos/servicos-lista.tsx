@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 
 import { toast } from "sonner";
 
+import { useAlternarAtivoServico, useExcluirServico, useServicosConsulta } from "./api";
+
 import {
   Listagem,
   ListagemBusca,
@@ -24,7 +26,6 @@ import { formatarBRL } from "@/lib/numeros";
 
 import { ServicoDetalhe } from "./servico-detalhe";
 import { ServicoForm } from "./servico-form";
-import { useServicosStore } from "./store";
 import { CATEGORIAS_SERVICO, formatarGarantia, formatarTempo, rotuloCategoriaServico, type Servico } from "./tipos";
 
 const FILTRO_CATEGORIA = [{ valor: "todos", texto: "Todas" }, ...CATEGORIAS_SERVICO];
@@ -36,9 +37,10 @@ const FILTRO_STATUS = [
 
 /** Listagem de serviços (mão de obra). Criar, editar e visualizar abrem em painel lateral. */
 export function ServicosLista() {
-  const servicos = useServicosStore((estado) => estado.itens);
-  const alternarAtivo = useServicosStore((estado) => estado.alternarAtivo);
-  const remover = useServicosStore((estado) => estado.remover);
+  const consulta = useServicosConsulta();
+  const servicos = useMemo(() => consulta.data ?? [], [consulta.data]);
+  const alternar = useAlternarAtivoServico();
+  const excluir = useExcluirServico();
 
   const [busca, setBusca] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("todos");
@@ -77,14 +79,25 @@ export function ServicosLista() {
     setDetalheAberto(true);
   }
 
-  function aoAlternarAtivo(servico: Servico) {
-    alternarAtivo(servico.id);
+  async function aoAlternarAtivo(servico: Servico) {
+    try {
+      await alternar.mutateAsync({ id: servico.id, ativo: !servico.ativo });
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível alterar. Tente de novo.");
+      return;
+    }
     toast.success(servico.ativo ? `${servico.descricao} foi inativado.` : `${servico.descricao} foi ativado.`);
   }
 
-  function confirmarExclusao() {
+  async function confirmarExclusao() {
     if (!excluindo) return;
-    remover(excluindo.id);
+    try {
+      await excluir.mutateAsync(excluindo.id);
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível excluir. Tente de novo.");
+      setExcluindo(null);
+      return;
+    }
     toast.success("Serviço excluído.");
     if (excluindo.id === visualizandoId) setDetalheAberto(false);
     setExcluindo(null);
@@ -100,7 +113,7 @@ export function ServicosLista() {
   const acoes = { aoVisualizar: abrirDetalhe, aoEditar: abrirForm, aoAlternarAtivo, aoExcluir: setExcluindo };
   const vazio = (
     <ListagemVazia>
-      {servicos.length === 0 ? "Nenhum serviço cadastrado ainda." : "Nenhum serviço encontrado com esses filtros."}
+      {consulta.isPending ? "Carregando…" : consulta.isError ? consulta.error.message : servicos.length === 0 ? "Nenhum serviço cadastrado ainda." : "Nenhum serviço encontrado com esses filtros."}
     </ListagemVazia>
   );
 

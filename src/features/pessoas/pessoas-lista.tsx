@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 
 import { toast } from "sonner";
 
+import { useAlternarAtivoPessoa, useExcluirPessoa, usePessoasConsulta } from "./api";
+
 import {
   Listagem,
   ListagemBusca,
@@ -17,7 +19,6 @@ import {
 } from "@/components/layout/listagem";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useVeiculosStore } from "@/features/veiculos/store";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 
 import { mascararDocumento, mascararTelefone } from "./documento";
@@ -51,9 +52,10 @@ function local(pessoa: Pessoa): string {
  * e visualizar abrem em painel lateral, sem sair da lista.
  */
 export function PessoasLista({ config }: { config: EntidadeConfig }) {
-  const pessoas = config.useStore((estado) => estado.pessoas);
-  const alternarAtivo = config.useStore((estado) => estado.alternarAtivo);
-  const remover = config.useStore((estado) => estado.remover);
+  const consulta = usePessoasConsulta(config.papel);
+  const pessoas = useMemo(() => consulta.data ?? [], [consulta.data]);
+  const alternar = useAlternarAtivoPessoa(config.papel);
+  const excluir = useExcluirPessoa(config.papel);
 
   const [busca, setBusca] = useState("");
   const [filtroTipo, setFiltroTipo] = useState("todos");
@@ -68,14 +70,8 @@ export function PessoasLista({ config }: { config: EntidadeConfig }) {
   const [detalheAberto, setDetalheAberto] = useState(false);
   const [visualizandoId, setVisualizandoId] = useState<string | null>(null);
   const [excluindo, setExcluindo] = useState<Pessoa | null>(null);
-  const veiculos = useVeiculosStore((estado) => estado.itens);
 
   function pedirExclusao(pessoa: Pessoa) {
-    // Os carros pertencem ao cliente: apagá-lo deixaria veículos e histórico sem dono.
-    if (config.chave === "clientes" && veiculos.some((v) => v.clienteId === pessoa.id)) {
-      toast.error(`${pessoa.nome} tem veículos cadastrados e não pode ser excluído. Inative o cliente.`);
-      return;
-    }
     setExcluindo(pessoa);
   }
 
@@ -112,14 +108,24 @@ export function PessoasLista({ config }: { config: EntidadeConfig }) {
     setDetalheAberto(true);
   }
 
-  function aoAlternarAtivo(pessoa: Pessoa) {
-    alternarAtivo(pessoa.id);
-    toast.success(pessoa.ativo ? `${pessoa.nome} foi inativado.` : `${pessoa.nome} foi ativado.`);
+  async function aoAlternarAtivo(pessoa: Pessoa) {
+    try {
+      await alternar.mutateAsync({ id: pessoa.id, ativo: !pessoa.ativo });
+      toast.success(pessoa.ativo ? `${pessoa.nome} foi inativado.` : `${pessoa.nome} foi ativado.`);
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível alterar. Tente de novo.");
+    }
   }
 
-  function confirmarExclusao() {
+  async function confirmarExclusao() {
     if (!excluindo) return;
-    remover(excluindo.id);
+    try {
+      await excluir.mutateAsync(excluindo.id);
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível excluir. Tente de novo.");
+      setExcluindo(null);
+      return;
+    }
     toast.success(`${capitalizar(config.singular)} excluído.`);
     if (excluindo.id === visualizandoId) setDetalheAberto(false);
     setExcluindo(null);
@@ -128,7 +134,11 @@ export function PessoasLista({ config }: { config: EntidadeConfig }) {
   const acoes = { aoVisualizar: abrirDetalhe, aoEditar: abrirForm, aoAlternarAtivo, aoExcluir: pedirExclusao };
   const vazio = (
     <ListagemVazia>
-      {pessoas.length === 0
+      {consulta.isPending
+        ? "Carregando…"
+        : consulta.isError
+          ? consulta.error.message
+          : pessoas.length === 0
         ? `Nenhum ${config.singular} cadastrado ainda.`
         : `Nenhum ${config.singular} encontrado com esses filtros.`}
     </ListagemVazia>

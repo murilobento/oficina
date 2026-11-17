@@ -3,7 +3,7 @@ import { CalendarDays, Car, ClipboardList, FileText, Package, Users } from 'luci
 
 import { Pagina } from '@/components/layout/pagina'
 import { LogoEmpresa } from '@/features/empresa/logo-empresa'
-import { useEmpresa } from '@/features/empresa/store'
+import { useEmpresa } from '@/features/empresa/api'
 
 export const Route = createFileRoute('/_app/')({ component: Inicio })
 

@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { AvisoEstoque } from "./aviso-estoque";
 import { useMemo, useState } from "react";
 
 import { Eye } from "lucide-react";
@@ -35,7 +37,7 @@ export function AcertosLista() {
   const [filtroMotivo, setFiltroMotivo] = useState("todos");
   const [pagina, setPagina] = useState(1);
   const [formAberto, setFormAberto] = useState(false);
-  const [abertura, setAbertura] = useState(0);
+  const [abertura] = useState(0);
   const [detalheAberto, setDetalheAberto] = useState(false);
   const [visualizandoId, setVisualizandoId] = useState<string | null>(null);
 
@@ -76,14 +78,12 @@ export function AcertosLista() {
 
   return (
     <Listagem>
+      <AvisoEstoque />
       <ListagemCabecalho
         titulo="Acerto de estoque"
         descricao="Correção do saldo a partir da contagem física das peças."
         rotuloNovo="Novo acerto"
-        aoNovo={() => {
-          setAbertura((numero) => numero + 1);
-          setFormAberto(true);
-        }}
+        aoNovo={() => toast.info("O acerto de estoque volta na próxima etapa, quando o saldo também estiver no banco.")}
       />
 
       <ListagemFiltros>

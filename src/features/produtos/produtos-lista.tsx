@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 
 import { toast } from "sonner";
 
+import { useAlternarAtivoProduto, useExcluirProduto, useProdutosConsulta } from "./api";
+
 import {
   Listagem,
   ListagemBusca,
@@ -25,7 +27,6 @@ import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
 import { ProdutoDetalhe } from "./produto-detalhe";
 import { ProdutoForm } from "./produto-form";
 import { AvisoEstoque } from "./produto-partes";
-import { useProdutosStore } from "./store";
 import { CATEGORIAS_PRODUTO, type Produto, rotuloCategoria, situacaoEstoque } from "./tipos";
 
 const FILTRO_CATEGORIA = [{ valor: "todos", texto: "Todas" }, ...CATEGORIAS_PRODUTO];
@@ -46,9 +47,10 @@ function saldoEmTexto(produto: Produto): string {
 
 /** Listagem de produtos (peças e insumos). Criar, editar e visualizar abrem em painel lateral. */
 export function ProdutosLista() {
-  const produtos = useProdutosStore((estado) => estado.itens);
-  const alternarAtivo = useProdutosStore((estado) => estado.alternarAtivo);
-  const remover = useProdutosStore((estado) => estado.remover);
+  const consulta = useProdutosConsulta();
+  const produtos = useMemo(() => consulta.data ?? [], [consulta.data]);
+  const alternar = useAlternarAtivoProduto();
+  const excluir = useExcluirProduto();
 
   const [busca, setBusca] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("todos");
@@ -99,14 +101,25 @@ export function ProdutosLista() {
     setDetalheAberto(true);
   }
 
-  function aoAlternarAtivo(produto: Produto) {
-    alternarAtivo(produto.id);
+  async function aoAlternarAtivo(produto: Produto) {
+    try {
+      await alternar.mutateAsync({ id: produto.id, ativo: !produto.ativo });
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível alterar. Tente de novo.");
+      return;
+    }
     toast.success(produto.ativo ? `${produto.descricao} foi inativado.` : `${produto.descricao} foi ativado.`);
   }
 
-  function confirmarExclusao() {
+  async function confirmarExclusao() {
     if (!excluindo) return;
-    remover(excluindo.id);
+    try {
+      await excluir.mutateAsync(excluindo.id);
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível excluir. Tente de novo.");
+      setExcluindo(null);
+      return;
+    }
     toast.success("Produto excluído.");
     if (excluindo.id === visualizandoId) setDetalheAberto(false);
     setExcluindo(null);
@@ -122,7 +135,7 @@ export function ProdutosLista() {
   const acoes = { aoVisualizar: abrirDetalhe, aoEditar: abrirForm, aoAlternarAtivo, aoExcluir: setExcluindo };
   const vazio = (
     <ListagemVazia>
-      {produtos.length === 0 ? "Nenhum produto cadastrado ainda." : "Nenhum produto encontrado com esses filtros."}
+      {consulta.isPending ? "Carregando…" : consulta.isError ? consulta.error.message : produtos.length === 0 ? "Nenhum produto cadastrado ainda." : "Nenhum produto encontrado com esses filtros."}
     </ListagemVazia>
   );
 

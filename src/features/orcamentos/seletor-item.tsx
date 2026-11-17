@@ -1,3 +1,6 @@
+import { usePode } from "@/features/auth/sessao";
+import { useServicos } from "@/features/servicos/api";
+import { useProdutos } from "@/features/produtos/api";
 import { useMemo, useState } from "react";
 
 import { Plus } from "lucide-react";
@@ -5,9 +8,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useProdutosStore } from "@/features/produtos/store";
 import { rotuloCategoria } from "@/features/produtos/tipos";
-import { useServicosStore } from "@/features/servicos/store";
 import { rotuloCategoriaServico } from "@/features/servicos/tipos";
 import { normalizar } from "@/lib/listagem";
 import { formatarBRL } from "@/lib/numeros";
@@ -42,8 +43,11 @@ export function SeletorItem({
   /** Como o documento aparece nos textos ("orçamento", "venda"). */
   documento?: string;
 }) {
-  const produtos = useProdutosStore((estado) => estado.itens);
-  const servicos = useServicosStore((estado) => estado.itens);
+  const produtos = useProdutos();
+  // Cadastrar pela lista exige a mesma permissão do cadastro (a API recusa sem ela).
+  const podeCadastrarProduto = usePode("estoque.editar");
+  const podeCadastrarServico = usePode("servicos.editar");
+  const servicos = useServicos();
   const [busca, setBusca] = useState("");
   // Cadastro rápido de produto/serviço no lugar da lista; null = lista.
   const [cadastrando, setCadastrando] = useState<TipoItem | null>(null);
@@ -151,12 +155,16 @@ export function SeletorItem({
             </ul>
 
             <div className="grid grid-cols-2 gap-2 border-t pt-3">
-              <Button type="button" variant="outline" onClick={() => setCadastrando("produto")}>
-                <Plus /> Novo produto
-              </Button>
-              <Button type="button" variant="outline" onClick={() => setCadastrando("servico")}>
-                <Plus /> Novo serviço
-              </Button>
+              {podeCadastrarProduto && (
+                <Button type="button" variant="outline" onClick={() => setCadastrando("produto")}>
+                  <Plus /> Novo produto
+                </Button>
+              )}
+              {podeCadastrarServico && (
+                <Button type="button" variant="outline" onClick={() => setCadastrando("servico")}>
+                  <Plus /> Novo serviço
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="ghost"

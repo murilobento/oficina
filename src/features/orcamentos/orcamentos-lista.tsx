@@ -1,3 +1,5 @@
+import { useVeiculos } from "@/features/veiculos/api";
+import { usePessoas } from "@/features/pessoas/api";
 import { useEffect, useMemo, useState } from "react";
 
 import { toast } from "sonner";
@@ -17,8 +19,6 @@ import {
 } from "@/components/layout/listagem";
 import { ConfirmarExclusaoRegistro } from "@/components/layout/registro-partes";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CLIENTES } from "@/features/pessoas/entidades";
-import { useVeiculosStore } from "@/features/veiculos/store";
 import { veiculoEmTexto } from "@/features/veiculos/tipos";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 import { formatarBRL } from "@/lib/numeros";
@@ -58,8 +58,8 @@ export function OrcamentosLista() {
   const orcamentos = useOrcamentosStore((estado) => estado.itens);
   const atualizar = useOrcamentosStore((estado) => estado.atualizar);
   const remover = useOrcamentosStore((estado) => estado.remover);
-  const clientes = CLIENTES.useStore((estado) => estado.pessoas);
-  const veiculos = useVeiculosStore((estado) => estado.itens);
+  const clientes = usePessoas("cliente");
+  const veiculos = useVeiculos();
   const vendas = useVendasStore((estado) => estado.itens);
   const [gerandoVenda, setGerandoVenda] = useState<Orcamento | null>(null);
   const [aberturaVenda, setAberturaVenda] = useState(0);

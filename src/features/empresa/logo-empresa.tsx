@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-import { useEmpresa } from "./store";
+import { useEmpresa } from "./api";
 import { siglaEmpresa } from "./tipos";
 
 /**

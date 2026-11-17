@@ -1,3 +1,5 @@
+import { AvisoEstoque } from "@/features/estoque/aviso-estoque";
+import { usePessoas } from "@/features/pessoas/api";
 import { useMemo, useState } from "react";
 
 import { toast } from "sonner";
@@ -17,7 +19,6 @@ import {
   ListagemVazia,
 } from "@/components/layout/listagem";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FORNECEDORES } from "@/features/pessoas/entidades";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
 
@@ -33,7 +34,7 @@ const data = (valor: string) => new Date(valor).toLocaleDateString("pt-BR");
 /** Listagem de compras de peças. Compra lançada dá entrada no estoque; só pode ser cancelada. */
 export function ComprasLista() {
   const compras = useComprasStore((estado) => estado.itens);
-  const fornecedores = FORNECEDORES.useStore((estado) => estado.pessoas);
+  const fornecedores = usePessoas("fornecedor");
 
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("todos");
@@ -92,6 +93,7 @@ export function ComprasLista() {
 
   return (
     <Listagem>
+      <AvisoEstoque />
       <ListagemCabecalho
         titulo="Compras"
         descricao="Peças compradas dos fornecedores. Cada compra dá entrada no estoque."
@@ -178,7 +180,7 @@ export function ComprasLista() {
       <ConfirmarCancelamento
         numero={cancelando?.numero ?? null}
         singular="compra"
-        consequencia="As peças desta compra saem do estoque (só é possível se ainda estiverem lá). O custo dos produtos não volta ao valor anterior."
+        consequencia="A compra fica marcada como cancelada."
         aoCancelar={() => setCancelando(null)}
         aoConfirmar={confirmarCancelamento}
       />

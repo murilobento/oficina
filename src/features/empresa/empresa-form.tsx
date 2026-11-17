@@ -23,8 +23,8 @@ import { UFS } from "@/features/pessoas/tipos";
 import { cn } from "@/lib/utils";
 
 import { ErroLogo, processarLogo, TIPOS_ACEITOS } from "./logo";
-import { useEmpresaStore } from "./store";
-import { type EmpresaFormValores, esquemaEmpresa, paraEmpresa, paraFormulario } from "./tipos";
+import { useEmpresaConsulta, useSalvarEmpresa } from "./api";
+import { type Empresa, type EmpresaFormValores, esquemaEmpresa, paraEmpresa, paraFormulario } from "./tipos";
 
 const PREFIXO = "empresa";
 const UF_OPCOES = UFS.map((uf) => ({ valor: uf, texto: uf }));
@@ -58,8 +58,14 @@ function Cartao({ titulo, descricao, children }: { titulo: string; descricao?: s
  * textos padrão dos documentos. Salva tudo de uma vez pelo botão fixo no rodapé.
  */
 export function EmpresaForm() {
-  const empresa = useEmpresaStore((estado) => estado.empresa);
-  const salvar = useEmpresaStore((estado) => estado.salvar);
+  const consulta = useEmpresaConsulta();
+  if (consulta.isPending) return <p className="text-muted-foreground text-sm">Carregando…</p>;
+  if (consulta.isError) return <p role="alert" className="text-destructive text-sm">{consulta.error.message}</p>;
+  return <EmpresaFormulario empresa={consulta.data} />;
+}
+
+function EmpresaFormulario({ empresa }: { empresa: Empresa }) {
+  const salvar = useSalvarEmpresa();
 
   const form = useForm<EmpresaFormValores>({
     resolver: zodResolver(esquemaEmpresa),
@@ -179,11 +185,14 @@ export function EmpresaForm() {
     }
   }
 
-  const enviar = form.handleSubmit((valores) => {
+  const enviar = form.handleSubmit(async (valores) => {
     try {
-      salvar(paraEmpresa(valores));
-    } catch {
-      toast.error("Não foi possível salvar. A logo pode ser pesada demais para este navegador.");
+      await salvar.mutateAsync(paraEmpresa(valores));
+    } catch (erro) {
+      const mensagem = erro instanceof Error ? erro.message : "Não foi possível salvar. Tente de novo.";
+      const campos = (erro as { campos?: Record<string, string> }).campos ?? {};
+      for (const [campo, texto] of Object.entries(campos)) form.setError(campo as keyof EmpresaFormValores, { message: texto });
+      toast.error(mensagem);
       return;
     }
     // Recomeça "limpo" com o que foi salvo, para o aviso de alterações sair.

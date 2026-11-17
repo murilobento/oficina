@@ -1,3 +1,4 @@
+import { usePessoas } from "@/features/pessoas/api";
 import { Ban } from "lucide-react";
 
 import { StatusDocumentoBadge } from "@/components/layout/documento-partes";
@@ -6,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { subtotalItem } from "@/features/orcamentos/calculo";
 import { mascararDocumento } from "@/features/pessoas/documento";
-import { FORNECEDORES } from "@/features/pessoas/entidades";
 import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
 
 import { type Compra, totaisDaCompra } from "./tipos";
@@ -23,7 +23,7 @@ export function CompraDetalhe({
   aoFechar: () => void;
   aoCancelar: (compra: Compra) => void;
 }) {
-  const fornecedores = FORNECEDORES.useStore((estado) => estado.pessoas);
+  const fornecedores = usePessoas("fornecedor");
   const fornecedor = fornecedores.find((item) => item.id === compra?.fornecedorId);
   const totais = compra ? totaisDaCompra(compra) : null;
 

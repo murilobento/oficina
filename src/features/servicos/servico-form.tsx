@@ -2,13 +2,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
+import { usePode } from "@/features/auth/sessao";
+
+import { useSalvarServico } from "./api";
+
 import { CampoAtivo, CampoSelect, CampoTexto, CampoTextarea } from "@/components/layout/campos-form";
 import { SecaoFormulario } from "@/components/layout/registro-partes";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { mascararMoeda, mascararQuantidade, proximoCodigo } from "@/lib/numeros";
+import { mascararMoeda, mascararQuantidade } from "@/lib/numeros";
 
-import { useServicosStore } from "./store";
 import {
   CATEGORIAS_SERVICO,
   esquemaServico,
@@ -35,9 +38,8 @@ export function ServicoForm({
   servico: Servico | null;
   aoFechar: () => void;
 }) {
-  const servicos = useServicosStore((estado) => estado.itens);
-  const adicionar = useServicosStore((estado) => estado.adicionar);
-  const atualizar = useServicosStore((estado) => estado.atualizar);
+  const salvar = useSalvarServico();
+  const podeVerValores = usePode("valores.ver");
 
   const editando = servico !== null;
   const form = useForm<ServicoFormValores>({
@@ -46,23 +48,19 @@ export function ServicoForm({
   });
   const { control } = form;
 
-  const enviar = form.handleSubmit((valores) => {
-    const dados = paraServico(valores);
-    if (dados.codigo === "") dados.codigo = proximoCodigo("SRV", servicos.map((item) => item.codigo), 3);
-
-    const outroComCodigo = servicos.find((item) => item.id !== servico?.id && item.codigo === dados.codigo);
-    if (outroComCodigo) {
-      form.setError("codigo", { message: `Este código já é do serviço ${outroComCodigo.descricao}.` }, { shouldFocus: true });
+  const enviar = form.handleSubmit(async (valores) => {
+    try {
+      await salvar.mutateAsync({ id: servico?.id, dados: paraServico(valores) });
+    } catch (erro) {
+      const campos = (erro as { campos?: Record<string, string> }).campos ?? {};
+      const primeiro = Object.keys(campos)[0];
+      for (const [campo, texto] of Object.entries(campos)) {
+        form.setError(campo as keyof ServicoFormValores, { message: texto }, { shouldFocus: campo === primeiro });
+      }
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível salvar. Tente de novo.");
       return;
     }
-
-    if (servico) {
-      atualizar(servico.id, dados);
-      toast.success("Serviço atualizado.");
-    } else {
-      adicionar(dados);
-      toast.success("Serviço cadastrado.");
-    }
+    toast.success(servico ? "Serviço atualizado." : "Serviço cadastrado.");
     aoFechar();
   });
 
@@ -105,15 +103,17 @@ export function ServicoForm({
 
             <SecaoFormulario titulo="Valor e tempo" descricao="Valores padrão: cada orçamento pode ajustar.">
               <div className="grid gap-4 sm:grid-cols-2">
-                <CampoTexto
-                  control={control}
-                  prefixo={PREFIXO}
-                  nome="valor"
-                  rotulo="Valor da mão de obra (R$)"
-                  inputMode="numeric"
-                  placeholder="0,00"
-                  mascara={mascararMoeda}
-                />
+                {podeVerValores && (
+                  <CampoTexto
+                    control={control}
+                    prefixo={PREFIXO}
+                    nome="valor"
+                    rotulo="Valor da mão de obra (R$)"
+                    inputMode="numeric"
+                    placeholder="0,00"
+                    mascara={mascararMoeda}
+                  />
+                )}
                 <CampoTexto
                   control={control}
                   prefixo={PREFIXO}

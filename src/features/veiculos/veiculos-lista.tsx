@@ -1,6 +1,9 @@
+import { usePessoas } from "@/features/pessoas/api";
 import { useMemo, useState } from "react";
 
 import { toast } from "sonner";
+
+import { useAlternarAtivoVeiculo, useExcluirVeiculo, useVeiculosConsulta } from "./api";
 
 import {
   Listagem,
@@ -18,13 +21,11 @@ import {
 import { AcoesRegistro, ConfirmarExclusaoRegistro } from "@/components/layout/registro-partes";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useOrcamentosStore } from "@/features/orcamentos/store";
-import { CLIENTES } from "@/features/pessoas/entidades";
 import { StatusBadge } from "@/features/pessoas/pessoa-partes";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 import { formatarQuantidade } from "@/lib/numeros";
 
 import { historicoDoVeiculo } from "./historico";
-import { useVeiculosStore } from "./store";
 import { COMBUSTIVEIS, mascararPlaca, type Veiculo } from "./tipos";
 import { VeiculoDetalhe } from "./veiculo-detalhe";
 import { VeiculoForm } from "./veiculo-form";
@@ -40,11 +41,12 @@ const data = (valor: string | null) => (valor ? new Date(valor).toLocaleDateStri
 
 /** Listagem de veículos dos clientes. `abrirId` já abre o painel de um veículo (vindo do cliente). */
 export function VeiculosLista({ abrirId }: { abrirId?: string }) {
-  const veiculos = useVeiculosStore((estado) => estado.itens);
-  const alternarAtivo = useVeiculosStore((estado) => estado.alternarAtivo);
-  const remover = useVeiculosStore((estado) => estado.remover);
+  const consulta = useVeiculosConsulta();
+  const veiculos = useMemo(() => consulta.data ?? [], [consulta.data]);
+  const alternar = useAlternarAtivoVeiculo();
+  const excluir = useExcluirVeiculo();
   const orcamentos = useOrcamentosStore((estado) => estado.itens);
-  const clientes = CLIENTES.useStore((estado) => estado.pessoas);
+  const clientes = usePessoas("cliente");
 
   const [busca, setBusca] = useState("");
   const [filtroCombustivel, setFiltroCombustivel] = useState("todos");
@@ -91,8 +93,13 @@ export function VeiculosLista({ abrirId }: { abrirId?: string }) {
     setDetalheAberto(true);
   }
 
-  function aoAlternarAtivo(veiculo: Veiculo) {
-    alternarAtivo(veiculo.id);
+  async function aoAlternarAtivo(veiculo: Veiculo) {
+    try {
+      await alternar.mutateAsync({ id: veiculo.id, ativo: !veiculo.ativo });
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível alterar. Tente de novo.");
+      return;
+    }
     toast.success(veiculo.ativo ? `${veiculo.modelo} foi inativado.` : `${veiculo.modelo} foi ativado.`);
   }
 
@@ -105,9 +112,15 @@ export function VeiculosLista({ abrirId }: { abrirId?: string }) {
     setExcluindo(veiculo);
   }
 
-  function confirmarExclusao() {
+  async function confirmarExclusao() {
     if (!excluindo) return;
-    remover(excluindo.id);
+    try {
+      await excluir.mutateAsync(excluindo.id);
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível excluir. Tente de novo.");
+      setExcluindo(null);
+      return;
+    }
     toast.success("Veículo excluído.");
     if (excluindo.id === visualizandoId) setDetalheAberto(false);
     setExcluindo(null);
@@ -123,7 +136,7 @@ export function VeiculosLista({ abrirId }: { abrirId?: string }) {
   const acoes = { aoVisualizar: abrirDetalhe, aoEditar: abrirForm, aoAlternarAtivo, aoExcluir: pedirExclusao };
   const vazio = (
     <ListagemVazia>
-      {veiculos.length === 0 ? "Nenhum veículo cadastrado ainda." : "Nenhum veículo encontrado com esses filtros."}
+      {consulta.isPending ? "Carregando…" : consulta.isError ? consulta.error.message : veiculos.length === 0 ? "Nenhum veículo cadastrado ainda." : "Nenhum veículo encontrado com esses filtros."}
     </ListagemVazia>
   );
 

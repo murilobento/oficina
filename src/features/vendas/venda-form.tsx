@@ -1,3 +1,5 @@
+import { useVeiculos } from "@/features/veiculos/api";
+import { usePessoas } from "@/features/pessoas/api";
 import { useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,8 +19,6 @@ import { ItensDoDocumento } from "@/features/orcamentos/itens-form";
 import { ResumoTotais } from "@/features/orcamentos/orcamento-partes";
 import { CampoCliente } from "@/features/pessoas/campo-cliente";
 import { ClienteRapido } from "@/features/pessoas/cliente-rapido";
-import { CLIENTES } from "@/features/pessoas/entidades";
-import { useVeiculosStore } from "@/features/veiculos/store";
 import { veiculoEmTexto } from "@/features/veiculos/tipos";
 import { VeiculoRapido } from "@/features/veiculos/veiculo-rapido";
 import { formatarQuantidade, mascararMoeda, mascararQuantidade, textoParaCentavos, textoParaNumero } from "@/lib/numeros";
@@ -33,8 +33,8 @@ const soDigitos = (limite: number) => (valor: string) => valor.replace(/\D/g, ""
  * no estoque e só pode ser cancelada depois. Quem usa deve trocar a `key` a cada abertura.
  */
 export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () => void }) {
-  const clientes = CLIENTES.useStore((estado) => estado.pessoas);
-  const veiculos = useVeiculosStore((estado) => estado.itens);
+  const clientes = usePessoas("cliente");
+  const veiculos = useVeiculos();
   const [clienteRapido, setClienteRapido] = useState({ aberto: false, nome: "", abertura: 0 });
   const [veiculoRapido, setVeiculoRapido] = useState({ aberto: false, abertura: 0 });
 

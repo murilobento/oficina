@@ -1,7 +1,7 @@
 import { createPortal } from "react-dom";
 
 import { CabecalhoEmpresa, RodapeEmpresa } from "@/features/empresa/cabecalho-empresa";
-import { useEmpresa } from "@/features/empresa/store";
+import { useEmpresa } from "@/features/empresa/api";
 import { mascararDocumento, mascararTelefone } from "@/features/pessoas/documento";
 import type { Pessoa } from "@/features/pessoas/tipos";
 import { formatarBRL, formatarQuantidade } from "@/lib/numeros";

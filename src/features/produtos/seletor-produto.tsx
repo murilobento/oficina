@@ -1,3 +1,4 @@
+import { useProdutos } from "@/features/produtos/api";
 import { useState } from "react";
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -5,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { formatarQuantidade } from "@/lib/numeros";
 import { normalizar } from "@/lib/listagem";
 
-import { useProdutosStore } from "./store";
 import type { Produto } from "./tipos";
 
 /**
@@ -23,7 +23,7 @@ export function SeletorProduto({
   aoEscolher: (produto: Produto) => void;
   ocultar?: string[];
 }) {
-  const produtos = useProdutosStore((estado) => estado.itens);
+  const produtos = useProdutos();
   const [busca, setBusca] = useState("");
 
   const termo = normalizar(busca.trim());

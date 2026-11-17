@@ -1,13 +1,14 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+
+import { useSalvarVeiculo } from "./api";
 import { z } from "zod";
 
 import { CampoTexto } from "@/components/layout/campos-form";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-import { useVeiculosStore } from "./store";
 import { esquemaVeiculo, FORM_VAZIO, mascararPlaca, paraVeiculo } from "./tipos";
 
 const esquema = esquemaVeiculo.pick({ modelo: true, placa: true, ano: true, cor: true, km: true });
@@ -32,7 +33,7 @@ export function VeiculoRapido({
   /** Recebe o veículo criado, para já ficar escolhido no orçamento. */
   aoCriado: (id: string, km: number) => void;
 }) {
-  const adicionar = useVeiculosStore((estado) => estado.adicionar);
+  const salvar = useSalvarVeiculo();
   const form = useForm<Valores>({
     resolver: zodResolver(esquema),
     defaultValues: { modelo: "", placa: "", ano: "", cor: "", km: "" },
@@ -43,9 +44,14 @@ export function VeiculoRapido({
   // "borbulharia" e também enviaria o orçamento.
   const enviar = (evento: React.FormEvent<HTMLFormElement>) => {
     evento.stopPropagation();
-    return form.handleSubmit((valores) => {
-      const dados = paraVeiculo({ ...FORM_VAZIO, ...valores, clienteId });
-      const criado = adicionar(dados);
+    return form.handleSubmit(async (valores) => {
+      let criado;
+      try {
+        criado = await salvar.mutateAsync({ dados: paraVeiculo({ ...FORM_VAZIO, ...valores, clienteId }) });
+      } catch (erro) {
+        toast.error(erro instanceof Error ? erro.message : "Não foi possível cadastrar. Tente de novo.");
+        return;
+      }
       toast.success("Veículo cadastrado. Complete os dados depois em Cadastro > Veículo.");
       aoCriado(criado.id, criado.km);
       aoFechar();

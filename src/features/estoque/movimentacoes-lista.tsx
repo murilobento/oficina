@@ -1,3 +1,5 @@
+import { AvisoEstoque } from "./aviso-estoque";
+import { useProdutos } from "@/features/produtos/api";
 import { useMemo, useState } from "react";
 
 import {
@@ -15,7 +17,6 @@ import {
 } from "@/components/layout/listagem";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useProdutosStore } from "@/features/produtos/store";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 import { formatarQuantidade } from "@/lib/numeros";
 import { cn } from "@/lib/utils";
@@ -55,7 +56,7 @@ function TipoBadge({ tipo }: { tipo: Movimento["tipo"] }) {
 /** Histórico de movimentações do estoque (somente consulta): quem lança são compras, vendas e acertos. */
 export function MovimentacoesLista() {
   const movimentos = useMovimentosStore((estado) => estado.itens);
-  const produtos = useProdutosStore((estado) => estado.itens);
+  const produtos = useProdutos();
 
   const [busca, setBusca] = useState("");
   const [filtroTipo, setFiltroTipo] = useState("todos");
@@ -97,6 +98,7 @@ export function MovimentacoesLista() {
 
   return (
     <Listagem>
+      <AvisoEstoque />
       <ListagemCabecalho
         titulo="Movimentação de estoque"
         descricao="Consulta de tudo que entrou e saiu das peças. Os registros vêm das compras, vendas e acertos."
