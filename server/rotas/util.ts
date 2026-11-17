@@ -15,9 +15,9 @@ export type Contexto = {
 
 /** Erro que vira resposta JSON `{ erro, campos? }` com o status indicado. */
 export class ErroApi extends Error {
-  status: 400 | 401 | 403 | 404 | 409;
+  status: 400 | 401 | 403 | 404 | 409 | 502;
   campos?: Record<string, string>;
-  constructor(status: 400 | 401 | 403 | 404 | 409, mensagem: string, campos?: Record<string, string>) {
+  constructor(status: 400 | 401 | 403 | 404 | 409 | 502, mensagem: string, campos?: Record<string, string>) {
     super(mensagem);
     this.status = status;
     this.campos = campos;

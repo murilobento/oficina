@@ -11,11 +11,11 @@ export const ORIGEM = "http://localhost:5173";
 export const SENHA_ADMIN = "senha-provisoria-1";
 
 /** Sobe a API com PGlite em memória e um administrador (admin@oficina.com). */
-export async function iniciarAppDeTeste() {
+export async function iniciarAppDeTeste(opcoes: { buscar?: typeof fetch } = {}) {
   const banco = await criarBanco(""); // PGlite em memória
   await migrar(banco);
   await criarAdministrador(banco, { email: "admin@oficina.com", nome: "Admin", senha: SENHA_ADMIN, segredo: SEGREDO });
-  const app = criarApp(banco, criarAuth(banco, { segredo: SEGREDO, urlBase: ORIGEM, origensConfiaveis: [ORIGEM] }));
+  const app = criarApp(banco, criarAuth(banco, { segredo: SEGREDO, urlBase: ORIGEM, origensConfiaveis: [ORIGEM] }), opcoes);
   const chamar = (caminho: string, opcoes: { metodo?: string; corpo?: unknown; cookie?: string } = {}) =>
     app.request(caminho, {
       method: opcoes.metodo ?? (opcoes.corpo !== undefined ? "POST" : "GET"),

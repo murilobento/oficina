@@ -7,6 +7,8 @@ import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { useSalvarVeiculo } from "./api";
+import { CampoModeloFipe } from "./campo-modelo-fipe";
+import { anosModelo } from "./fipe";
 
 import { CampoAtivo, CampoSelect, CampoTexto, CampoTextarea } from "@/components/layout/campos-form";
 import { SecaoFormulario } from "@/components/layout/registro-partes";
@@ -57,6 +59,9 @@ export function VeiculoForm({
     defaultValues: veiculo ? paraFormulario(veiculo) : { ...FORM_VAZIO, clienteId: clienteInicial },
   });
   const { control } = form;
+  // Anos da lista; um ano antigo já cadastrado fora dela continua aparecendo.
+  const anoAtual = form.getValues("ano");
+  const opcoesAno = [...new Set([...anosModelo(), ...(anoAtual ? [anoAtual] : [])])].map((ano) => ({ valor: ano, texto: ano }));
 
   const clientesDisponiveis = clientes
     .filter((cliente) => cliente.ativo || cliente.id === veiculo?.clienteId || cliente.id === clienteInicial)
@@ -127,16 +132,9 @@ export function VeiculoForm({
 
             <SecaoFormulario titulo="Identificação">
               <div className="grid gap-4 sm:grid-cols-2">
-                <CampoTexto
-                  control={control}
-                  prefixo={PREFIXO}
-                  nome="modelo"
-                  rotulo="Marca e modelo"
-                  placeholder="Ex.: Hyundai HB20 1.0"
-                  className="sm:col-span-2"
-                />
+                <CampoModeloFipe form={form} prefixo={PREFIXO} emEdicao={editando} />
                 <CampoTexto control={control} prefixo={PREFIXO} nome="placa" rotulo="Placa (opcional)" placeholder="ABC-1D23" mascara={mascararPlaca} />
-                <CampoTexto control={control} prefixo={PREFIXO} nome="ano" rotulo="Ano (opcional)" inputMode="numeric" placeholder="2019" mascara={soDigitos(4)} />
+                <CampoSelect control={control} prefixo={PREFIXO} nome="ano" rotulo="Ano (opcional)" opcoes={opcoesAno} />
                 <CampoTexto control={control} prefixo={PREFIXO} nome="cor" rotulo="Cor (opcional)" />
                 <CampoTexto
                   control={control}

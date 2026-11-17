@@ -70,7 +70,7 @@ export function veiculoEmTexto(veiculo: Pick<Veiculo, "modelo" | "placa">): stri
 /** Dados do formulário: o dono (`clienteId`) é escolhido na própria tela ou vem do orçamento. */
 export const esquemaVeiculo = z.object({
   clienteId: z.string().min(1, "Escolha o cliente."),
-  modelo: z.string().trim().min(1, "Informe a marca e o modelo.").max(60, "No máximo 60 caracteres."),
+  modelo: z.string().trim().min(1, "Informe a marca e o modelo.").max(100, "No máximo 100 caracteres."),
   placa: z.string().refine((valor) => valor === "" || PLACA.test(limparPlaca(valor)), "Placa inválida. Ex.: ABC-1D23."),
   ano: z.string().refine((valor) => valor === "" || /^(19|20)\d{2}$/.test(valor), "Ano com 4 números, como 2019."),
   cor: z.string().trim().max(30, "No máximo 30 caracteres."),

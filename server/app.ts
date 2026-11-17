@@ -7,6 +7,7 @@ import type { Auth } from "./auth";
 import type { Banco } from "./banco";
 import { permissoesDoPerfil } from "./perfis";
 import { registrarRotasEmpresa } from "./rotas/empresa";
+import { registrarRotasFipe } from "./rotas/fipe";
 import { registrarRotasPessoas } from "./rotas/pessoas";
 import { registrarRotasProdutos } from "./rotas/produtos";
 import { registrarRotasServicos } from "./rotas/servicos";
@@ -20,7 +21,7 @@ type Variaveis = { sessao: Sessao; permissoes: Permissao[] };
  * API da oficina (Hono). Roda como função da Vercel (api/index.ts) ou como servidor Node local
  * (server/dev.ts). O Better Auth responde em /api/auth/*; o restante exige sessão.
  */
-export function criarApp(banco: Banco, auth: Auth) {
+export function criarApp(banco: Banco, auth: Auth, opcoes: { buscar?: typeof fetch } = {}) {
   const app = new Hono<{ Variables: Variaveis }>().basePath("/api");
 
   app.get("/saude", async (c) => {
@@ -82,6 +83,7 @@ export function criarApp(banco: Banco, auth: Auth) {
   registrarRotasProdutos(contexto);
   registrarRotasServicos(contexto);
   registrarRotasVeiculos(contexto);
+  registrarRotasFipe(contexto, opcoes.buscar);
 
   app.notFound((c) => c.json({ erro: "Rota não encontrada." }, 404));
   app.onError((erro, c) => {
