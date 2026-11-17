@@ -3,16 +3,15 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { useSalvarVeiculo } from "./api";
-import { z } from "zod";
-
-import { CampoTexto } from "@/components/layout/campos-form";
+import { CampoSelect, CampoTexto } from "@/components/layout/campos-form";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-import { esquemaVeiculo, FORM_VAZIO, mascararPlaca, paraVeiculo } from "./tipos";
+import { CampoModeloFipe } from "./campo-modelo-fipe";
+import { anosModelo } from "./fipe";
+import { esquemaVeiculo, FORM_VAZIO, mascararPlaca, paraVeiculo, type VeiculoFormValores } from "./tipos";
 
-const esquema = esquemaVeiculo.pick({ modelo: true, placa: true, ano: true, cor: true, km: true });
-type Valores = z.infer<typeof esquema>;
+const OPCOES_ANO = anosModelo().map((ano) => ({ valor: ano, texto: ano }));
 
 const soDigitos = (limite: number) => (valor: string) => valor.replace(/\D/g, "").slice(0, limite);
 
@@ -34,9 +33,11 @@ export function VeiculoRapido({
   aoCriado: (id: string, km: number) => void;
 }) {
   const salvar = useSalvarVeiculo();
-  const form = useForm<Valores>({
-    resolver: zodResolver(esquema),
-    defaultValues: { modelo: "", placa: "", ano: "", cor: "", km: "" },
+  // O formulário completo roda por baixo (motor e combustível vêm sugeridos pelo modelo escolhido);
+  // só os campos principais aparecem aqui.
+  const form = useForm<VeiculoFormValores>({
+    resolver: zodResolver(esquemaVeiculo),
+    defaultValues: { ...FORM_VAZIO, clienteId },
   });
   const { control } = form;
 
@@ -47,7 +48,7 @@ export function VeiculoRapido({
     return form.handleSubmit(async (valores) => {
       let criado;
       try {
-        criado = await salvar.mutateAsync({ dados: paraVeiculo({ ...FORM_VAZIO, ...valores, clienteId }) });
+        criado = await salvar.mutateAsync({ dados: paraVeiculo({ ...valores, clienteId }) });
       } catch (erro) {
         toast.error(erro instanceof Error ? erro.message : "Não foi possível cadastrar. Tente de novo.");
         return;
@@ -63,19 +64,12 @@ export function VeiculoRapido({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Novo veículo</DialogTitle>
-          <DialogDescription>Cadastro rápido do carro deste cliente.</DialogDescription>
+          <DialogDescription>Cadastro rápido do carro deste cliente. Escolha a marca e o modelo na lista.</DialogDescription>
         </DialogHeader>
         <form noValidate onSubmit={enviar} className="grid gap-4 sm:grid-cols-2">
-          <CampoTexto
-            control={control}
-            prefixo="veiculo-rapido"
-            nome="modelo"
-            rotulo="Marca e modelo"
-            placeholder="Ex.: Hyundai HB20 1.0"
-            className="sm:col-span-2"
-          />
+          <CampoModeloFipe form={form} prefixo="veiculo-rapido" emEdicao={false} />
           <CampoTexto control={control} prefixo="veiculo-rapido" nome="placa" rotulo="Placa (opcional)" placeholder="ABC-1D23" mascara={mascararPlaca} />
-          <CampoTexto control={control} prefixo="veiculo-rapido" nome="ano" rotulo="Ano (opcional)" inputMode="numeric" placeholder="2019" mascara={soDigitos(4)} />
+          <CampoSelect control={control} prefixo="veiculo-rapido" nome="ano" rotulo="Ano (opcional)" opcoes={OPCOES_ANO} />
           <CampoTexto control={control} prefixo="veiculo-rapido" nome="cor" rotulo="Cor (opcional)" />
           <CampoTexto control={control} prefixo="veiculo-rapido" nome="km" rotulo="Km atual (opcional)" inputMode="numeric" placeholder="48200" mascara={soDigitos(7)} />
           <DialogFooter className="flex-row justify-end gap-2 sm:col-span-2">
