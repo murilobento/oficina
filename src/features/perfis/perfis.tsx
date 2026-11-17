@@ -8,6 +8,7 @@ import { usuariosIniciais } from "@/features/usuarios/data";
 import { type PerfilAcesso, perfisIniciais } from "./data";
 import { PerfilForm, type PerfilFormValores } from "./perfil-form";
 import { PerfisCards } from "./perfis-cards";
+import { novoId } from "@/lib/id";
 
 /**
  * Tela de perfis (protótipo): cartões com os perfis e o formulário para editar nome, descrição
@@ -37,7 +38,7 @@ export function Perfis() {
       setPerfis((lista) => lista.map((item) => (item.id === emEdicao.id ? { ...item, ...valores } : item)));
       toast.success(`Perfil ${valores.nome} atualizado.`);
     } else {
-      const novo: PerfilAcesso = { id: crypto.randomUUID(), ...valores, protegido: false };
+      const novo: PerfilAcesso = { id: novoId(), ...valores, protegido: false };
       setPerfis((lista) => [...lista, novo]);
       toast.success(`Perfil ${valores.nome} criado.`);
     }

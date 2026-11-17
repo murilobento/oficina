@@ -18,6 +18,7 @@ import {
 import { subtotalItem } from "./calculo";
 import { type ItemEscolhido, SeletorItem } from "./seletor-item";
 import type { ItemFormValores } from "./tipos";
+import { novoId } from "@/lib/id";
 
 /** O formulário precisa ter `itens: ItemFormValores[]`; serve para orçamento e venda. */
 type FormComItens = { itens: ItemFormValores[] };
@@ -45,7 +46,7 @@ export function ItensDoDocumento<T extends FormComItens>({
 
   function adicionarItem(escolhido: ItemEscolhido) {
     append({
-      id: crypto.randomUUID(),
+      id: novoId(),
       tipo: escolhido.tipo,
       origemId: escolhido.origemId,
       descricao: escolhido.descricao,

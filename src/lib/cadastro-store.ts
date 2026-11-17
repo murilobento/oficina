@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { novoId } from "./id";
 
 export type Cadastro = { id: string; criadoEm: string; ativo?: boolean };
 
@@ -22,7 +23,7 @@ export function criarCadastroStore<T extends Cadastro>(chave: string, iniciais: 
       (set) => ({
         itens: iniciais,
         adicionar: (dados) => {
-          const novo = { ...dados, id: crypto.randomUUID(), criadoEm: new Date().toISOString() } as T;
+          const novo = { ...dados, id: novoId(), criadoEm: new Date().toISOString() } as T;
           set((estado) => ({ itens: [...estado.itens, novo] }));
           return novo;
         },

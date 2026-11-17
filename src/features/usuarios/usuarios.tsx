@@ -34,6 +34,7 @@ import {
 import { ConfirmacaoDialog, SenhaProvisoriaDialog } from "./usuario-dialogs";
 import { UsuarioForm, type UsuarioFormValores } from "./usuario-form";
 import { AcoesUsuario, StatusBadge } from "./usuario-partes";
+import { novoId } from "@/lib/id";
 
 const TODOS = "todos";
 const FILTRO_PERFIL = [{ valor: TODOS, texto: "Todos" }, ...perfis.map((perfil) => ({ valor: perfil.id, texto: perfil.nome }))];
@@ -107,7 +108,7 @@ export function Usuarios() {
       toast.success(`Dados de ${valores.nome} atualizados.`);
     } else {
       const novo: Usuario = {
-        id: crypto.randomUUID(),
+        id: novoId(),
         ...valores,
         ativo: true,
         trocarSenha: true,

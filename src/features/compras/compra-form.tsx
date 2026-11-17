@@ -21,6 +21,7 @@ import { useEnvioUnico } from "@/lib/envio-unico";
 
 import { useRegistrarCompra } from "./api";
 import { type CompraFormValores, esquemaCompra, FORM_VAZIO, paraCompra, totaisDaCompra } from "./tipos";
+import { novoId } from "@/lib/id";
 
 /**
  * Painel lateral de lançamento de compra. Compra lançada já vale: dá entrada no estoque e
@@ -210,7 +211,7 @@ export function CompraForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: ()
           ocultar={itens.map((item) => item.produtoId)}
           aoEscolher={(produto) =>
             append({
-              id: crypto.randomUUID(),
+              id: novoId(),
               produtoId: produto.id,
               descricao: produto.descricao,
               unidade: produto.unidade,
