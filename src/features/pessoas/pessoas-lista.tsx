@@ -17,6 +17,7 @@ import {
 } from "@/components/layout/listagem";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useVeiculosStore } from "@/features/veiculos/store";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 
 import { mascararDocumento, mascararTelefone } from "./documento";
@@ -67,6 +68,16 @@ export function PessoasLista({ config }: { config: EntidadeConfig }) {
   const [detalheAberto, setDetalheAberto] = useState(false);
   const [visualizandoId, setVisualizandoId] = useState<string | null>(null);
   const [excluindo, setExcluindo] = useState<Pessoa | null>(null);
+  const veiculos = useVeiculosStore((estado) => estado.itens);
+
+  function pedirExclusao(pessoa: Pessoa) {
+    // Os carros pertencem ao cliente: apagá-lo deixaria veículos e histórico sem dono.
+    if (config.chave === "clientes" && veiculos.some((v) => v.clienteId === pessoa.id)) {
+      toast.error(`${pessoa.nome} tem veículos cadastrados e não pode ser excluído. Inative o cliente.`);
+      return;
+    }
+    setExcluindo(pessoa);
+  }
 
   const visualizando = pessoas.find((pessoa) => pessoa.id === visualizandoId) ?? null;
 
@@ -114,7 +125,7 @@ export function PessoasLista({ config }: { config: EntidadeConfig }) {
     setExcluindo(null);
   }
 
-  const acoes = { aoVisualizar: abrirDetalhe, aoEditar: abrirForm, aoAlternarAtivo, aoExcluir: setExcluindo };
+  const acoes = { aoVisualizar: abrirDetalhe, aoEditar: abrirForm, aoAlternarAtivo, aoExcluir: pedirExclusao };
   const vazio = (
     <ListagemVazia>
       {pessoas.length === 0
@@ -282,7 +293,7 @@ export function PessoasLista({ config }: { config: EntidadeConfig }) {
         aoFechar={() => setDetalheAberto(false)}
         aoEditar={abrirForm}
         aoAlternarAtivo={aoAlternarAtivo}
-        aoExcluir={setExcluindo}
+        aoExcluir={pedirExclusao}
       />
       <ConfirmarExclusao
         config={config}

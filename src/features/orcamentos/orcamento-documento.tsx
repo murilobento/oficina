@@ -1,12 +1,15 @@
 import { createPortal } from "react-dom";
 
-import { APP_CONFIG } from "@/config/app-config";
+import { CabecalhoEmpresa, RodapeEmpresa } from "@/features/empresa/cabecalho-empresa";
+import { useEmpresa } from "@/features/empresa/store";
 import { mascararDocumento, mascararTelefone } from "@/features/pessoas/documento";
 import type { Pessoa } from "@/features/pessoas/tipos";
 import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
 
 import { subtotalItem, validoAte } from "./calculo";
-import { mascararPlaca, type Orcamento, totaisDoOrcamento } from "./tipos";
+import { type Veiculo, mascararPlaca } from "@/features/veiculos/tipos";
+
+import { type Orcamento, totaisDoOrcamento } from "./tipos";
 
 function dataCurta(data: Date | string): string {
   return new Date(data).toLocaleDateString("pt-BR");
@@ -16,24 +19,26 @@ function dataCurta(data: Date | string): string {
  * Folha do orçamento para entregar ao cliente (ou salvar em PDF pelo diálogo de impressão).
  * Fica escondida na tela e só aparece ao imprimir: o CSS de globals.css esconde o resto da página.
  */
-export function OrcamentoDocumento({ orcamento, cliente }: { orcamento: Orcamento; cliente: Pessoa | null }) {
+export function OrcamentoDocumento({
+  orcamento,
+  cliente,
+  veiculo,
+}: {
+  orcamento: Orcamento;
+  cliente: Pessoa | null;
+  veiculo: Veiculo | null;
+}) {
+  const empresa = useEmpresa();
   const totais = totaisDoOrcamento(orcamento);
-  const { veiculo } = orcamento;
   const telefone = cliente ? mascararTelefone(cliente.celular || cliente.telefone) : "";
 
   return createPortal(
     <div data-impressao className="font-sans text-[11pt] leading-snug">
-      <header className="flex items-start justify-between gap-6 border-b-2 border-black pb-3">
-        <div>
-          <p className="text-xl font-bold">{APP_CONFIG.empresa}</p>
-          <p className="text-sm">Oficina mecânica</p>
-        </div>
-        <div className="text-right">
-          <p className="text-lg font-bold">Orçamento {orcamento.numero}</p>
-          <p className="text-sm">Emitido em {dataCurta(orcamento.criadoEm)}</p>
-          <p className="text-sm">Válido até {dataCurta(validoAte(orcamento.criadoEm, orcamento.validadeDias))}</p>
-        </div>
-      </header>
+      <CabecalhoEmpresa empresa={empresa}>
+        <p className="text-lg font-bold">Orçamento {orcamento.numero}</p>
+        <p className="text-sm">Emitido em {dataCurta(orcamento.criadoEm)}</p>
+        <p className="text-sm">Válido até {dataCurta(validoAte(orcamento.criadoEm, orcamento.validadeDias))}</p>
+      </CabecalhoEmpresa>
 
       <section className="mt-4 grid grid-cols-2 gap-6 text-sm">
         <div>
@@ -44,13 +49,13 @@ export function OrcamentoDocumento({ orcamento, cliente }: { orcamento: Orcament
         </div>
         <div>
           <h2 className="mb-1 text-xs font-bold tracking-wide uppercase">Veículo</h2>
-          <p className="font-medium">{veiculo.modelo}</p>
+          <p className="font-medium">{veiculo?.modelo ?? "Veículo removido"}</p>
           <p>
             {[
-              veiculo.placa && `Placa ${mascararPlaca(veiculo.placa)}`,
-              veiculo.ano,
-              veiculo.cor,
-              veiculo.km > 0 && `${formatarQuantidade(veiculo.km)} km`,
+              veiculo?.placa && `Placa ${mascararPlaca(veiculo.placa)}`,
+              veiculo?.ano,
+              veiculo?.cor,
+              orcamento.km > 0 && `${formatarQuantidade(orcamento.km)} km`,
             ]
               .filter(Boolean)
               .join(" · ")}
@@ -120,9 +125,11 @@ export function OrcamentoDocumento({ orcamento, cliente }: { orcamento: Orcament
       )}
 
       <footer className="mt-12 grid grid-cols-2 gap-10 text-center text-xs break-inside-avoid">
-        <p className="border-t border-black pt-1">{APP_CONFIG.empresa}</p>
+        <p className="border-t border-black pt-1">{empresa.nomeFantasia}</p>
         <p className="border-t border-black pt-1">Aprovação do cliente</p>
       </footer>
+
+      <RodapeEmpresa empresa={empresa} />
     </div>,
     document.body,
   );

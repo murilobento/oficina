@@ -18,6 +18,8 @@ import {
 import { ConfirmarExclusaoRegistro } from "@/components/layout/registro-partes";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CLIENTES } from "@/features/pessoas/entidades";
+import { useVeiculosStore } from "@/features/veiculos/store";
+import { veiculoEmTexto } from "@/features/veiculos/tipos";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 import { formatarBRL } from "@/lib/numeros";
 
@@ -27,7 +29,7 @@ import { OrcamentoDocumento } from "./orcamento-documento";
 import { OrcamentoForm } from "./orcamento-form";
 import { AcoesOrcamento, StatusOrcamentoBadge } from "./orcamento-partes";
 import { useOrcamentosStore } from "./store";
-import { mascararPlaca, type Orcamento, ROTULO_STATUS, statusExibido, totaisDoOrcamento } from "./tipos";
+import { type Orcamento, ROTULO_STATUS, statusExibido, totaisDoOrcamento } from "./tipos";
 
 const FILTRO_STATUS = [
   { valor: "todos", texto: "Todos" },
@@ -49,18 +51,13 @@ function dataCurta(data: Date | string): string {
   return new Date(data).toLocaleDateString("pt-BR");
 }
 
-function veiculoEmTexto(orcamento: Orcamento): string {
-  return [orcamento.veiculo.modelo, orcamento.veiculo.placa && mascararPlaca(orcamento.veiculo.placa)]
-    .filter(Boolean)
-    .join(" · ");
-}
-
 /** Listagem de orçamentos. Criar, editar e visualizar abrem em painel lateral. */
 export function OrcamentosLista() {
   const orcamentos = useOrcamentosStore((estado) => estado.itens);
   const atualizar = useOrcamentosStore((estado) => estado.atualizar);
   const remover = useOrcamentosStore((estado) => estado.remover);
   const clientes = CLIENTES.useStore((estado) => estado.pessoas);
+  const veiculos = useVeiculosStore((estado) => estado.itens);
 
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("todos");
@@ -75,6 +72,11 @@ export function OrcamentosLista() {
   const [imprimindo, setImprimindo] = useState<Orcamento | null>(null);
 
   const visualizando = orcamentos.find((item) => item.id === visualizandoId) ?? null;
+  const veiculoDe = (orcamento: Orcamento) => veiculos.find((item) => item.id === orcamento.veiculoId) ?? null;
+  const textoVeiculo = (orcamento: Orcamento) => {
+    const veiculo = veiculoDe(orcamento);
+    return veiculo ? veiculoEmTexto(veiculo) : "Veículo removido";
+  };
   const nomeCliente = (orcamento: Orcamento) =>
     clientes.find((cliente) => cliente.id === orcamento.clienteId)?.nome ?? "Cliente removido";
 
@@ -86,12 +88,13 @@ export function OrcamentosLista() {
       .filter((orcamento) => {
         if (termo === "") return true;
         const cliente = clientes.find((item) => item.id === orcamento.clienteId)?.nome ?? "";
-        const noTexto = normalizar(`${orcamento.numero} ${cliente} ${orcamento.veiculo.modelo}`).includes(termo);
-        const naPlaca = termoPlaca !== "" && orcamento.veiculo.placa.toLowerCase().includes(termoPlaca);
+        const veiculo = veiculos.find((item) => item.id === orcamento.veiculoId);
+        const noTexto = normalizar(`${orcamento.numero} ${cliente} ${veiculo?.modelo ?? ""}`).includes(termo);
+        const naPlaca = termoPlaca !== "" && (veiculo?.placa ?? "").toLowerCase().includes(termoPlaca);
         return noTexto || naPlaca;
       })
       .sort((a, b) => b.criadoEm.localeCompare(a.criadoEm));
-  }, [orcamentos, clientes, busca, filtroStatus]);
+  }, [orcamentos, clientes, veiculos, busca, filtroStatus]);
 
   const { visiveis, paginaAtual, totalPaginas } = paginar(filtrados, pagina);
 
@@ -196,7 +199,7 @@ export function OrcamentosLista() {
               <StatusOrcamentoBadge status={statusExibido(orcamento)} />
               <span className="text-sm font-medium tabular-nums">{formatarBRL(totaisDoOrcamento(orcamento).total)}</span>
             </div>
-            <p className="text-muted-foreground text-sm">{veiculoEmTexto(orcamento)}</p>
+            <p className="text-muted-foreground text-sm">{textoVeiculo(orcamento)}</p>
           </ListagemCartao>
         ))}
         {visiveis.length === 0 && <li className="col-span-full">{vazio}</li>}
@@ -225,7 +228,7 @@ export function OrcamentosLista() {
                 </TableCell>
                 <TableCell className="max-w-72 py-3">
                   <span className="block truncate font-medium">{nomeCliente(orcamento)}</span>
-                  <span className="text-muted-foreground block truncate text-sm">{veiculoEmTexto(orcamento)}</span>
+                  <span className="text-muted-foreground block truncate text-sm">{textoVeiculo(orcamento)}</span>
                 </TableCell>
                 <TableCell className="py-3 whitespace-nowrap tabular-nums">{dataCurta(orcamento.criadoEm)}</TableCell>
                 <TableCell className="hidden py-3 whitespace-nowrap tabular-nums @6xl:table-cell">
@@ -280,6 +283,7 @@ export function OrcamentosLista() {
         <OrcamentoDocumento
           orcamento={imprimindo}
           cliente={clientes.find((cliente) => cliente.id === imprimindo.clienteId) ?? null}
+          veiculo={veiculoDe(imprimindo)}
         />
       )}
     </Listagem>

@@ -1,16 +1,24 @@
 import { useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Trash2, UserPlus } from "lucide-react";
+import { CarFront, Plus, Trash2, UserPlus } from "lucide-react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { CampoTexto, CampoTextarea } from "@/components/layout/campos-form";
 import { SecaoFormulario } from "@/components/layout/registro-partes";
 import { Button } from "@/components/ui/button";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useEmpresa } from "@/features/empresa/store";
+import { CampoCliente } from "@/features/pessoas/campo-cliente";
+import { ClienteRapido } from "@/features/pessoas/cliente-rapido";
 import { CLIENTES } from "@/features/pessoas/entidades";
+import { historicoDoVeiculo, kmAbaixoDoUltimo } from "@/features/veiculos/historico";
+import { useVeiculosStore } from "@/features/veiculos/store";
+import { veiculoEmTexto } from "@/features/veiculos/tipos";
+import { VeiculoRapido } from "@/features/veiculos/veiculo-rapido";
 import {
   centavosParaTexto,
   formatarBRL,
@@ -22,15 +30,12 @@ import {
 } from "@/lib/numeros";
 
 import { calcularTotais, subtotalItem } from "./calculo";
-import { CampoCliente } from "./campo-cliente";
-import { ClienteRapido } from "./cliente-rapido";
 import { ResumoTotais } from "./orcamento-partes";
 import { type ItemEscolhido, SeletorItem } from "./seletor-item";
 import { useOrcamentosStore } from "./store";
 import {
   esquemaOrcamento,
   FORM_VAZIO,
-  mascararPlaca,
   type Orcamento,
   type OrcamentoFormValores,
   paraFormulario,
@@ -57,19 +62,29 @@ export function OrcamentoForm({
   const adicionar = useOrcamentosStore((estado) => estado.adicionar);
   const atualizar = useOrcamentosStore((estado) => estado.atualizar);
   const clientes = CLIENTES.useStore((estado) => estado.pessoas);
+  const veiculos = useVeiculosStore((estado) => estado.itens);
+  const atualizarVeiculo = useVeiculosStore((estado) => estado.atualizar);
+  const empresa = useEmpresa();
 
   const [seletorAberto, setSeletorAberto] = useState(false);
   // Cadastro rápido de cliente: `abertura` troca a key para o formulário abrir limpo.
   const [clienteRapido, setClienteRapido] = useState({ aberto: false, nome: "", abertura: 0 });
+  const [veiculoRapido, setVeiculoRapido] = useState({ aberto: false, abertura: 0 });
   const editando = orcamento !== null;
 
   const form = useForm<OrcamentoFormValores>({
     resolver: zodResolver(esquemaOrcamento),
-    defaultValues: orcamento ? paraFormulario(orcamento) : FORM_VAZIO,
+    // Orçamento novo já vem com a validade e as condições definidas em Administração > Empresa.
+    defaultValues: orcamento
+      ? paraFormulario(orcamento)
+      : { ...FORM_VAZIO, validadeDias: String(empresa.validadeOrcamentoDias), observacoes: empresa.condicoesOrcamento },
   });
   const { control, formState } = form;
   const { fields, append, remove } = useFieldArray({ control, name: "itens" });
 
+  const clienteId = useWatch({ control, name: "clienteId" });
+  const veiculoId = useWatch({ control, name: "veiculoId" });
+  const kmTexto = useWatch({ control, name: "km" });
   const itens = useWatch({ control, name: "itens" });
   const descontoTipo = useWatch({ control, name: "descontoTipo" });
   const desconto = useWatch({ control, name: "desconto" });
@@ -88,6 +103,35 @@ export function OrcamentoForm({
   const clientesDisponiveis = clientes
     .filter((cliente) => cliente.ativo || cliente.id === orcamento?.clienteId)
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+  // Veículos do cliente escolhido; o já usado neste orçamento continua na lista mesmo se inativado.
+  const veiculosDisponiveis = veiculos
+    .filter((v) => v.clienteId === clienteId && (v.ativo || v.id === orcamento?.veiculoId))
+    .sort((a, b) => a.modelo.localeCompare(b.modelo, "pt-BR"));
+  const veiculo = veiculos.find((v) => v.id === veiculoId);
+  // Histórico do carro sem contar este próprio orçamento (na edição).
+  const historico = veiculo
+    ? historicoDoVeiculo(
+        orcamentos.filter((o) => o.id !== orcamento?.id),
+        veiculo.id,
+      )
+    : null;
+  const kmBaixo = historico ? kmAbaixoDoUltimo(Number(kmTexto || 0), historico.ultimoKm) : false;
+
+  function trocarCliente(id: string) {
+    if (id === clienteId) return;
+    form.setValue("clienteId", id, { shouldDirty: true, shouldValidate: true });
+    // O carro é do cliente: ao trocar de cliente, a escolha anterior não vale mais.
+    form.setValue("veiculoId", "", { shouldDirty: true });
+    form.setValue("km", "", { shouldDirty: true });
+  }
+
+  function escolherVeiculo(id: string, kmSugerido?: number) {
+    form.setValue("veiculoId", id, { shouldDirty: true, shouldValidate: true });
+    const escolhido = veiculos.find((v) => v.id === id);
+    const km = kmSugerido ?? escolhido?.km ?? 0;
+    form.setValue("km", km > 0 ? String(km) : "", { shouldDirty: true });
+  }
 
   function cadastrarCliente(nome: string) {
     setClienteRapido((atual) => ({ aberto: true, nome, abertura: atual.abertura + 1 }));
@@ -114,6 +158,9 @@ export function OrcamentoForm({
 
   const enviar = form.handleSubmit((valores) => {
     const dados = paraOrcamento(valores);
+    // O carro guarda o km mais recente: sobe quando a visita registra um valor maior.
+    const alvo = veiculos.find((v) => v.id === dados.veiculoId);
+    if (alvo && dados.km > alvo.km) atualizarVeiculo(alvo.id, { km: dados.km });
     if (orcamento) {
       atualizar(orcamento.id, dados);
       toast.success(`${orcamento.numero} atualizado.`);
@@ -153,7 +200,7 @@ export function OrcamentoForm({
                         valor={field.value}
                         clientes={clientesDisponiveis}
                         invalido={fieldState.invalid}
-                        aoMudar={(id) => field.onChange(id)}
+                        aoMudar={trocarCliente}
                         aoCadastrar={cadastrarCliente}
                       />
                       <Button
@@ -175,41 +222,101 @@ export function OrcamentoForm({
 
             <SecaoFormulario titulo="Veículo">
               <div className="grid gap-4 sm:grid-cols-2">
-                <CampoTexto
+                <Controller
                   control={control}
-                  prefixo={PREFIXO}
-                  nome="modelo"
-                  rotulo="Marca e modelo"
-                  placeholder="Ex.: Hyundai HB20 1.0"
-                  className="sm:col-span-2"
+                  name="veiculoId"
+                  render={({ field, fieldState }) => (
+                    <Field className="gap-1.5 sm:col-span-2" data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor="orcamento-veiculoId">Veículo do cliente</FieldLabel>
+                      <div className="flex gap-2">
+                        <NativeSelect
+                          id="orcamento-veiculoId"
+                          className="w-full"
+                          disabled={!clienteId}
+                          value={field.value}
+                          onBlur={field.onBlur}
+                          onChange={(evento) => escolherVeiculo(evento.target.value)}
+                          aria-invalid={fieldState.invalid}
+                        >
+                          <NativeSelectOption value="">
+                            {!clienteId
+                              ? "Escolha o cliente primeiro"
+                              : veiculosDisponiveis.length === 0
+                                ? "Nenhum veículo cadastrado"
+                                : "Selecione o veículo"}
+                          </NativeSelectOption>
+                          {veiculosDisponiveis.map((v) => (
+                            <NativeSelectOption key={v.id} value={v.id}>
+                              {veiculoEmTexto(v)}
+                            </NativeSelectOption>
+                          ))}
+                        </NativeSelect>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          disabled={!clienteId}
+                          aria-label="Cadastrar novo veículo"
+                          title="Novo veículo"
+                          onClick={() => setVeiculoRapido((atual) => ({ aberto: true, abertura: atual.abertura + 1 }))}
+                        >
+                          <CarFront />
+                        </Button>
+                      </div>
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                    </Field>
+                  )}
                 />
-                <CampoTexto
-                  control={control}
-                  prefixo={PREFIXO}
-                  nome="placa"
-                  rotulo="Placa (opcional)"
-                  placeholder="ABC-1D23"
-                  mascara={mascararPlaca}
-                />
-                <CampoTexto
-                  control={control}
-                  prefixo={PREFIXO}
-                  nome="ano"
-                  rotulo="Ano (opcional)"
-                  inputMode="numeric"
-                  placeholder="2019"
-                  mascara={soDigitos(4)}
-                />
-                <CampoTexto control={control} prefixo={PREFIXO} nome="cor" rotulo="Cor (opcional)" />
+                {veiculo && historico && (
+                  <div
+                    data-testid="resumo-veiculo"
+                    className="bg-muted/50 text-muted-foreground flex flex-col gap-1 rounded-lg border p-3 text-sm sm:col-span-2"
+                  >
+                    {historico.ultimaVisita ? (
+                      <>
+                        <p>
+                          Última visita em{" "}
+                          <span className="text-foreground font-medium">
+                            {new Date(historico.ultimaVisita).toLocaleDateString("pt-BR")}
+                          </span>
+                          {historico.ultimoKm > 0 && (
+                            <>
+                              , com <span className="text-foreground font-medium">{historico.ultimoKm.toLocaleString("pt-BR")} km</span>
+                            </>
+                          )}
+                          . {historico.realizadas} {historico.realizadas === 1 ? "serviço realizado" : "visitas realizadas"} no total.
+                        </p>
+                        {historico.aplicados.length > 0 && (
+                          <p>
+                            Feito por último:{" "}
+                            {historico.aplicados
+                              .filter((a) => a.tipo === "servico")
+                              .slice(0, 3)
+                              .map((a) => a.descricao)
+                              .join(", ") || "só peças"}
+                            .
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <p>Primeira visita deste veículo.</p>
+                    )}
+                  </div>
+                )}
                 <CampoTexto
                   control={control}
                   prefixo={PREFIXO}
                   nome="km"
-                  rotulo="Quilometragem (opcional)"
+                  rotulo="Quilometragem desta visita (opcional)"
                   inputMode="numeric"
                   placeholder="48200"
                   mascara={soDigitos(7)}
                 />
+                {kmBaixo && historico && (
+                  <FieldDescription role="status" className="text-amber-600 sm:col-span-2 dark:text-amber-400">
+                    Atenção: a última visita registrou {historico.ultimoKm.toLocaleString("pt-BR")} km, mais que este valor.
+                  </FieldDescription>
+                )}
                 <CampoTextarea
                   control={control}
                   prefixo={PREFIXO}
@@ -363,7 +470,14 @@ export function OrcamentoForm({
           aberto={clienteRapido.aberto}
           nomeInicial={clienteRapido.nome}
           aoFechar={() => setClienteRapido((atual) => ({ ...atual, aberto: false }))}
-          aoCriado={(id) => form.setValue("clienteId", id, { shouldDirty: true, shouldValidate: true })}
+          aoCriado={(id) => trocarCliente(id)}
+        />
+        <VeiculoRapido
+          key={`v${veiculoRapido.abertura}`}
+          aberto={veiculoRapido.aberto}
+          clienteId={clienteId}
+          aoFechar={() => setVeiculoRapido((atual) => ({ ...atual, aberto: false }))}
+          aoCriado={(id, km) => escolherVeiculo(id, km)}
         />
         <SeletorItem aberto={seletorAberto} aoFechar={() => setSeletorAberto(false)} aoEscolher={adicionarItem} />
       </SheetContent>

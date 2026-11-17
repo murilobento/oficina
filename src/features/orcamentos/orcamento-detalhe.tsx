@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { CLIENTES } from "@/features/pessoas/entidades";
 import { mascararDocumento, mascararTelefone } from "@/features/pessoas/documento";
+import { useVeiculosStore } from "@/features/veiculos/store";
+import { mascararPlaca } from "@/features/veiculos/tipos";
 import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
 
 import { subtotalItem, validoAte } from "./calculo";
 import { ResumoTotais, StatusOrcamentoBadge } from "./orcamento-partes";
 import {
-  mascararPlaca,
   type Orcamento,
   podeEditar,
   type StatusOrcamento,
@@ -40,6 +41,8 @@ export function OrcamentoDetalhe({
 }) {
   const clientes = CLIENTES.useStore((estado) => estado.pessoas);
   const cliente = clientes.find((item) => item.id === orcamento?.clienteId) ?? null;
+  const veiculos = useVeiculosStore((estado) => estado.itens);
+  const veiculo = veiculos.find((item) => item.id === orcamento?.veiculoId) ?? null;
 
   return (
     <Sheet open={aberto && orcamento !== null} onOpenChange={(open) => !open && aoFechar()}>
@@ -52,7 +55,6 @@ export function OrcamentoDetalhe({
   function conteudo(atual: Orcamento) {
     const exibido = statusExibido(atual);
     const totais = totaisDoOrcamento(atual);
-    const { veiculo } = atual;
     const vencido = exibido === "vencido";
     const validade = validoAte(atual.criadoEm, atual.validadeDias);
 
@@ -77,11 +79,11 @@ export function OrcamentoDetalhe({
           </SecaoDados>
 
           <SecaoDados titulo="Veículo">
-            <Dado rotulo="Marca e modelo">{veiculo.modelo}</Dado>
-            <Dado rotulo="Placa">{mascararPlaca(veiculo.placa)}</Dado>
-            <Dado rotulo="Ano">{veiculo.ano}</Dado>
-            <Dado rotulo="Cor">{veiculo.cor}</Dado>
-            <Dado rotulo="Quilometragem">{veiculo.km > 0 ? `${formatarQuantidade(veiculo.km)} km` : ""}</Dado>
+            <Dado rotulo="Marca e modelo">{veiculo?.modelo ?? "Veículo removido"}</Dado>
+            <Dado rotulo="Placa">{veiculo ? mascararPlaca(veiculo.placa) : ""}</Dado>
+            <Dado rotulo="Ano">{veiculo?.ano}</Dado>
+            <Dado rotulo="Cor">{veiculo?.cor}</Dado>
+            <Dado rotulo="Quilometragem">{atual.km > 0 ? `${formatarQuantidade(atual.km)} km` : ""}</Dado>
             <Dado rotulo="Problema relatado" largo>
               {atual.problema && <span className="whitespace-pre-wrap">{atual.problema}</span>}
             </Dado>

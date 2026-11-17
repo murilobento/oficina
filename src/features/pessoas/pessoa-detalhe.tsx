@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
+import { VeiculosDoCliente } from "@/features/veiculos/veiculos-do-cliente";
+
 import { mascararCEP, mascararDocumento, mascararTelefone } from "./documento";
 import type { EntidadeConfig } from "./entidades";
 import { StatusBadge } from "./pessoa-partes";
@@ -120,6 +122,8 @@ export function PessoaDetalhe({
                 <Dado rotulo="Bairro">{pessoa.bairro}</Dado>
                 <Dado rotulo="Cidade / UF">{[pessoa.cidade, pessoa.uf].filter(Boolean).join("/")}</Dado>
               </Secao>
+
+              {config.chave === "clientes" && <VeiculosDoCliente clienteId={pessoa.id} />}
 
               <Secao titulo="Outras informações">
                 <Dado rotulo="Observações" largo>

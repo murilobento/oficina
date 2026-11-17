@@ -25,21 +25,15 @@ export type ItemOrcamento = {
   valor: number;
 };
 
-export type VeiculoOrcamento = {
-  /** Sem hífen, maiúscula (ABC1D23). */
-  placa: string;
-  modelo: string;
-  ano: string;
-  cor: string;
-  km: number;
-};
-
 export type Orcamento = {
   id: string;
   /** ORC-0001 */
   numero: string;
   clienteId: string;
-  veiculo: VeiculoOrcamento;
+  /** Carro do cadastro de Veículos (sempre do mesmo cliente). */
+  veiculoId: string;
+  /** Km do carro nesta visita; 0 quando não foi anotado. */
+  km: number;
   /** O que o cliente relatou (barulho, luz acesa...). */
   problema: string;
   itens: ItemOrcamento[];
@@ -77,18 +71,6 @@ export function totaisDoOrcamento(orcamento: Pick<Orcamento, "itens" | "desconto
   return calcularTotais(orcamento.itens, orcamento.descontoTipo, orcamento.desconto);
 }
 
-/** ABC1D23 -> "ABC-1D23" (aceita placa antiga e Mercosul). */
-export function mascararPlaca(valor: string): string {
-  const limpo = valor.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 7);
-  return limpo.length > 3 ? `${limpo.slice(0, 3)}-${limpo.slice(3)}` : limpo;
-}
-
-export function limparPlaca(valor: string): string {
-  return valor.toUpperCase().replace(/[^A-Z0-9]/g, "");
-}
-
-const PLACA = /^[A-Z]{3}\d[A-Z0-9]\d{2}$/;
-
 const esquemaItem = z.object({
   id: z.string(),
   tipo: z.enum(["produto", "servico"]),
@@ -104,10 +86,7 @@ const esquemaItem = z.object({
 export const esquemaOrcamento = z
   .object({
     clienteId: z.string().min(1, "Escolha o cliente."),
-    placa: z.string().refine((valor) => valor === "" || PLACA.test(limparPlaca(valor)), "Placa inválida. Ex.: ABC-1D23."),
-    modelo: z.string().trim().min(1, "Informe a marca e o modelo.").max(60, "No máximo 60 caracteres."),
-    ano: z.string().refine((valor) => valor === "" || /^(19|20)\d{2}$/.test(valor), "Ano com 4 números, como 2019."),
-    cor: z.string().trim().max(30, "No máximo 30 caracteres."),
+    veiculoId: z.string().min(1, "Escolha o veículo."),
     km: z.string(),
     problema: z.string().trim().max(500, "No máximo 500 caracteres."),
     itens: z.array(esquemaItem).min(1, "Adicione ao menos um produto ou serviço."),
@@ -139,10 +118,7 @@ export type ItemFormValores = OrcamentoFormValores["itens"][number];
 
 export const FORM_VAZIO: OrcamentoFormValores = {
   clienteId: "",
-  placa: "",
-  modelo: "",
-  ano: "",
-  cor: "",
+  veiculoId: "",
   km: "",
   problema: "",
   itens: [],
@@ -155,11 +131,8 @@ export const FORM_VAZIO: OrcamentoFormValores = {
 export function paraFormulario(orcamento: Orcamento): OrcamentoFormValores {
   return {
     clienteId: orcamento.clienteId,
-    placa: mascararPlaca(orcamento.veiculo.placa),
-    modelo: orcamento.veiculo.modelo,
-    ano: orcamento.veiculo.ano,
-    cor: orcamento.veiculo.cor,
-    km: orcamento.veiculo.km > 0 ? String(orcamento.veiculo.km) : "",
+    veiculoId: orcamento.veiculoId,
+    km: orcamento.km > 0 ? String(orcamento.km) : "",
     problema: orcamento.problema,
     itens: orcamento.itens.map((item) => ({
       id: item.id,
@@ -182,13 +155,8 @@ export function paraFormulario(orcamento: Orcamento): OrcamentoFormValores {
 export function paraOrcamento(valores: OrcamentoFormValores) {
   return {
     clienteId: valores.clienteId,
-    veiculo: {
-      placa: limparPlaca(valores.placa),
-      modelo: valores.modelo,
-      ano: valores.ano,
-      cor: valores.cor,
-      km: Number(valores.km || 0),
-    },
+    veiculoId: valores.veiculoId,
+    km: Number(valores.km || 0),
     problema: valores.problema,
     itens: valores.itens.map(
       (item): ItemOrcamento => ({
