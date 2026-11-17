@@ -2,6 +2,8 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { CalendarDays, Car, ClipboardList, FileText, Package, Users } from 'lucide-react'
 
 import { Pagina } from '@/components/layout/pagina'
+import { LogoEmpresa } from '@/features/empresa/logo-empresa'
+import { useEmpresa } from '@/features/empresa/store'
 import { supabaseNaoConfigurado } from '@/lib/supabase'
 
 export const Route = createFileRoute('/_app/')({ component: Inicio })
@@ -17,8 +19,13 @@ const ATALHOS = [
 ] as const
 
 function Inicio() {
+  const empresa = useEmpresa()
   return (
     <Pagina titulo="Início" descricao="Atalhos do dia a dia.">
+      <div className="flex items-center gap-3">
+        <LogoEmpresa className="size-12" />
+        <p className="min-w-0 truncate text-lg font-semibold">{empresa.nomeFantasia}</p>
+      </div>
       {supabaseNaoConfigurado && (
         <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
           Supabase ainda não configurado: copie <code>.env.example</code> para <code>.env.local</code> e preencha as

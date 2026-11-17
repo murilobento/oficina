@@ -5,20 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { APP_CONFIG } from "@/config/app-config";
+import { useEmpresa } from "@/features/empresa/store";
 
 export const Route = createFileRoute("/login")({ component: Login });
 
+const ANO = new Date().getFullYear();
+
 // Etapa 1.0: apenas o visual (layout "auth v2" do template). O login de verdade entra na etapa 1.1.
 function Login() {
+  const empresa = useEmpresa();
   return (
     <main>
       <div className="grid h-dvh justify-center p-2 lg:grid-cols-2">
         <div className="bg-primary relative order-2 hidden h-full rounded-3xl lg:flex">
           <div className="text-primary-foreground absolute top-10 space-y-1 px-10">
-            <Building2 className="size-10" />
-            <h1 className="text-2xl font-medium">{APP_CONFIG.name}</h1>
-            <p className="text-sm">Sistema da {APP_CONFIG.empresa}.</p>
+            {empresa.logo ? (
+              <img src={empresa.logo} alt={`Logo ${empresa.nomeFantasia}`} className="size-14 rounded-xl bg-white object-contain p-1" />
+            ) : (
+              <Building2 className="size-10" />
+            )}
+            <h1 className="text-2xl font-medium">{empresa.nomeFantasia}</h1>
+            <p className="text-sm">Sistema de gestão da oficina.</p>
           </div>
 
           <div className="absolute bottom-10 flex w-full justify-between px-10">
@@ -59,7 +66,7 @@ function Login() {
           </div>
 
           <div className="absolute bottom-5 flex w-full justify-between px-10">
-            <div className="text-sm">{APP_CONFIG.copyright}</div>
+            <div className="text-sm">© {ANO} {empresa.nomeFantasia}</div>
           </div>
         </div>
       </div>

@@ -92,6 +92,11 @@ export const navModules: NavModule[] = [
     icon: Settings,
     groups: [
       {
+        id: "empresa",
+        title: "Empresa",
+        items: [{ id: "dados-empresa", title: "Dados da empresa", url: "/admin/empresa", permissao: "empresa.gerenciar" }],
+      },
+      {
         id: "acesso",
         title: "Acesso",
         items: [

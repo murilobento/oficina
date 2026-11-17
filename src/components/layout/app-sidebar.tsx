@@ -15,7 +15,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { APP_CONFIG } from "@/config/app-config";
+import { LogoEmpresa } from "@/features/empresa/logo-empresa";
+import { useEmpresa } from "@/features/empresa/store";
 import { findModuleByPath, type NavModule, navModules } from "@/navigation/sidebar-items";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
@@ -36,6 +37,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const variant = usePreferencesStore(useShallow((s) => s.values.sidebar_variant));
   const pathname = useLocation({ select: (location) => location.pathname });
   const navigate = useNavigate();
+  const empresa = useEmpresa();
   const { setOpen, setOpenMobile } = useSidebar();
 
   // O painel mostra o módulo clicado; ao trocar de tela, volta a mostrar o módulo da tela atual.
@@ -81,11 +83,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild className="md:h-8 md:p-0 group-data-[collapsible=icon]:p-0!" tooltip={APP_CONFIG.name}>
+              <SidebarMenuButton asChild className="md:h-8 md:p-0 group-data-[collapsible=icon]:p-0!" tooltip={empresa.nomeFantasia}>
                 <Link to="/">
-                  <span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-md text-xs font-bold">
-                    OF
-                  </span>
+                  <LogoEmpresa className="size-8" />
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -119,7 +119,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <Sidebar collapsible="none" className="min-w-0 flex-1">
         {/* h-12 = mesma altura da barra superior, para as duas linhas de borda se encontrarem. */}
         <SidebarHeader className="h-12 shrink-0 justify-center border-b py-0">
-          <div className="flex items-center px-2 text-base font-semibold">{moduloAberto.title}</div>
+          <div className="flex min-w-0 flex-col px-2 leading-tight">
+            <span className="text-muted-foreground truncate text-xs">{empresa.nomeFantasia}</span>
+            <span className="truncate text-base font-semibold">{moduloAberto.title}</span>
+          </div>
         </SidebarHeader>
         <SidebarContent>
           <NavMain key={moduloAberto.id} module={moduloAberto} />

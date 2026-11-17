@@ -24,6 +24,7 @@ export const MODULOS: { id: string; nome: string }[] = [
   { id: "estoque", nome: "Peças e estoque" },
   { id: "servicos", nome: "Serviços" },
   { id: "valores", nome: "Valores" },
+  { id: "empresa", nome: "Empresa" },
   { id: "funcionarios", nome: "Funcionários" },
   { id: "perfis", nome: "Perfis" },
   { id: "auditoria", nome: "Auditoria" },

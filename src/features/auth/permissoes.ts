@@ -20,6 +20,7 @@ export const PERMISSOES = {
   'servicos.ver': 'Ver serviços',
   'servicos.editar': 'Cadastrar e editar serviços',
   'valores.ver': 'Ver preços e valores',
+  'empresa.gerenciar': 'Gerenciar os dados da empresa e a logo',
   'funcionarios.gerenciar': 'Gerenciar funcionários',
   'perfis.gerenciar': 'Gerenciar perfis e permissões',
   'auditoria.ver': 'Consultar a auditoria',
