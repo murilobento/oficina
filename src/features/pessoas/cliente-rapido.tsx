@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { mascararTelefone, soDigitos, type TipoPessoa } from "@/features/pessoas/documento";
-import { CLIENTES } from "@/features/pessoas/entidades";
+import { CLIENTES, type EntidadeConfig } from "@/features/pessoas/entidades";
 import { FORM_VAZIO, paraPessoa } from "@/features/pessoas/tipos";
 
 const esquema = z.object({
@@ -31,14 +31,17 @@ export function ClienteRapido({
   nomeInicial,
   aoFechar,
   aoCriado,
+  config = CLIENTES,
 }: {
   aberto: boolean;
   nomeInicial: string;
   aoFechar: () => void;
   /** Recebe o id do cliente criado, para já ficar escolhido no orçamento. */
   aoCriado: (id: string) => void;
+  /** Cliente (padrão) ou fornecedor. */
+  config?: EntidadeConfig;
 }) {
-  const adicionar = CLIENTES.useStore((estado) => estado.adicionar);
+  const adicionar = config.useStore((estado) => estado.adicionar);
   const form = useForm<Valores>({
     resolver: zodResolver(esquema),
     defaultValues: { tipo: "PF", nome: nomeInicial, celular: "" },
@@ -52,7 +55,7 @@ export function ClienteRapido({
     evento.stopPropagation();
     return form.handleSubmit((valores) => {
       const criado = adicionar(paraPessoa({ ...FORM_VAZIO, ...valores }));
-      toast.success("Cliente cadastrado. Complete os dados depois em Cadastro > Cliente.");
+      toast.success(`${config.singular[0].toUpperCase()}${config.singular.slice(1)} cadastrado. Complete os dados depois em Cadastro > ${config.singular[0].toUpperCase()}${config.singular.slice(1)}.`);
       aoCriado(criado.id);
       aoFechar();
     })(evento);
@@ -62,8 +65,8 @@ export function ClienteRapido({
     <Dialog open={aberto} onOpenChange={(open) => !open && aoFechar()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Novo cliente</DialogTitle>
-          <DialogDescription>Cadastro rápido: só o essencial para seguir com o orçamento.</DialogDescription>
+          <DialogTitle>Novo {config.singular}</DialogTitle>
+          <DialogDescription>Cadastro rápido: só o essencial para seguir. O restante se completa depois no cadastro.</DialogDescription>
         </DialogHeader>
 
         <form noValidate onSubmit={enviar} className="flex flex-col gap-4">
@@ -105,7 +108,7 @@ export function ClienteRapido({
               Cancelar
             </Button>
             <Button type="submit" className="flex-1 sm:flex-none">
-              Cadastrar cliente
+              Cadastrar {config.singular}
             </Button>
           </DialogFooter>
         </form>

@@ -1,4 +1,4 @@
-import { CheckCircle2, FilePlus2, Pencil, Printer, RefreshCw, RotateCcw, Send, Trash2, XCircle } from "lucide-react";
+import { CheckCircle2, Pencil, Printer, RefreshCw, RotateCcw, Send, ShoppingCart, Trash2, XCircle } from "lucide-react";
 
 import { Dado, SecaoDados } from "@/components/layout/registro-partes";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ export function OrcamentoDetalhe({
   aoImprimir,
   aoExcluir,
   aoMudar,
+  aoGerarVenda,
 }: {
   aberto: boolean;
   orcamento: Orcamento | null;
@@ -38,6 +39,7 @@ export function OrcamentoDetalhe({
   aoImprimir: (orcamento: Orcamento) => void;
   aoExcluir: (orcamento: Orcamento) => void;
   aoMudar: (orcamento: Orcamento, mudanca: MudancaStatus) => void;
+  aoGerarVenda: (orcamento: Orcamento) => void;
 }) {
   const clientes = CLIENTES.useStore((estado) => estado.pessoas);
   const cliente = clientes.find((item) => item.id === orcamento?.clienteId) ?? null;
@@ -159,8 +161,8 @@ export function OrcamentoDetalhe({
               <Button variant="outline" onClick={() => aoMudar(atual, { status: "enviado" })}>
                 <RotateCcw /> Reabrir
               </Button>
-              <Button onClick={() => aoMudar(atual, { status: "convertido" })}>
-                <FilePlus2 /> Converter em OS
+              <Button onClick={() => aoGerarVenda(atual)}>
+                <ShoppingCart /> Gerar venda
               </Button>
             </>
           )}

@@ -50,8 +50,8 @@ export const navModules: NavModule[] = [
         id: "atendimento",
         items: [
           { id: "orcamentos", title: "Orçamento", url: "/orcamentos" },
-          { id: "vendas", title: "Venda" },
-          { id: "compras", title: "Compra" },
+          { id: "vendas", title: "Venda", url: "/vendas", permissao: "vendas.ver" },
+          { id: "compras", title: "Compra", url: "/compras", permissao: "compras.ver" },
         ],
       },
     ],
@@ -81,8 +81,8 @@ export const navModules: NavModule[] = [
       {
         id: "estoque",
         items: [
-          { id: "movimentacoes", title: "Movimentação de estoque" },
-          { id: "acertos", title: "Acerto de estoque" },
+          { id: "movimentacoes", title: "Movimentação de estoque", url: "/estoque/movimentacoes", permissao: "estoque.ver" },
+          { id: "acertos", title: "Acerto de estoque", url: "/estoque/acertos", permissao: "estoque.editar" },
         ],
       },
     ],

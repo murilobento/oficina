@@ -24,6 +24,8 @@ import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 import { formatarBRL } from "@/lib/numeros";
 
 import { validoAte } from "./calculo";
+import { GerarVendaDialog } from "@/features/vendas/gerar-venda-dialog";
+import { useVendasStore } from "@/features/vendas/store";
 import { OrcamentoDetalhe, type MudancaStatus } from "./orcamento-detalhe";
 import { OrcamentoDocumento } from "./orcamento-documento";
 import { OrcamentoForm } from "./orcamento-form";
@@ -44,7 +46,7 @@ const MENSAGEM_STATUS = {
   enviado: "marcado como enviado.",
   aprovado: "aprovado.",
   recusado: "marcado como recusado.",
-  convertido: "marcado como convertido em OS. A tela de ordens de serviço ainda será criada.",
+  convertido: "virou venda.",
 } as const;
 
 function dataCurta(data: Date | string): string {
@@ -58,6 +60,9 @@ export function OrcamentosLista() {
   const remover = useOrcamentosStore((estado) => estado.remover);
   const clientes = CLIENTES.useStore((estado) => estado.pessoas);
   const veiculos = useVeiculosStore((estado) => estado.itens);
+  const vendas = useVendasStore((estado) => estado.itens);
+  const [gerandoVenda, setGerandoVenda] = useState<Orcamento | null>(null);
+  const [aberturaVenda, setAberturaVenda] = useState(0);
 
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("todos");
@@ -140,7 +145,22 @@ export function OrcamentosLista() {
     setExcluindo(null);
   }
 
-  const acoes = { aoVisualizar: abrirDetalhe, aoEditar: abrirForm, aoImprimir: setImprimindo, aoExcluir: setExcluindo };
+  function pedirExclusao(orcamento: Orcamento) {
+    // A venda guarda o vínculo com o orçamento de origem: com venda, o orçamento fica no histórico.
+    const venda = vendas.find((item) => item.orcamentoId === orcamento.id);
+    if (venda) {
+      toast.error(`${orcamento.numero} gerou a venda ${venda.numero} e não pode ser excluído.`);
+      return;
+    }
+    setExcluindo(orcamento);
+  }
+
+  function gerarVenda(orcamento: Orcamento) {
+    setAberturaVenda((numero) => numero + 1);
+    setGerandoVenda(orcamento);
+  }
+
+  const acoes = { aoVisualizar: abrirDetalhe, aoEditar: abrirForm, aoImprimir: setImprimindo, aoExcluir: pedirExclusao };
   const vazio = (
     <ListagemVazia>
       {orcamentos.length === 0 ? "Nenhum orçamento criado ainda." : "Nenhum orçamento encontrado com esses filtros."}
@@ -270,9 +290,11 @@ export function OrcamentosLista() {
         aoFechar={() => setDetalheAberto(false)}
         aoEditar={abrirForm}
         aoImprimir={setImprimindo}
-        aoExcluir={setExcluindo}
+        aoExcluir={pedirExclusao}
         aoMudar={mudar}
+        aoGerarVenda={gerarVenda}
       />
+      <GerarVendaDialog key={aberturaVenda} orcamento={gerandoVenda} aoFechar={() => setGerandoVenda(null)} aoGerada={() => setDetalheAberto(false)} />
       <ConfirmarExclusaoRegistro
         nome={excluindo?.numero ?? null}
         singular="orçamento"

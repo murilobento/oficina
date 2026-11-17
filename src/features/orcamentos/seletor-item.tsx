@@ -34,10 +34,13 @@ export function SeletorItem({
   aberto,
   aoFechar,
   aoEscolher,
+  documento = "orçamento",
 }: {
   aberto: boolean;
   aoFechar: () => void;
   aoEscolher: (item: ItemEscolhido) => void;
+  /** Como o documento aparece nos textos ("orçamento", "venda"). */
+  documento?: string;
 }) {
   const produtos = useProdutosStore((estado) => estado.itens);
   const servicos = useServicosStore((estado) => estado.itens);
@@ -100,7 +103,7 @@ export function SeletorItem({
           </DialogTitle>
           <DialogDescription>
             {cadastrando
-              ? "Cadastro rápido: já fica salvo no cadastro e entra no orçamento."
+              ? `Cadastro rápido: já fica salvo no cadastro e entra ${documento === "venda" ? "na" : "no"} ${documento}.`
               : "Escolha um produto ou serviço do cadastro, ou cadastre um novo."}
           </DialogDescription>
         </DialogHeader>
@@ -171,7 +174,7 @@ export function SeletorItem({
                 Serviço avulso
               </Button>
               <p className="text-muted-foreground col-span-2 text-center text-xs">
-                Avulso vale só para este orçamento e não entra no cadastro.
+                Avulso vale só para {documento === "venda" ? "esta" : "este"} {documento} e não entra no cadastro.
               </p>
             </div>
           </>

@@ -1,8 +1,8 @@
 import { useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CarFront, Plus, Trash2, UserPlus } from "lucide-react";
-import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
+import { CarFront, UserPlus } from "lucide-react";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { CampoTexto, CampoTextarea } from "@/components/layout/campos-form";
@@ -20,8 +20,6 @@ import { useVeiculosStore } from "@/features/veiculos/store";
 import { veiculoEmTexto } from "@/features/veiculos/tipos";
 import { VeiculoRapido } from "@/features/veiculos/veiculo-rapido";
 import {
-  centavosParaTexto,
-  formatarBRL,
   mascararMoeda,
   mascararQuantidade,
   proximoCodigo,
@@ -29,9 +27,9 @@ import {
   textoParaNumero,
 } from "@/lib/numeros";
 
-import { calcularTotais, subtotalItem } from "./calculo";
+import { calcularTotais } from "./calculo";
 import { ResumoTotais } from "./orcamento-partes";
-import { type ItemEscolhido, SeletorItem } from "./seletor-item";
+import { ItensDoDocumento } from "./itens-form";
 import { useOrcamentosStore } from "./store";
 import {
   esquemaOrcamento,
@@ -66,7 +64,6 @@ export function OrcamentoForm({
   const atualizarVeiculo = useVeiculosStore((estado) => estado.atualizar);
   const empresa = useEmpresa();
 
-  const [seletorAberto, setSeletorAberto] = useState(false);
   // Cadastro rápido de cliente: `abertura` troca a key para o formulário abrir limpo.
   const [clienteRapido, setClienteRapido] = useState({ aberto: false, nome: "", abertura: 0 });
   const [veiculoRapido, setVeiculoRapido] = useState({ aberto: false, abertura: 0 });
@@ -80,7 +77,6 @@ export function OrcamentoForm({
       : { ...FORM_VAZIO, validadeDias: String(empresa.validadeOrcamentoDias), observacoes: empresa.condicoesOrcamento },
   });
   const { control, formState } = form;
-  const { fields, append, remove } = useFieldArray({ control, name: "itens" });
 
   const clienteId = useWatch({ control, name: "clienteId" });
   const veiculoId = useWatch({ control, name: "veiculoId" });
@@ -135,18 +131,6 @@ export function OrcamentoForm({
 
   function cadastrarCliente(nome: string) {
     setClienteRapido((atual) => ({ aberto: true, nome, abertura: atual.abertura + 1 }));
-  }
-
-  function adicionarItem(escolhido: ItemEscolhido) {
-    append({
-      id: crypto.randomUUID(),
-      tipo: escolhido.tipo,
-      origemId: escolhido.origemId,
-      descricao: escolhido.descricao,
-      unidade: escolhido.unidade,
-      quantidade: "1",
-      valor: centavosParaTexto(escolhido.valor),
-    });
   }
 
   function trocarTipoDesconto(novo: "valor" | "percentual") {
@@ -329,71 +313,7 @@ export function OrcamentoForm({
               </div>
             </SecaoFormulario>
 
-            <SecaoFormulario titulo="Itens" descricao="Peças e serviços. Preço e quantidade podem ser ajustados neste orçamento.">
-              <div className="flex flex-col gap-3">
-                {fields.map((campo, indice) => {
-                  const tipo = itens[indice]?.tipo ?? campo.tipo;
-                  const subtotal = subtotalItem({
-                    quantidade: textoParaNumero(itens[indice]?.quantidade ?? "") || 0,
-                    valor: textoParaCentavos(itens[indice]?.valor ?? ""),
-                  });
-                  return (
-                    <div key={campo.id} className="bg-card flex flex-col gap-3 rounded-xl border p-3">
-                      <div className="flex items-start gap-2">
-                        <CampoTexto
-                          control={control}
-                          prefixo={PREFIXO}
-                          nome={`itens.${indice}.descricao`}
-                          rotulo={tipo === "servico" ? "Serviço" : "Peça"}
-                          className="min-w-0 flex-1"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="text-muted-foreground mt-6 shrink-0"
-                          aria-label={`Remover item ${indice + 1}`}
-                          onClick={() => remove(indice)}
-                        >
-                          <Trash2 />
-                        </Button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <CampoTexto
-                          control={control}
-                          prefixo={PREFIXO}
-                          nome={`itens.${indice}.quantidade`}
-                          rotulo={`Quantidade (${itens[indice]?.unidade || "UN"})`}
-                          inputMode="decimal"
-                          mascara={mascararQuantidade}
-                        />
-                        <CampoTexto
-                          control={control}
-                          prefixo={PREFIXO}
-                          nome={`itens.${indice}.valor`}
-                          rotulo="Valor unitário (R$)"
-                          inputMode="numeric"
-                          placeholder="0,00"
-                          mascara={mascararMoeda}
-                        />
-                      </div>
-                      <p className="text-muted-foreground text-right text-sm tabular-nums">
-                        Subtotal <span className="text-foreground font-medium">{formatarBRL(subtotal)}</span>
-                      </p>
-                    </div>
-                  );
-                })}
-
-                <Button type="button" variant="outline" onClick={() => setSeletorAberto(true)}>
-                  <Plus /> Adicionar item
-                </Button>
-                {erroItens && (
-                  <p role="alert" className="text-destructive text-sm">
-                    {erroItens}
-                  </p>
-                )}
-              </div>
-            </SecaoFormulario>
+            <ItensDoDocumento control={control} prefixo={PREFIXO} documento="orçamento" erro={erroItens} />
 
             <SecaoFormulario titulo="Desconto e validade">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -479,7 +399,6 @@ export function OrcamentoForm({
           aoFechar={() => setVeiculoRapido((atual) => ({ ...atual, aberto: false }))}
           aoCriado={(id, km) => escolherVeiculo(id, km)}
         />
-        <SeletorItem aberto={seletorAberto} aoFechar={() => setSeletorAberto(false)} aoEscolher={adicionarItem} />
       </SheetContent>
     </Sheet>
   );

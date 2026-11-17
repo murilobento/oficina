@@ -52,7 +52,7 @@ export const ROTULO_STATUS: Record<StatusExibido, string> = {
   enviado: "Enviado",
   aprovado: "Aprovado",
   recusado: "Recusado",
-  convertido: "Virou OS",
+  convertido: "Virou venda",
   vencido: "Vencido",
 };
 
@@ -71,7 +71,7 @@ export function totaisDoOrcamento(orcamento: Pick<Orcamento, "itens" | "desconto
   return calcularTotais(orcamento.itens, orcamento.descontoTipo, orcamento.desconto);
 }
 
-const esquemaItem = z.object({
+export const esquemaItem = z.object({
   id: z.string(),
   tipo: z.enum(["produto", "servico"]),
   origemId: z.string(),
@@ -97,21 +97,27 @@ export const esquemaOrcamento = z
       .refine((valor) => /^\d+$/.test(valor) && Number(valor) >= 1 && Number(valor) <= 90, "Entre 1 e 90 dias."),
     observacoes: z.string().trim().max(500, "No máximo 500 caracteres."),
   })
-  .superRefine((valores, contexto) => {
-    if (valores.descontoTipo === "percentual") {
-      if (textoParaNumero(valores.desconto) > 100) {
-        contexto.addIssue({ code: "custom", path: ["desconto"], message: "O desconto não pode passar de 100%." });
-      }
-      return;
+  .superRefine(validarDesconto);
+
+/** Desconto não pode passar de 100% nem do total dos itens. Serve para orçamento e venda. */
+export function validarDesconto(
+  valores: Pick<OrcamentoFormValores, "itens" | "descontoTipo" | "desconto">,
+  contexto: z.RefinementCtx,
+) {
+  if (valores.descontoTipo === "percentual") {
+    if (textoParaNumero(valores.desconto) > 100) {
+      contexto.addIssue({ code: "custom", path: ["desconto"], message: "O desconto não pode passar de 100%." });
     }
-    const subtotal = valores.itens.reduce(
-      (soma, item) => soma + Math.round(textoParaNumero(item.quantidade) * textoParaCentavos(item.valor)),
-      0,
-    );
-    if (textoParaCentavos(valores.desconto) > subtotal) {
-      contexto.addIssue({ code: "custom", path: ["desconto"], message: "O desconto não pode ser maior que o total dos itens." });
-    }
-  });
+    return;
+  }
+  const subtotal = valores.itens.reduce(
+    (soma, item) => soma + Math.round(textoParaNumero(item.quantidade) * textoParaCentavos(item.valor)),
+    0,
+  );
+  if (textoParaCentavos(valores.desconto) > subtotal) {
+    contexto.addIssue({ code: "custom", path: ["desconto"], message: "O desconto não pode ser maior que o total dos itens." });
+  }
+}
 
 export type OrcamentoFormValores = z.infer<typeof esquemaOrcamento>;
 export type ItemFormValores = OrcamentoFormValores["itens"][number];

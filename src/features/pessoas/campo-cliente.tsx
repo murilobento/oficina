@@ -31,6 +31,7 @@ export function CampoCliente({
   invalido,
   aoMudar,
   aoCadastrar,
+  entidade = "cliente",
 }: {
   id: string;
   /** Id do cliente escolhido ("" = nenhum). */
@@ -40,6 +41,8 @@ export function CampoCliente({
   aoMudar: (id: string) => void;
   /** Chamado com o texto digitado, para o cadastro rápido já vir com o nome. */
   aoCadastrar: (nomeDigitado: string) => void;
+  /** Como a pessoa é chamada nos textos ("cliente", "fornecedor"). */
+  entidade?: string;
 }) {
   const [aberto, setAberto] = useState(false);
   const [busca, setBusca] = useState("");
@@ -74,7 +77,7 @@ export function CampoCliente({
             !escolhido && "text-muted-foreground",
           )}
         >
-          <span className="truncate">{escolhido ? escolhido.nome : "Digite para buscar o cliente"}</span>
+          <span className="truncate">{escolhido ? escolhido.nome : `Digite para buscar o ${entidade}`}</span>
           <ChevronsUpDown className="text-muted-foreground size-4 shrink-0" />
         </Button>
       </PopoverTrigger>
@@ -84,8 +87,8 @@ export function CampoCliente({
           <CommandInput
             value={busca}
             onValueChange={setBusca}
-            placeholder="Nome ou CPF/CNPJ do cliente"
-            aria-label="Buscar cliente"
+            placeholder={`Nome ou CPF/CNPJ do ${entidade}`}
+            aria-label={`Buscar ${entidade}`}
           />
           <CommandList>
             {encontrados.slice(0, MAXIMO_NA_LISTA).map((cliente) => (
@@ -110,7 +113,7 @@ export function CampoCliente({
               </CommandItem>
             ))}
             {encontrados.length === 0 && (
-              <p className="text-muted-foreground py-4 text-center text-sm">Nenhum cliente encontrado.</p>
+              <p className="text-muted-foreground py-4 text-center text-sm">Nenhum {entidade} encontrado.</p>
             )}
             {encontrados.length > MAXIMO_NA_LISTA && (
               <p className="text-muted-foreground py-2 text-center text-xs">Digite mais para refinar a busca.</p>
@@ -128,7 +131,7 @@ export function CampoCliente({
               }}
             >
               <Plus className="size-4" />
-              {busca.trim() ? `Cadastrar "${busca.trim()}"` : "Cadastrar novo cliente"}
+              {busca.trim() ? `Cadastrar "${busca.trim()}"` : `Cadastrar novo ${entidade}`}
             </CommandItem>
           </CommandGroup>
         </Command>
