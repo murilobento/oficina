@@ -104,11 +104,12 @@ export function SearchDialog() {
     <>
       <Button
         onClick={() => handleOpenChange(true)}
-        variant="link"
-        className="text-muted-foreground px-0! font-normal hover:no-underline"
+        variant="ghost"
+        aria-label="Buscar telas"
+        className="text-muted-foreground px-2.5 max-md:size-11 max-md:px-0 md:px-0! hover:bg-transparent"
       >
-        <Search data-icon="inline-start" />
-        Buscar
+        <Search data-icon="inline-start" className="max-md:size-5" />
+        <span className="max-md:sr-only">Buscar</span>
         <kbd className="bg-muted hidden h-5 md:inline-flex items-center gap-1 rounded border px-1.5 text-[10px] font-medium select-none">
           Ctrl K
         </kbd>
@@ -118,7 +119,7 @@ export function SearchDialog() {
           <CommandInput placeholder="Buscar telas…" value={query} onValueChange={setQuery} />
           <CommandList>
             <CommandEmpty>Nada encontrado.</CommandEmpty>
-            {query ? renderGroups(searchItems) : renderGroups(searchItems)}
+            {renderGroups(searchItems)}
           </CommandList>
         </Command>
       </CommandDialog>

@@ -1,3 +1,4 @@
+import { PlacaVeiculo } from "@/components/marca/placa-veiculo";
 import { usePessoas } from "@/features/pessoas/api";
 import { useMemo, useState } from "react";
 
@@ -22,6 +23,7 @@ import { AcoesRegistro, ConfirmarExclusaoRegistro } from "@/components/layout/re
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useOrcamentos } from "@/features/orcamentos/api";
 import { StatusBadge } from "@/features/pessoas/pessoa-partes";
+import { useAbrirQuandoPedido } from "@/lib/acao-novo";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 import { formatarQuantidade } from "@/lib/numeros";
 
@@ -133,6 +135,7 @@ export function VeiculosLista({ abrirId }: { abrirId?: string }) {
     };
   }
 
+  useAbrirQuandoPedido("veiculo", () => abrirForm(null));
   const acoes = { aoVisualizar: abrirDetalhe, aoEditar: abrirForm, aoAlternarAtivo, aoExcluir: pedirExclusao };
   const vazio = (
     <ListagemVazia>
@@ -163,20 +166,18 @@ export function VeiculosLista({ abrirId }: { abrirId?: string }) {
             <div className="flex items-start justify-between gap-2">
               <button
                 type="button"
-                className="-my-1 flex min-h-11 min-w-0 flex-1 flex-col justify-center text-left"
+                className="-my-1 flex min-h-11 min-w-0 flex-1 flex-col items-start justify-center gap-1 text-left"
                 onClick={() => abrirDetalhe(veiculo)}
               >
-                <span className="block truncate font-medium">{veiculo.modelo}</span>
-                <span className="text-muted-foreground block truncate text-sm">
-                  {[veiculo.placa && mascararPlaca(veiculo.placa), veiculo.ano].filter(Boolean).join(" · ")}
-                </span>
+                {veiculo.placa ? <PlacaVeiculo placa={veiculo.placa} /> : <span className="text-muted-foreground text-xs">Sem placa</span>}
+                <span className="block max-w-full truncate font-semibold">{[veiculo.modelo, veiculo.ano].filter(Boolean).join(" · ")}</span>
               </button>
               <AcoesRegistro item={veiculo} nome={veiculo.modelo} {...acoes} />
             </div>
             <p className="text-muted-foreground truncate text-sm">{nomeCliente(veiculo)}</p>
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge ativo={veiculo.ativo} />
-              <span className="text-muted-foreground text-sm">
+              <span className="text-muted-foreground font-mono text-xs">
                 {[veiculo.km > 0 && `${formatarQuantidade(veiculo.km)} km`, ultimaVisita(veiculo) && `visita ${data(ultimaVisita(veiculo))}`]
                   .filter(Boolean)
                   .join(" · ")}

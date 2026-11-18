@@ -61,10 +61,10 @@ function TrocarSenha() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center p-4">
-      <form noValidate onSubmit={salvar} className="flex w-full max-w-sm flex-col gap-6">
-        <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-medium">Trocar senha</h1>
+    <main className="bg-sidebar flex min-h-dvh items-center justify-center p-4">
+      <form noValidate onSubmit={salvar} className="bg-card text-card-foreground border-t-primary flex w-full max-w-sm flex-col gap-6 rounded-md border-t-4 p-6 shadow-lg">
+        <div className="space-y-1">
+          <h1 className="font-display text-3xl leading-none font-extrabold uppercase">Trocar senha</h1>
           <p className="text-muted-foreground text-sm">
             {eu?.trocarSenha
               ? 'No primeiro acesso a senha provisória precisa ser trocada.'

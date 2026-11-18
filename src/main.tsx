@@ -3,9 +3,8 @@ import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import "@fontsource-variable/geist";
+import "@fontsource-variable/archivo/wdth.css";
 import "@fontsource-variable/geist-mono";
-import "@fontsource-variable/inter";
 
 import { AtualizacaoApp } from "@/components/layout/atualizacao-app";
 import { AvisoSemConexao } from "@/components/layout/aviso-sem-conexao";

@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 
 import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
 
+import { PlacaVeiculo } from "@/components/marca/placa-veiculo";
+
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,8 +34,8 @@ export function ListagemCabecalho({
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="text-2xl font-semibold tracking-tight">{titulo}</h1>
-        <p className="text-muted-foreground text-sm">{descricao}</p>
+        <h1 className="text-3xl leading-none font-extrabold">{titulo}</h1>
+        <p className="text-muted-foreground mt-1 text-sm">{descricao}</p>
       </div>
       {aoNovo && (
         <Button className="shrink-0" aria-label={rotuloNovo} onClick={aoNovo}>
@@ -47,7 +49,7 @@ export function ListagemCabecalho({
 
 /** Linha de busca e filtros: busca em cima e filtros lado a lado no celular; tudo em linha no computador. */
 export function ListagemFiltros({ children }: { children: ReactNode }) {
-  return <div className="flex flex-col gap-3 @2xl:flex-row @2xl:items-center">{children}</div>;
+  return <div className="bg-background sticky top-14 z-20 -mx-4 flex flex-col gap-3 px-4 py-2 md:top-12 md:-mx-6 md:px-6 @2xl:flex-row @2xl:items-center">{children}</div>;
 }
 
 export function ListagemBusca({
@@ -120,12 +122,61 @@ export function ListagemCartoes({ children }: { children: ReactNode }) {
 }
 
 export function ListagemCartao({ children }: { children: ReactNode }) {
-  return <li className="bg-card flex min-w-0 flex-col gap-3 rounded-xl border p-4 uppercase [&_button]:uppercase">{children}</li>;
+  return <li className="bg-card flex min-w-0 flex-col gap-3 rounded-md border p-4 uppercase [&_button]:uppercase">{children}</li>;
+}
+
+/**
+ * Cartão de documento (orçamento, venda, compra): cabeçalho com código e status, corpo com
+ * cliente e detalhe (e placa, se houver) e rodapé com o valor em destaque e a data.
+ */
+export function ListagemCartaoDocumento({
+  codigo,
+  status,
+  acoes,
+  titulo,
+  detalhe,
+  placa,
+  valor,
+  data,
+  aoAbrir,
+}: {
+  codigo: string;
+  status: ReactNode;
+  acoes: ReactNode;
+  titulo: string;
+  detalhe: string;
+  placa?: string;
+  valor: string;
+  data: string;
+  aoAbrir: () => void;
+}) {
+  return (
+    <li className="bg-card flex min-w-0 flex-col overflow-hidden rounded-md border uppercase [&_button]:uppercase">
+      <div className="flex items-center justify-between gap-2 border-b py-1 pr-1 pl-3">
+        <span className="font-mono text-sm font-semibold">{codigo}</span>
+        <div className="flex min-w-0 items-center gap-1">
+          {status}
+          {acoes}
+        </div>
+      </div>
+      <button type="button" className="flex min-h-14 items-center justify-between gap-3 px-3 py-2.5 text-left" onClick={aoAbrir}>
+        <span className="min-w-0">
+          <span className="block truncate font-semibold">{titulo}</span>
+          <span className="text-muted-foreground block truncate text-sm">{detalhe}</span>
+        </span>
+        {placa && <PlacaVeiculo placa={placa} />}
+      </button>
+      <div className="bg-muted/50 flex items-baseline justify-between px-3 py-2">
+        <span className="font-mono text-lg font-bold tabular-nums">{valor}</span>
+        <span className="text-muted-foreground font-mono text-xs">{data}</span>
+      </div>
+    </li>
+  );
 }
 
 /** Moldura da tabela, quando há largura para ela. Colunas secundárias usam "hidden @6xl:table-cell". */
 export function ListagemTabela({ children }: { children: ReactNode }) {
-  return <div className="bg-card hidden overflow-x-auto rounded-xl border @4xl:block">{children}</div>;
+  return <div className="bg-card hidden overflow-x-auto rounded-md border @4xl:block">{children}</div>;
 }
 
 export function ListagemVazia({ children }: { children: ReactNode }) {

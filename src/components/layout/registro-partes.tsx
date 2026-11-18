@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { Eye, MoreHorizontal, Pencil, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 
+import { RotuloSecao } from "@/components/marca/rotulo-secao";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -112,8 +113,8 @@ export function SecaoFormulario({
 }) {
   return (
     <section className="flex flex-col gap-4">
-      <div>
-        <h3 className="text-sm font-semibold">{titulo}</h3>
+      <div className="flex flex-col gap-1">
+        <RotuloSecao>{titulo}</RotuloSecao>
         {descricao && <p className="text-muted-foreground text-sm">{descricao}</p>}
       </div>
       {children}
@@ -125,7 +126,7 @@ export function SecaoFormulario({
 export function SecaoDados({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-3">
-      <h3 className="text-sm font-semibold">{titulo}</h3>
+      <RotuloSecao>{titulo}</RotuloSecao>
       <dl className="grid gap-4 sm:grid-cols-2">{children}</dl>
     </section>
   );

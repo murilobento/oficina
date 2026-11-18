@@ -19,6 +19,7 @@ import {
 } from "@/components/layout/listagem";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useAbrirQuandoPedido } from "@/lib/acao-novo";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 
 import { mascararDocumento, mascararTelefone } from "./documento";
@@ -131,6 +132,7 @@ export function PessoasLista({ config }: { config: EntidadeConfig }) {
     setExcluindo(null);
   }
 
+  useAbrirQuandoPedido(config.singular === "cliente" ? "cliente" : "fornecedor", () => abrirForm(null));
   const acoes = { aoVisualizar: abrirDetalhe, aoEditar: abrirForm, aoAlternarAtivo, aoExcluir: pedirExclusao };
   const vazio = (
     <ListagemVazia>

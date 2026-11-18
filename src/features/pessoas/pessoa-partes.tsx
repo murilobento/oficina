@@ -1,4 +1,6 @@
-import { Eye, MoreHorizontal, Pencil, Trash2, UserCheck, UserX } from "lucide-react";
+import { Check, Eye, MoreHorizontal, Pause, Pencil, Trash2, UserCheck, UserX } from "lucide-react";
+
+import { FitaStatus } from "@/components/marca/fita-status";
 
 import {
   AlertDialog,
@@ -10,7 +12,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -19,7 +20,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
 
 import type { EntidadeConfig } from "./entidades";
 import type { Pessoa } from "./tipos";
@@ -32,20 +32,7 @@ export type AcoesPessoaProps = {
 };
 
 export function StatusBadge({ ativo }: { ativo: boolean }) {
-  return (
-    <Badge
-      variant="outline"
-      className={cn(
-        "gap-1.5 border px-2 py-1 font-medium",
-        ativo
-          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-          : "border-border bg-muted text-muted-foreground",
-      )}
-    >
-      <span className={cn("size-1.5 rounded-full", ativo ? "bg-emerald-500" : "bg-muted-foreground/60")} />
-      {ativo ? "Ativo" : "Inativo"}
-    </Badge>
-  );
+  return ativo ? <FitaStatus tom="ok" icone={Check}>Ativo</FitaStatus> : <FitaStatus tom="neutro" icone={Pause}>Inativo</FitaStatus>;
 }
 
 /** Menu de ações rápidas de um cadastro, usado na tabela e nos cartões da listagem. */

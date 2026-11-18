@@ -1,6 +1,7 @@
-import { KeyRound, MoreHorizontal, Pencil, UserCheck, UserX } from "lucide-react";
+import { Ban, Check, KeyRound, type LucideIcon, MoreHorizontal, Pencil, UserCheck, UserX } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { FitaStatus, type TomStatus } from "@/components/marca/fita-status";
+
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,10 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
 
 import type { Usuario } from "./api";
-import { statusMeta, type UsuarioStatus } from "./data";
+import type { UsuarioStatus } from "./data";
 
 export type AcoesUsuarioProps = {
   aoEditar: (usuario: Usuario) => void;
@@ -20,13 +20,18 @@ export type AcoesUsuarioProps = {
   aoAlternarAtivo: (usuario: Usuario) => void;
 };
 
+const FITA_USUARIO: Record<UsuarioStatus, { tom: TomStatus; icone: LucideIcon }> = {
+  Ativo: { tom: "ok", icone: Check },
+  "Senha provisória": { tom: "atencao", icone: KeyRound },
+  Desativado: { tom: "neutro", icone: Ban },
+};
+
 export function StatusBadge({ status }: { status: UsuarioStatus }) {
-  const meta = statusMeta[status];
+  const { tom, icone } = FITA_USUARIO[status];
   return (
-    <Badge className={cn("gap-1.5 border px-2 py-1 font-medium", meta.badgeClass)} variant="outline">
-      <span className={cn("size-1.5 rounded-full", meta.dotClass)} />
+    <FitaStatus tom={tom} icone={icone}>
       {status}
-    </Badge>
+    </FitaStatus>
   );
 }
 

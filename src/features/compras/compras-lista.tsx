@@ -10,7 +10,7 @@ import {
   Listagem,
   ListagemBusca,
   ListagemCabecalho,
-  ListagemCartao,
+  ListagemCartaoDocumento,
   ListagemCartoes,
   ListagemFiltro,
   ListagemFiltros,
@@ -20,6 +20,7 @@ import {
   ListagemVazia,
 } from "@/components/layout/listagem";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useAbrirQuandoPedido } from "@/lib/acao-novo";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 import { useEnvioUnico } from "@/lib/envio-unico";
 import { formatarBRL } from "@/lib/numeros";
@@ -68,6 +69,12 @@ export function ComprasLista() {
   }, [compras, fornecedores, busca, filtroStatus]);
 
   const { visiveis, paginaAtual, totalPaginas } = paginar(filtrados, pagina);
+
+  useAbrirQuandoPedido("compra", () => {
+    if (!podeEditar) return;
+    setAbertura((numero) => numero + 1);
+    setFormAberto(true);
+  });
 
   function abrirDetalhe(compra: Compra) {
     setVisualizandoId(compra.id);
@@ -123,20 +130,17 @@ export function ComprasLista() {
 
       <ListagemCartoes>
         {visiveis.map((compra) => (
-          <ListagemCartao key={compra.id}>
-            <div className="flex items-start justify-between gap-2">
-              <button type="button" className="-my-1 flex min-h-11 min-w-0 flex-1 flex-col justify-center text-left" onClick={() => abrirDetalhe(compra)}>
-                <span className="block truncate font-medium">{compra.numero}</span>
-                <span className="text-muted-foreground block truncate text-sm">{nomeFornecedor(compra)}</span>
-              </button>
-              <AcoesDocumento item={compra} {...acoes} />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusDocumentoBadge status={compra.status} concluida="Recebida" />
-              <span className="text-muted-foreground text-sm">{[data(compra.criadoEm), compra.notaFiscal && `NF ${compra.notaFiscal}`].filter(Boolean).join(" · ")}</span>
-            </div>
-            <p className="font-medium tabular-nums">{formatarBRL(totaisDaCompra(compra).total)}</p>
-          </ListagemCartao>
+          <ListagemCartaoDocumento
+            key={compra.id}
+            codigo={compra.numero}
+            status={<StatusDocumentoBadge status={compra.status} concluida="Recebida" />}
+            acoes={<AcoesDocumento item={compra} {...acoes} />}
+            titulo={nomeFornecedor(compra)}
+            detalhe={compra.notaFiscal ? `NF ${compra.notaFiscal}` : "Sem nota fiscal"}
+            valor={formatarBRL(totaisDaCompra(compra).total)}
+            data={data(compra.criadoEm)}
+            aoAbrir={() => abrirDetalhe(compra)}
+          />
         ))}
         {visiveis.length === 0 && <li className="col-span-full">{vazio}</li>}
       </ListagemCartoes>

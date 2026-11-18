@@ -1,8 +1,11 @@
 import {
+  Car,
+  FileText,
   Home,
   type LucideIcon,
   Package,
   Settings,
+  Receipt,
   Users,
   Wrench,
 } from "lucide-react";
@@ -149,4 +152,34 @@ export function findModuleByPath(pathname: string, modulos: NavModule[] = navMod
 
 export function isSamePath(url: string, pathname: string): boolean {
   return pathname === url || pathname.startsWith(`${url}/`);
+}
+
+/** Atalhos da barra inferior do celular, na ordem de prioridade. O Início sempre entra; os demais pedem permissão. */
+const ATALHOS_CANDIDATOS: { id: string; titulo: string; url: string; icone: LucideIcon; permissao?: Permissao }[] = [
+  { id: "inicio", titulo: "Início", url: "/", icone: Home },
+  { id: "orcamentos", titulo: "Orçam.", url: "/orcamentos", icone: FileText, permissao: "orcamentos.ver" },
+  { id: "vendas", titulo: "Vendas", url: "/vendas", icone: Receipt, permissao: "vendas.ver" },
+  { id: "estoque", titulo: "Estoque", url: "/estoque/movimentacoes", icone: Package, permissao: "estoque.ver" },
+  { id: "clientes", titulo: "Clientes", url: "/clientes", icone: Users, permissao: "clientes.ver" },
+];
+
+export type AtalhoInferior = (typeof ATALHOS_CANDIDATOS)[number];
+
+export function atalhosInferiores(permissoes: readonly Permissao[] | null): AtalhoInferior[] {
+  return ATALHOS_CANDIDATOS.filter((a) => !a.permissao || permissoes === null || permissoes.includes(a.permissao)).slice(0, 3);
+}
+
+/** Ações do botão ＋ Novo. `chave` liga a ação à lista que abre o formulário (ver src/lib/acao-novo.ts). */
+const ACOES_NOVO: { id: string; titulo: string; url: string; icone: LucideIcon; permissoes: Permissao[] }[] = [
+  { id: "orcamento", titulo: "Novo orçamento", url: "/orcamentos", icone: FileText, permissoes: ["orcamentos.ver", "orcamentos.editar"] },
+  { id: "venda", titulo: "Nova venda", url: "/vendas", icone: Receipt, permissoes: ["vendas.ver", "vendas.editar"] },
+  { id: "compra", titulo: "Nova compra", url: "/compras", icone: Package, permissoes: ["compras.ver", "compras.editar", "valores.ver"] },
+  { id: "cliente", titulo: "Novo cliente", url: "/clientes", icone: Users, permissoes: ["clientes.ver", "clientes.editar"] },
+  { id: "veiculo", titulo: "Novo veículo", url: "/veiculos", icone: Car, permissoes: ["veiculos.ver", "veiculos.editar"] },
+];
+
+export type AcaoNovo = (typeof ACOES_NOVO)[number];
+
+export function acoesNovoPermitidas(permissoes: readonly Permissao[] | null): AcaoNovo[] {
+  return ACOES_NOVO.filter((a) => permissoes === null || a.permissoes.every((p) => permissoes.includes(p)));
 }

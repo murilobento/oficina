@@ -1,4 +1,6 @@
-import { Ban, Eye, MoreHorizontal } from "lucide-react";
+import { Ban, Check, Eye, MoreHorizontal } from "lucide-react";
+
+import { FitaStatus } from "@/components/marca/fita-status";
 
 import {
   AlertDialog,
@@ -10,18 +12,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
 
 /** Documentos de venda e compra: lançados já valendo, e só podem ser cancelados (não editados). */
 export type StatusDocumento = "concluida" | "cancelada";
-
-const COR: Record<StatusDocumento, string> = {
-  concluida: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-  cancelada: "border-destructive/20 bg-destructive/10 text-destructive",
-};
 
 export const FILTRO_STATUS_DOCUMENTO = (concluida: string) => [
   { valor: "todos", texto: "Todos" },
@@ -30,10 +25,10 @@ export const FILTRO_STATUS_DOCUMENTO = (concluida: string) => [
 ];
 
 export function StatusDocumentoBadge({ status, concluida }: { status: StatusDocumento; concluida: string }) {
-  return (
-    <Badge variant="outline" className={cn("px-2 py-1 font-medium", COR[status])}>
-      {status === "concluida" ? concluida : "Cancelada"}
-    </Badge>
+  return status === "concluida" ? (
+    <FitaStatus tom="ok" icone={Check}>{concluida}</FitaStatus>
+  ) : (
+    <FitaStatus tom="erro" icone={Ban}>Cancelada</FitaStatus>
   );
 }
 

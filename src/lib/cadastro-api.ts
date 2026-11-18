@@ -11,13 +11,13 @@ export function criarCadastroApi<T extends { id: string }, Dados>(recurso: strin
   const chave = [recurso] as const;
   const VAZIO: T[] = [];
 
-  const useConsulta = () => useQuery({ queryKey: chave, queryFn: () => api<T[]>(`/${recurso}`) });
+  const useConsulta = (habilitado = true) => useQuery({ queryKey: chave, queryFn: () => api<T[]>(`/${recurso}`), enabled: habilitado });
 
   return {
     /** Consulta completa (carregando e erro), para as listagens. */
     useConsulta,
     /** Só a lista (vazia enquanto carrega). */
-    useLista: (): T[] => useConsulta().data ?? VAZIO,
+    useLista: (habilitado = true): T[] => useConsulta(habilitado).data ?? VAZIO,
     /** Lista já carregada no cache, para código que não é componente (regras de venda e compra). */
     doCache: (): T[] => queryClient.getQueryData<T[]>(chave) ?? VAZIO,
     useSalvar: () => {

@@ -11,8 +11,6 @@
  * Others are flexible and can use any persistence.
  */
 
-import { fontKeys } from "@/lib/fonts/registry";
-
 import {
   CONTENT_LAYOUT_VALUES,
   NAVBAR_STYLE_VALUES,
@@ -71,8 +69,8 @@ export const PREFERENCE_REGISTRY = {
   }),
 
   font: definePreference({
-    values: fontKeys,
-    defaultValue: "geist",
+    values: ["archivo"] as const,
+    defaultValue: "archivo",
     persistence: "client-cookie",
     attribute: "data-font",
   }),

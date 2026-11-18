@@ -279,7 +279,7 @@ export function PessoaForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <Field className="gap-1.5 sm:col-span-2">
             <FieldLabel id="pessoa-tipo-rotulo">Tipo de pessoa</FieldLabel>
-            <div role="radiogroup" aria-labelledby="pessoa-tipo-rotulo" className="flex flex-wrap gap-2">
+            <div role="radiogroup" aria-labelledby="pessoa-tipo-rotulo" className="grid grid-cols-2 gap-2">
               {(["PF", "PJ"] as const).map((opcao) => (
                 <Button
                   key={opcao}
@@ -287,6 +287,7 @@ export function PessoaForm({
                   role="radio"
                   aria-checked={tipo === opcao}
                   variant={tipo === opcao ? "default" : "outline"}
+                  className="min-w-0"
                   onClick={() => trocarTipo(opcao)}
                 >
                   {opcao === "PF" ? <User /> : <BriefcaseBusiness />}

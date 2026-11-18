@@ -14,11 +14,12 @@ import {
   ListagemTabela,
   ListagemVazia,
 } from "@/components/layout/listagem";
-import { Badge } from "@/components/ui/badge";
+import { ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+
+import { FitaStatus } from "@/components/marca/fita-status";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 import { formatarQuantidade } from "@/lib/numeros";
-import { cn } from "@/lib/utils";
 
 import { useMovimentos } from "@/features/estoque/api";
 import { type Movimento, ROTULO_ORIGEM } from "./tipos";
@@ -37,18 +38,10 @@ const dataHora = (valor: string) =>
   new Date(valor).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
 function TipoBadge({ tipo }: { tipo: Movimento["tipo"] }) {
-  return (
-    <Badge
-      variant="outline"
-      className={cn(
-        "px-2 py-1 font-medium",
-        tipo === "entrada"
-          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-          : "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400",
-      )}
-    >
-      {tipo === "entrada" ? "Entrada" : "Saída"}
-    </Badge>
+  return tipo === "entrada" ? (
+    <FitaStatus tom="ok" icone={ArrowDownToLine}>Entrada</FitaStatus>
+  ) : (
+    <FitaStatus tom="atencao" icone={ArrowUpFromLine}>Saída</FitaStatus>
   );
 }
 

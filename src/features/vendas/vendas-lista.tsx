@@ -10,7 +10,7 @@ import {
   Listagem,
   ListagemBusca,
   ListagemCabecalho,
-  ListagemCartao,
+  ListagemCartaoDocumento,
   ListagemCartoes,
   ListagemFiltro,
   ListagemFiltros,
@@ -20,6 +20,7 @@ import {
   ListagemVazia,
 } from "@/components/layout/listagem";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useAbrirQuandoPedido } from "@/lib/acao-novo";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 import { useEnvioUnico } from "@/lib/envio-unico";
 import { formatarBRL } from "@/lib/numeros";
@@ -68,6 +69,12 @@ export function VendasLista() {
   }, [vendas, clientes, busca, filtroStatus, filtroPagamento]);
 
   const { visiveis, paginaAtual, totalPaginas } = paginar(filtrados, pagina);
+
+  useAbrirQuandoPedido("venda", () => {
+    if (!podeEditar) return;
+    setAbertura((numero) => numero + 1);
+    setFormAberto(true);
+  });
 
   function abrirDetalhe(venda: Venda) {
     setVisualizandoId(venda.id);
@@ -123,20 +130,17 @@ export function VendasLista() {
 
       <ListagemCartoes>
         {visiveis.map((venda) => (
-          <ListagemCartao key={venda.id}>
-            <div className="flex items-start justify-between gap-2">
-              <button type="button" className="-my-1 flex min-h-11 min-w-0 flex-1 flex-col justify-center text-left" onClick={() => abrirDetalhe(venda)}>
-                <span className="block truncate font-medium">{venda.numero}</span>
-                <span className="text-muted-foreground block truncate text-sm">{nomeCliente(venda)}</span>
-              </button>
-              <AcoesDocumento item={venda} {...acoes} />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusDocumentoBadge status={venda.status} concluida="Concluída" />
-              <span className="text-muted-foreground text-sm">{data(venda.criadoEm)} · {rotuloPagamento(venda.formaPagamento)}</span>
-            </div>
-            <p className="font-medium tabular-nums">{formatarBRL(totaisDaVenda(venda).total)}</p>
-          </ListagemCartao>
+          <ListagemCartaoDocumento
+            key={venda.id}
+            codigo={venda.numero}
+            status={<StatusDocumentoBadge status={venda.status} concluida="Concluída" />}
+            acoes={<AcoesDocumento item={venda} {...acoes} />}
+            titulo={nomeCliente(venda)}
+            detalhe={rotuloPagamento(venda.formaPagamento)}
+            valor={formatarBRL(totaisDaVenda(venda).total)}
+            data={data(venda.criadoEm)}
+            aoAbrir={() => abrirDetalhe(venda)}
+          />
         ))}
         {visiveis.length === 0 && <li className="col-span-full">{vazio}</li>}
       </ListagemCartoes>

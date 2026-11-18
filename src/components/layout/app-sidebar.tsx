@@ -108,7 +108,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       isActive={estaAtivo(modulo)}
                       onClick={() => aoEscolherModulo(modulo)}
                       aria-label={modulo.title}
-                      className="px-2"
+                      className="relative px-2 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground"
                     >
                       <modulo.icon />
                       <span className="sr-only">{modulo.title}</span>
@@ -126,8 +126,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {/* h-12 = mesma altura da barra superior, para as duas linhas de borda se encontrarem. */}
         <SidebarHeader className="h-12 shrink-0 justify-center border-b py-0">
           <div className="flex min-w-0 flex-col px-2 leading-tight">
-            <span className="text-muted-foreground truncate text-xs">{empresa.nomeFantasia}</span>
-            <span className="truncate text-base font-semibold">{moduloAberto.title}</span>
+            <span className="text-sidebar-foreground/70 truncate text-xs">{empresa.nomeFantasia}</span>
+            <span className="truncate text-lg font-extrabold tracking-wide uppercase [font-stretch:75%]">{moduloAberto.title}</span>
           </div>
         </SidebarHeader>
         <SidebarContent>

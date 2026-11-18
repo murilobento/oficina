@@ -4,6 +4,12 @@ import { LOGIN_ATIVO, useSessao } from "@/features/auth/sessao";
 
 import { filtrarModulos, navModules, permissaoDaRota } from "./sidebar-items";
 
+/** Permissões de quem está logado; nulo quando o login está desativado (desenvolvimento: tudo liberado). */
+export function usePermissoes() {
+  const permissoes = useSessao((estado) => estado.eu?.permissoes ?? null);
+  return LOGIN_ATIVO ? (permissoes ?? []) : null;
+}
+
 /** Os módulos do menu que o funcionário logado pode ver. */
 export function useModulosPermitidos() {
   const permissoes = useSessao((estado) => estado.eu?.permissoes ?? null);

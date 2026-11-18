@@ -1,6 +1,6 @@
-import { Eye, MoreHorizontal, Pencil, Printer, Trash2 } from "lucide-react";
+import { Check, Clock, Eye, type LucideIcon, MoreHorizontal, Pencil, Printer, ReceiptText, Send, Trash2, X } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { FitaStatus, type TomStatus } from "@/components/marca/fita-status";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,20 +15,21 @@ import { cn } from "@/lib/utils";
 import type { Totais } from "./calculo";
 import { type Orcamento, podeEditar, ROTULO_STATUS, type StatusExibido } from "./tipos";
 
-const COR_STATUS: Record<StatusExibido, string> = {
-  rascunho: "border-border bg-muted text-muted-foreground",
-  enviado: "border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-400",
-  aprovado: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-  recusado: "border-destructive/20 bg-destructive/10 text-destructive",
-  convertido: "border-violet-500/20 bg-violet-500/10 text-violet-700 dark:text-violet-400",
-  vencido: "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+const FITA: Record<StatusExibido, { tom: TomStatus; icone: LucideIcon }> = {
+  rascunho: { tom: "neutro", icone: Pencil },
+  enviado: { tom: "info", icone: Send },
+  aprovado: { tom: "ok", icone: Check },
+  recusado: { tom: "erro", icone: X },
+  convertido: { tom: "sinal", icone: ReceiptText },
+  vencido: { tom: "atencao", icone: Clock },
 };
 
 export function StatusOrcamentoBadge({ status }: { status: StatusExibido }) {
+  const { tom, icone } = FITA[status];
   return (
-    <Badge variant="outline" className={cn("px-2 py-1 font-medium", COR_STATUS[status])}>
+    <FitaStatus tom={tom} icone={icone}>
       {ROTULO_STATUS[status]}
-    </Badge>
+    </FitaStatus>
   );
 }
 
@@ -88,8 +89,8 @@ export function ResumoTotais({ totais, className }: { totais: Totais; className?
       <Linha rotulo="Mão de obra" valor={formatarBRL(totais.maoDeObra)} />
       {totais.desconto > 0 && <Linha rotulo="Desconto" valor={`− ${formatarBRL(totais.desconto)}`} />}
       <div className="mt-1 flex items-baseline justify-between gap-4 border-t pt-2">
-        <dt className="font-semibold">Total</dt>
-        <dd className="text-lg font-semibold tabular-nums">{formatarBRL(totais.total)}</dd>
+        <dt className="font-display text-xs font-bold tracking-widest uppercase">Total</dt>
+        <dd className="font-mono text-2xl font-bold tabular-nums">{formatarBRL(totais.total)}</dd>
       </div>
     </dl>
   );
@@ -99,7 +100,7 @@ function Linha({ rotulo, valor }: { rotulo: string; valor: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
       <dt className="text-muted-foreground">{rotulo}</dt>
-      <dd className="tabular-nums">{valor}</dd>
+      <dd className="font-mono tabular-nums">{valor}</dd>
     </div>
   );
 }

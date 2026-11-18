@@ -11,7 +11,7 @@ import {
   Listagem,
   ListagemBusca,
   ListagemCabecalho,
-  ListagemCartao,
+  ListagemCartaoDocumento,
   ListagemCartoes,
   ListagemFiltro,
   ListagemFiltros,
@@ -23,6 +23,7 @@ import {
 import { ConfirmarExclusaoRegistro } from "@/components/layout/registro-partes";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { veiculoEmTexto } from "@/features/veiculos/tipos";
+import { useAbrirQuandoPedido } from "@/lib/acao-novo";
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 import { useEnvioUnico } from "@/lib/envio-unico";
 import { formatarBRL } from "@/lib/numeros";
@@ -183,6 +184,7 @@ export function OrcamentosLista() {
     setGerandoVenda(orcamento);
   }
 
+  useAbrirQuandoPedido("orcamento", () => podeEditar && abrirForm(null));
   const acoes = { aoVisualizar: abrirDetalhe, aoEditar: abrirForm, aoImprimir: gerarPdf, aoExcluir: pedirExclusao };
   const vazio = (
     <ListagemVazia>
@@ -224,26 +226,17 @@ export function OrcamentosLista() {
 
       <ListagemCartoes>
         {visiveis.map((orcamento) => (
-          <ListagemCartao key={orcamento.id}>
-            <div className="flex items-start justify-between gap-2">
-              <button
-                type="button"
-                className="-my-1 flex min-h-11 min-w-0 flex-1 flex-col justify-center text-left"
-                onClick={() => abrirDetalhe(orcamento)}
-              >
-                <span className="block truncate font-medium">{nomeCliente(orcamento)}</span>
-                <span className="text-muted-foreground block truncate text-sm">
-                  {orcamento.numero} · {dataCurta(orcamento.criadoEm)}
-                </span>
-              </button>
-              <AcoesOrcamento orcamento={orcamento} {...acoes} />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusOrcamentoBadge status={statusExibido(orcamento)} />
-              <span className="text-sm font-medium tabular-nums">{formatarBRL(totaisDoOrcamento(orcamento).total)}</span>
-            </div>
-            <p className="text-muted-foreground text-sm">{textoVeiculo(orcamento)}</p>
-          </ListagemCartao>
+          <ListagemCartaoDocumento
+            key={orcamento.id}
+            codigo={orcamento.numero}
+            status={<StatusOrcamentoBadge status={statusExibido(orcamento)} />}
+            acoes={<AcoesOrcamento orcamento={orcamento} {...acoes} />}
+            titulo={nomeCliente(orcamento)}
+            detalhe={textoVeiculo(orcamento)}
+            valor={formatarBRL(totaisDoOrcamento(orcamento).total)}
+            data={dataCurta(orcamento.criadoEm)}
+            aoAbrir={() => abrirDetalhe(orcamento)}
+          />
         ))}
         {visiveis.length === 0 && <li className="col-span-full">{vazio}</li>}
       </ListagemCartoes>
