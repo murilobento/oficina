@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { Home } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 
 import {
@@ -17,7 +18,8 @@ import {
 } from "@/components/ui/sidebar";
 import { LogoEmpresa } from "@/features/empresa/logo-empresa";
 import { useEmpresa } from "@/features/empresa/api";
-import { findModuleByPath, type NavModule, navModules } from "@/navigation/sidebar-items";
+import { useModulosPermitidos } from "@/navigation/acesso";
+import { findModuleByPath, type NavModule } from "@/navigation/sidebar-items";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
 import { useSessao } from "@/features/auth/sessao";
@@ -27,7 +29,7 @@ import { NavUser } from "./nav-user";
 // Funcionário de exemplo enquanto o login não está ativo (VITE_LOGIN_ATIVO).
 const USUARIO_EXEMPLO = { name: "Funcionário de exemplo", email: "login ainda não ativado" };
 
-const PRIMEIRO_MODULO_COM_PAINEL = navModules.find((module) => module.groups) as NavModule;
+const MODULO_VAZIO: NavModule = { id: "vazio", title: "Menu", icon: Home, groups: [] };
 
 /**
  * Menu em dois níveis: faixa de ícones com os módulos à esquerda e,
@@ -41,14 +43,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const empresa = useEmpresa();
   const eu = useSessao((estado) => estado.eu);
   const { setOpen, setOpenMobile } = useSidebar();
+  const modulos = useModulosPermitidos();
+  const primeiroComPainel = modulos.find((module) => module.groups) ?? MODULO_VAZIO;
 
   // O painel mostra o módulo clicado; ao trocar de tela, volta a mostrar o módulo da tela atual.
-  const moduloDaRota = findModuleByPath(pathname);
+  const moduloDaRota = findModuleByPath(pathname, modulos);
   const [escolha, setEscolha] = useState<{ modulo: NavModule; rota: string } | null>(null);
   const moduloAberto =
     escolha && escolha.rota === pathname
       ? escolha.modulo
-      : (moduloDaRota ?? escolha?.modulo ?? PRIMEIRO_MODULO_COM_PAINEL);
+      : (moduloDaRota ?? escolha?.modulo ?? primeiroComPainel);
 
   // No celular o menu é uma gaveta: fecha sozinha ao trocar de tela.
   useEffect(() => {
@@ -70,7 +74,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // se ele não abriu nenhum nesta tela, o módulo da tela atual.
   const escolhaValida = escolha && escolha.rota === pathname ? escolha.modulo : undefined;
   const moduloMarcadoId =
-    escolhaValida?.id ?? navModules.find((modulo) => modulo.url === pathname)?.id ?? moduloDaRota?.id;
+    escolhaValida?.id ?? modulos.find((modulo) => modulo.url === pathname)?.id ?? moduloDaRota?.id;
   const estaAtivo = (modulo: NavModule) => modulo.id === moduloMarcadoId;
 
   return (
@@ -97,7 +101,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroup>
             <SidebarGroupContent className="px-0">
               <SidebarMenu>
-                {navModules.map((modulo) => (
+                {modulos.map((modulo) => (
                   <SidebarMenuItem key={modulo.id}>
                     <SidebarMenuButton
                       tooltip={{ children: modulo.title, hidden: false }}

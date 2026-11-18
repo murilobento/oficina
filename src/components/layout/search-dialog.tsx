@@ -16,7 +16,8 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { navModules } from "@/navigation/sidebar-items";
+import { useModulosPermitidos } from "@/navigation/acesso";
+import type { NavModule } from "@/navigation/sidebar-items";
 
 type SearchItem = {
   id: string;
@@ -26,19 +27,20 @@ type SearchItem = {
   icon?: LucideIcon;
 };
 
-// Só entram na busca as telas que já existem (itens com endereço).
-const searchItems: SearchItem[] = navModules.flatMap((module) => {
-  if (module.url) {
-    return [{ id: module.id, group: "Geral", label: module.title, url: module.url, icon: module.icon }];
-  }
-  return (module.groups ?? []).flatMap((group) =>
-    group.items.flatMap((item) =>
-      item.url ? [{ id: item.id, group: module.title, label: item.title, url: item.url, icon: module.icon }] : [],
-    ),
-  );
-});
+// Só entram na busca as telas que já existem (itens com endereço) e que a pessoa pode abrir.
+function montarItens(modulos: NavModule[]): SearchItem[] {
+  return modulos.flatMap((module) => {
+    if (module.url) {
+      return [{ id: module.id, group: "Geral", label: module.title, url: module.url, icon: module.icon }];
+    }
+    return (module.groups ?? []).flatMap((group) =>
+      group.items.flatMap((item) =>
+        item.url ? [{ id: item.id, group: module.title, label: item.title, url: item.url, icon: module.icon }] : [],
+      ),
+    );
+  });
+}
 
-const recommendations = searchItems;
 
 function groupBy(items: SearchItem[]) {
   const groups = [...new Set(items.map((item) => item.group))];
@@ -52,6 +54,8 @@ export function SearchDialog() {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const navigate = useNavigate();
+  const modulos = useModulosPermitidos();
+  const searchItems = React.useMemo(() => montarItens(modulos), [modulos]);
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -114,7 +118,7 @@ export function SearchDialog() {
           <CommandInput placeholder="Buscar telas…" value={query} onValueChange={setQuery} />
           <CommandList>
             <CommandEmpty>Nada encontrado.</CommandEmpty>
-            {query ? renderGroups(searchItems) : renderGroups(recommendations)}
+            {query ? renderGroups(searchItems) : renderGroups(searchItems)}
           </CommandList>
         </Command>
       </CommandDialog>
