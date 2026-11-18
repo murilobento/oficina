@@ -5,7 +5,8 @@ import type { Consulta } from "../banco";
 import { movimentar } from "../estoque";
 
 import { comItens } from "./documentos";
-import { camposPagamentos, conferirPagamentos, contaDaVenda, esquemaNovoPagamento, gravarPagamentos, type PagamentoEntrada, totalDaVenda } from "./pagamentos-venda";
+import { situacaoParcelas } from "../../src/features/vendas/parcelas";
+import { camposPagamentos, conferirPagamentos, contaDaVenda, esquemaRecebimento, gravarPagamentos, gravarParcelas, type PagamentoEntrada, totalDaVenda } from "./pagamentos-venda";
 import { camposItensEDesconto, conferirClienteEVeiculo, gravarItens, type ItemVendaApi, precificar, protegerValores, somarPorProduto, subirKm, validarDescontoApi } from "./itens-venda";
 import { type Contexto, ErroApi, lerCorpo, type Variaveis, violaChaveEstrangeira } from "./util";
 
@@ -34,6 +35,7 @@ type DadosVenda = {
   desconto: number;
   pagamentos: PagamentoEntrada[];
   divergencia?: "saldo" | "desconto";
+  parcelamento?: { parcelas: number; primeiroVencimento: string };
   observacoes: string;
 };
 
@@ -47,18 +49,25 @@ export function registrarRotasVendas({ app, banco, exigirSessao, exigirPermissao
       : await banco.consultar("select * from vendas order by criado_em desc");
     const docs = await comItens(banco.consultar, "venda_itens", "venda_id", linhas);
     const ids = docs.map((d) => String(d.id));
-    const todos = ids.length === 0 ? [] : await banco.consultar("select id, venda_id, forma, valor, criado_em, criado_por, estornado_em from venda_pagamentos where venda_id = any($1::uuid[]) order by criado_em, id", [ids]);
+    const todos = ids.length === 0 ? [] : await banco.consultar("select id, venda_id, forma, valor, parcelas_cartao, criado_em, criado_por, estornado_em from venda_pagamentos where venda_id = any($1::uuid[]) order by criado_em, id", [ids]);
+    const todasParcelas = ids.length === 0 ? [] : await banco.consultar<{ venda_id: string; numero: number; vencimento: string | Date; valor: number }>("select venda_id, numero, to_char(vencimento, 'YYYY-MM-DD') as vencimento, valor from venda_parcelas where venda_id = any($1::uuid[]) order by numero", [ids]);
     return docs.map((d) => {
       const pagamentos = todos
         .filter((p) => p.venda_id === d.id)
-        .map((p) => ({ id: p.id, forma: p.forma, valor: Number(p.valor), criadoEm: new Date(p.criado_em as string).toISOString(), criadoPor: p.criado_por ?? "", estornadoEm: p.estornado_em ? new Date(p.estornado_em as string).toISOString() : null }));
+        .map((p) => ({ id: p.id, forma: p.forma, valor: Number(p.valor), parcelasCartao: p.parcelas_cartao === null || p.parcelas_cartao === undefined ? null : Number(p.parcelas_cartao), criadoEm: new Date(p.criado_em as string).toISOString(), criadoPor: p.criado_por ?? "", estornadoEm: p.estornado_em ? new Date(p.estornado_em as string).toISOString() : null }));
       const ativos = pagamentos.filter((p) => p.estornadoEm === null);
       const totalPago = ativos.reduce((soma, p) => soma + p.valor, 0);
       const total = totalDaVenda(d.itens as { tipo: "produto" | "servico"; quantidade: number; valor: number }[], d.descontoTipo as "valor" | "percentual", Number(d.desconto), Number(d.ajuste));
       const formas = [...new Set(ativos.map((p) => p.forma as string))];
+      const saldo = d.status === "concluida" ? Math.max(0, total - totalPago) : 0;
+      // Venda cancelada não tem o que receber: sem parcelas.
+      const parcelas = d.status !== "concluida" ? [] : situacaoParcelas(
+        todasParcelas.filter((p) => p.venda_id === d.id).map((p) => ({ numero: Number(p.numero), vencimento: String(p.vencimento), valor: Number(p.valor) })),
+        saldo,
+      );
       return {
         ...d, clienteId: d.clienteId ?? "", veiculoId: d.veiculoId ?? "", orcamentoId: d.orcamentoId ?? "",
-        pagamentos, totalPago, temPagamento: ativos.length > 0, saldo: d.status === "concluida" ? Math.max(0, total - totalPago) : 0,
+        pagamentos, parcelas, totalPago, temPagamento: ativos.length > 0, saldo,
         formaPagamento: formas.length === 0 ? "" : formas.length === 1 ? formas[0] : "varias",
       };
     });
@@ -71,7 +80,7 @@ export function registrarRotasVendas({ app, banco, exigirSessao, exigirPermissao
   const enviar = (c: Context<{ Variables: Variaveis }>, vendas: Record<string, unknown>[]) => {
     const ver = c.get("permissoes").includes("valores.ver");
     const protegidas = protegerValores(vendas, ver);
-    return ver ? protegidas : protegidas.map((v) => ({ ...v, ajuste: 0, pagamentos: [], totalPago: 0, saldo: 0 }));
+    return ver ? protegidas : protegidas.map((v) => ({ ...v, ajuste: 0, pagamentos: [], parcelas: [], totalPago: 0, saldo: 0 }));
   };
 
   /** Quem vê valores informa os pagamentos; quem não vê só escolhe a forma e a API paga o total. */
@@ -79,9 +88,10 @@ export function registrarRotasVendas({ app, banco, exigirSessao, exigirPermissao
     const total = totalDaVenda(itens, tipo, desconto, 0);
     if (!verValores) {
       if (pagamentos.length === 0) throw new ErroApi(400, "Escolha a forma de pagamento.", { pagamentos: "Escolha a forma de pagamento." });
-      return { pagamentos: total > 0 ? [{ forma: pagamentos[0].forma, valor: total }] : [], ajuste: 0 };
+      return { pagamentos: total > 0 ? [{ forma: pagamentos[0].forma, valor: total, parcelasCartao: pagamentos[0].parcelasCartao }] : [], ajuste: 0, saldo: 0 };
     }
-    return conferirPagamentos(total, pagamentos, divergencia, temCliente);
+    const r = conferirPagamentos(total, pagamentos, divergencia, temCliente);
+    return { ...r, saldo: total - r.ajuste - r.pagamentos.reduce((s, p) => s + p.valor, 0) };
   }
   const quemSou = (c: Context<{ Variables: Variaveis }>) => String((c.get("sessao") as { user?: { name?: string } } | null)?.user?.name ?? "");
 
@@ -102,6 +112,7 @@ export function registrarRotasVendas({ app, banco, exigirSessao, exigirPermissao
           [d.clienteId || null, d.veiculoId || null, d.km, d.orcamentoId || null, d.descontoTipo, d.desconto, acerto.ajuste, d.observacoes],
         );
         await gravarPagamentos(q, venda.id, acerto.pagamentos, quem);
+        await gravarParcelas(q, venda.id, acerto.saldo, d.parcelamento);
         await gravarItens(q, "venda_itens", "venda_id", venda.id, d.itens);
         await baixar(q, d.itens, venda.numero);
         await subirKm(q, d.veiculoId || null, d.km);
@@ -147,6 +158,7 @@ export function registrarRotasVendas({ app, banco, exigirSessao, exigirPermissao
           [orc.cliente_id, orc.veiculo_id, orc.km, orcamentoId, orc.desconto_tipo, orc.desconto, acerto.ajuste],
         );
         await gravarPagamentos(q, venda.id, acerto.pagamentos, quemSou(c));
+        await gravarParcelas(q, venda.id, acerto.saldo, corpo.parcelamento);
         const lista = lista0;
         await gravarItens(q, "venda_itens", "venda_id", venda.id, lista);
         await baixar(q, lista, venda.numero);
@@ -164,14 +176,15 @@ export function registrarRotasVendas({ app, banco, exigirSessao, exigirPermissao
   app.post("/vendas/:id/pagamentos", ...editar, async (c) => {
     if (!c.get("permissoes").includes("valores.ver")) throw new ErroApi(403, "Sem permissão para registrar valores.");
     const id = c.req.param("id");
-    const dados = await lerCorpo(c, esquemaNovoPagamento);
+    const dados = await lerCorpo(c, esquemaRecebimento);
+    const soma = dados.pagamentos.reduce((s, p) => s + p.valor, 0);
     await buscar(id);
     await banco.transacao(async (q) => {
       const [venda] = await q<{ status: string }>("select status from vendas where id = $1::uuid for update", [id]);
       if (venda.status !== "concluida") throw new ErroApi(409, "Esta venda está cancelada.");
       const { total, pago } = await contaDaVenda(q, id);
-      if (dados.valor > total - pago) throw new ErroApi(400, "O valor passa do saldo em aberto.", { valor: "O valor passa do saldo em aberto." });
-      await gravarPagamentos(q, id, [dados], quemSou(c));
+      if (soma > total - pago) throw new ErroApi(400, "O valor passa do saldo em aberto.", { valor: "O valor passa do saldo em aberto." });
+      await gravarPagamentos(q, id, dados.pagamentos, quemSou(c));
     });
     return c.json(enviar(c, [await buscar(id)])[0], 201);
   });

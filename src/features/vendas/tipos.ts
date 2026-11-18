@@ -10,11 +10,15 @@ import {
 } from "@/features/orcamentos/tipos";
 import { textoParaCentavos, textoParaNumero } from "@/lib/numeros";
 
+import type { ParcelaSituacao } from "./parcelas";
+
 export type PagamentoVenda = {
   id: string;
   forma: string;
   /** Centavos. */
   valor: number;
+  /** Crédito parcelado no cartão (só informativo). */
+  parcelasCartao: number | null;
   criadoEm: string;
   criadoPor: string;
   /** Preenchido quando o pagamento foi desfeito. */
@@ -38,6 +42,8 @@ export type Venda = {
   /** Resumo vindo da API: uma forma, "varias" ou vazio (nada recebido ainda). */
   formaPagamento: string;
   pagamentos: PagamentoVenda[];
+  /** Parcelas do que ficou a receber, com o quanto de cada uma já foi pago. */
+  parcelas: ParcelaSituacao[];
   /** Centavos recebidos (sem estornos). */
   totalPago: number;
   /** Há algum pagamento recebido (visível mesmo sem ver valores): impede cancelar. */
@@ -72,7 +78,7 @@ export function totaisDaVenda(venda: Pick<Venda, "itens" | "descontoTipo" | "des
 }
 
 /** Corpo base para gravar (os pagamentos entram à parte, na hora de lançar). */
-export type DadosBaseVenda = Omit<Venda, "id" | "numero" | "status" | "criadoEm" | "formaPagamento" | "pagamentos" | "totalPago" | "temPagamento" | "saldo" | "ajuste">;
+export type DadosBaseVenda = Omit<Venda, "id" | "numero" | "status" | "criadoEm" | "formaPagamento" | "pagamentos" | "parcelas" | "totalPago" | "temPagamento" | "saldo" | "ajuste">;
 
 export const esquemaVenda = z
   .object({

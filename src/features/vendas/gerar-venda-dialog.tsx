@@ -1,25 +1,21 @@
-import { useState } from "react";
-
 import { TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { usePode } from "@/features/auth/sessao";
-import { useProdutos } from "@/features/produtos/api";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { itensSemSaldo } from "@/features/estoque/movimentar";
 import type { Orcamento } from "@/features/orcamentos/tipos";
 import { totaisDoOrcamento } from "@/features/orcamentos/tipos";
-import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
+import { useProdutos } from "@/features/produtos/api";
 import { useEnvioUnico } from "@/lib/envio-unico";
+import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
 
 import { useGerarVendaDoOrcamento } from "./api";
-import { corpoPagamento, type EstadoPagamento, estadoInicial, validarPagamento } from "./pagamentos";
-import { PagamentosCampos } from "./pagamentos-campos";
+import type { CorpoRecebimento } from "./pagamentos";
+import { RecebimentoEtapa } from "./recebimento-etapa";
 
 /**
- * Confirma a venda de um orçamento aprovado: pede a forma de pagamento e avisa quando faltar
- * saldo de alguma peça. Quem usa deve trocar a `key` a cada abertura.
+ * Orçamento aprovado → venda: abre direto na etapa de recebimento (os itens já estão definidos)
+ * e avisa quando faltar saldo de alguma peça. Quem usa deve trocar a `key` a cada abertura.
  */
 export function GerarVendaDialog({
   orcamento,
@@ -30,26 +26,18 @@ export function GerarVendaDialog({
   aoFechar: () => void;
   aoGerada?: (numero: string) => void;
 }) {
-  const [pagamento, setPagamento] = useState<EstadoPagamento>(estadoInicial);
-  const [erro, setErro] = useState("");
   const gerar = useGerarVendaDoOrcamento();
   const { proteger } = useEnvioUnico();
   const produtos = useProdutos();
-  const verValores = usePode("valores.ver");
 
   const total = orcamento ? totaisDoOrcamento(orcamento).total : 0;
   const faltas = orcamento ? itensSemSaldo(orcamento.itens.filter((item) => item.tipo === "produto"), produtos) : [];
 
-  const confirmar = proteger(async () => {
+  const concluir = proteger(async (corpo: CorpoRecebimento) => {
     if (!orcamento) return;
-    const problema = validarPagamento(pagamento, total, orcamento.clienteId !== "", verValores);
-    if (problema) {
-      setErro(problema);
-      return;
-    }
     try {
-      const venda = await gerar.mutateAsync({ orcamentoId: orcamento.id, ...corpoPagamento(pagamento, total, verValores) });
-      toast.success(venda.saldo > 0 ? `${venda.numero} gerada. Saldo a receber: ${formatarBRL(venda.saldo)}.` : `${venda.numero} gerada a partir de ${orcamento.numero}.`);
+      const venda = await gerar.mutateAsync({ orcamentoId: orcamento.id, ...corpo });
+      toast.success(venda.saldo > 0 ? `${venda.numero} gerada. A receber: ${formatarBRL(venda.saldo)}.` : `${venda.numero} gerada a partir de ${orcamento.numero}.`);
       aoGerada?.(venda.numero);
       aoFechar();
     } catch (falha) {
@@ -58,50 +46,32 @@ export function GerarVendaDialog({
   });
 
   return (
-    <Dialog open={orcamento !== null} onOpenChange={(open) => !open && aoFechar()}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Gerar venda de {orcamento?.numero}</DialogTitle>
-          <DialogDescription>
-            {orcamento && verValores && `Total de ${formatarBRL(totaisDoOrcamento(orcamento).total)}.`}
-          </DialogDescription>
-        </DialogHeader>
-        <PagamentosCampos
-          prefixo="gerar-venda"
-          total={total}
-          estado={pagamento}
-          aoMudar={(novo) => {
-            setPagamento(novo);
-            setErro("");
-          }}
-          temCliente={orcamento?.clienteId !== undefined && orcamento.clienteId !== ""}
-          erro={erro}
-        />
-        {faltas.length > 0 && (
-          <div role="status" className="flex gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">
-            <TriangleAlert className="mt-0.5 size-4 shrink-0" />
-            <div>
-              <p className="font-medium">Saldo insuficiente em estoque</p>
-              <ul className="mt-1">
-                {faltas.map((f) => (
-                  <li key={f.produtoId}>
-                    {f.descricao}: pedido {formatarQuantidade(f.pedido)}, em estoque {formatarQuantidade(f.saldo)}.
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-1">A venda segue e o saldo ficará negativo até a entrada da compra.</p>
+    <Sheet open={orcamento !== null} onOpenChange={(open) => !open && aoFechar()}>
+      <SheetContent className="w-full! gap-0 sm:max-w-lg!">
+        <SheetHeader className="border-b">
+          <SheetTitle>Recebimento · {orcamento?.numero}</SheetTitle>
+          <SheetDescription>Registre como o cliente pagou para gerar a venda.</SheetDescription>
+        </SheetHeader>
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+          {faltas.length > 0 && (
+            <div role="status" className="border-atencao/40 bg-atencao-fundo flex gap-2 rounded-md border p-3 text-sm">
+              <TriangleAlert className="text-atencao mt-0.5 size-4 shrink-0" />
+              <div>
+                <p className="font-medium">Saldo insuficiente em estoque</p>
+                <ul className="mt-1">
+                  {faltas.map((f) => (
+                    <li key={f.produtoId}>
+                      {f.descricao}: pedido {formatarQuantidade(f.pedido)}, em estoque {formatarQuantidade(f.saldo)}.
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-1">A venda segue e o saldo ficará negativo até a entrada da compra.</p>
+              </div>
             </div>
-          </div>
-        )}
-        <DialogFooter className="flex-row justify-end gap-2">
-          <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
-            Voltar
-          </Button>
-          <Button type="button" className="flex-1 sm:flex-none" onClick={confirmar} disabled={gerar.isPending}>
-            Gerar venda
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          )}
+          {orcamento && <RecebimentoEtapa modo="venda" total={total} temCliente={orcamento.clienteId !== ""} enviando={gerar.isPending} aoConcluir={concluir} />}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }

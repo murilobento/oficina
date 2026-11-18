@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { calcularTotais } from "../../src/features/orcamentos/calculo";
+import { dataValida, dividirParcelas, hojeISO, somarDias } from "../../src/features/vendas/parcelas";
 import type { Consulta } from "../banco";
 
 import { ErroApi } from "./util";
@@ -12,15 +13,23 @@ const forma = z.enum(FORMAS_RECEBIMENTO, "Escolha a forma de pagamento.");
 const valorCentavos = z.number().int("Informe o valor em centavos.").max(2_000_000_000, "Valor alto demais.");
 
 /** Valor mínimo 0 aqui: quem não vê valores só escolhe a forma e a API paga o total (ver `conferirPagamentos`). */
+const parcelasCartao = z.number().int().min(1).max(12, "No máximo 12 vezes.").optional();
+// Tolerância de 1 dia no "não pode ser passado": o servidor pode estar em outro fuso que o aparelho.
+const dataISO = z.string().refine(dataValida, "Data inválida.").refine((d) => d >= somarDias(hojeISO(), -1), "O vencimento não pode ser no passado.");
+
 export const camposPagamentos = {
-  pagamentos: z.array(z.object({ forma, valor: valorCentavos.min(0, "O valor não pode ser negativo.") })).max(10, "Pagamentos demais."),
+  pagamentos: z.array(z.object({ forma, valor: valorCentavos.min(0, "O valor não pode ser negativo."), parcelasCartao })).max(10, "Pagamentos demais."),
+  /** Como dividir o que fica a receber (padrão: 1 parcela em 30 dias). */
+  parcelamento: z.object({ parcelas: z.number().int().min(1, "Ao menos 1 parcela.").max(24, "No máximo 24 parcelas."), primeiroVencimento: dataISO }).optional(),
   /** O que fazer quando o pago é menor que o total: ficar devendo ou dar desconto da diferença. */
   divergencia: z.enum(["saldo", "desconto"]).optional(),
 };
 
-export const esquemaNovoPagamento = z.object({ forma, valor: valorCentavos.min(1, "Informe o valor pago.") });
+export const esquemaRecebimento = z.object({
+  pagamentos: z.array(z.object({ forma, valor: valorCentavos.min(1, "Informe o valor pago."), parcelasCartao })).min(1, "Informe o pagamento.").max(10, "Pagamentos demais."),
+});
 
-export type PagamentoEntrada = { forma: FormaRecebimento; valor: number };
+export type PagamentoEntrada = { forma: FormaRecebimento; valor: number; parcelasCartao?: number };
 
 const brl = (centavos: number) => (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -73,5 +82,15 @@ export async function contaDaVenda(q: Consulta, vendaId: string): Promise<{ tota
 }
 
 export async function gravarPagamentos(q: Consulta, vendaId: string, pagamentos: PagamentoEntrada[], quem: string) {
-  for (const p of pagamentos) await q("insert into venda_pagamentos (venda_id, forma, valor, criado_por) values ($1::uuid, $2, $3, $4)", [vendaId, p.forma, p.valor, quem]);
+  for (const p of pagamentos) {
+    const vezes = p.forma === "credito" && p.parcelasCartao && p.parcelasCartao > 1 ? p.parcelasCartao : null;
+    await q("insert into venda_pagamentos (venda_id, forma, valor, criado_por, parcelas_cartao) values ($1::uuid, $2, $3, $4, $5)", [vendaId, p.forma, p.valor, quem, vezes]);
+  }
+}
+
+/** Grava as parcelas do saldo que ficou a receber (padrão: 1 parcela em 30 dias). */
+export async function gravarParcelas(q: Consulta, vendaId: string, saldo: number, parcelamento?: { parcelas: number; primeiroVencimento: string }) {
+  if (saldo <= 0) return;
+  const parcelas = dividirParcelas(saldo, Math.min(parcelamento?.parcelas ?? 1, saldo), parcelamento?.primeiroVencimento ?? somarDias(hojeISO(), 30));
+  for (const p of parcelas) await q("insert into venda_parcelas (venda_id, numero, vencimento, valor) values ($1::uuid, $2, $3::date, $4)", [vendaId, p.numero, p.vencimento, p.valor]);
 }

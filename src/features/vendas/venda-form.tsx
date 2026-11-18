@@ -4,7 +4,7 @@ import { usePessoas } from "@/features/pessoas/api";
 import { useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CarFront, TriangleAlert, UserPlus, X } from "lucide-react";
+import { CarFront, ChevronLeft, TriangleAlert, UserPlus, X } from "lucide-react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -27,8 +27,8 @@ import { useEnvioUnico } from "@/lib/envio-unico";
 
 import { useRegistrarVenda } from "./api";
 import { usePode } from "@/features/auth/sessao";
-import { corpoPagamento, type EstadoPagamento, estadoInicial, validarPagamento } from "./pagamentos";
-import { PagamentosCampos } from "./pagamentos-campos";
+import type { CorpoRecebimento } from "./pagamentos";
+import { RecebimentoEtapa } from "./recebimento-etapa";
 import { esquemaVenda, FORM_VAZIO, paraVenda, type VendaFormValores } from "./tipos";
 
 const soDigitos = (limite: number) => (valor: string) => valor.replace(/\D/g, "").slice(0, limite);
@@ -43,7 +43,7 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
   const [clienteRapido, setClienteRapido] = useState({ aberto: false, nome: "", abertura: 0 });
   const [veiculoRapido, setVeiculoRapido] = useState({ aberto: false, abertura: 0 });
 
-  const { enviando, enviar: enviarUnico } = useEnvioUnico();
+  const { enviando, enviar: enviarUnico, proteger } = useEnvioUnico();
 
   const form = useForm<VendaFormValores>({ resolver: zodResolver(esquemaVenda), defaultValues: FORM_VAZIO });
   const { control, formState } = form;
@@ -58,9 +58,9 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
     descontoTipo,
     descontoTipo === "valor" ? textoParaCentavos(desconto) : textoParaNumero(desconto) || 0,
   );
-  const [pagamento, setPagamento] = useState<EstadoPagamento>(estadoInicial);
-  const [erroPagamento, setErroPagamento] = useState("");
+  // Etapa 2: com os dados da venda já conferidos, a folha mostra o recebimento.
   const verValores = usePode("valores.ver");
+  const [conferida, setConferida] = useState<VendaFormValores | null>(null);
   const registrar = useRegistrarVenda();
   const produtos = useProdutos();
   const faltas = itensSemSaldo(
@@ -93,14 +93,12 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
     form.clearErrors("desconto");
   }
 
-  const enviar = enviarUnico(form, async (valores) => {
-    const problema = validarPagamento(pagamento, totais.total, valores.clienteId !== "", verValores);
-    if (problema) {
-      setErroPagamento(problema);
-      return;
-    }
+  const enviar = enviarUnico(form, (valores) => setConferida(valores));
+
+  const concluir = proteger(async (corpo: CorpoRecebimento) => {
+    if (!conferida) return;
     try {
-      const venda = await registrar.mutateAsync({ ...paraVenda(valores), ...corpoPagamento(pagamento, totais.total, verValores) });
+      const venda = await registrar.mutateAsync({ ...paraVenda(conferida), ...corpo });
       toast.success(venda.saldo > 0 ? `${venda.numero} lançada. Saldo a receber: ${formatarBRL(venda.saldo)}.` : `${venda.numero} lançada.`);
       aoFechar();
     } catch (erro) {
@@ -118,7 +116,16 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
           <SheetDescription>Lançamento direto, sem orçamento. Sem cliente, a venda é de consumidor final.</SheetDescription>
         </SheetHeader>
 
-        <form noValidate onSubmit={enviar} className="flex min-h-0 flex-1 flex-col">
+        {conferida && (
+          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
+            <Button type="button" variant="ghost" className="-ml-2 self-start" onClick={() => setConferida(null)}>
+              <ChevronLeft /> Voltar aos itens
+            </Button>
+            <RecebimentoEtapa modo="venda" total={totais.total} temCliente={conferida.clienteId !== ""} enviando={registrar.isPending} aoConcluir={concluir} />
+          </div>
+        )}
+
+        <form noValidate onSubmit={enviar} className={conferida ? "hidden" : "flex min-h-0 flex-1 flex-col"}>
           <div className="flex flex-1 flex-col gap-8 overflow-y-auto p-4">
             <SecaoFormulario titulo="Cliente e veículo" descricao="Opcional: peça vendida no balcão não precisa de cadastro.">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -203,7 +210,7 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
               </div>
             )}
 
-            <SecaoFormulario titulo="Desconto e pagamento">
+            <SecaoFormulario titulo="Desconto">
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field className="gap-1.5 sm:col-span-2">
                   <FieldLabel id="venda-desconto-tipo">Tipo de desconto</FieldLabel>
@@ -232,20 +239,6 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
               </div>
             </SecaoFormulario>
 
-            <SecaoFormulario titulo="Pagamento">
-              <PagamentosCampos
-                prefixo="venda"
-                total={totais.total}
-                estado={pagamento}
-                aoMudar={(novo) => {
-                  setPagamento(novo);
-                  setErroPagamento("");
-                }}
-                temCliente={clienteId !== ""}
-                erro={erroPagamento}
-              />
-            </SecaoFormulario>
-
             <SecaoFormulario titulo="Outras informações">
               <CampoTextarea control={control} prefixo="venda" nome="observacoes" rotulo="Observações (opcional)" linhas={3} />
             </SecaoFormulario>
@@ -260,7 +253,7 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
               Cancelar
             </Button>
             <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando || registrar.isPending}>
-              Lançar venda
+              {verValores ? `Continuar para pagamento · ${formatarBRL(totais.total)}` : "Continuar para pagamento"}
             </Button>
           </SheetFooter>
         </form>

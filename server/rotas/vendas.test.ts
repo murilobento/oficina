@@ -224,7 +224,7 @@ describe("pagamentos da venda", () => {
 
   it("recebe o restante depois; não passa do saldo; estorno reabre o saldo", async () => {
     const v = await (await pagar([{ forma: "pix", valor: 20000 }], { divergencia: "saldo" })).json();
-    const receber = (valor: number, forma = "dinheiro") => ctx.chamar(`/api/vendas/${v.id}/pagamentos`, { corpo: { forma, valor }, cookie: ctx.admin });
+    const receber = (valor: number, forma = "dinheiro") => ctx.chamar(`/api/vendas/${v.id}/pagamentos`, { corpo: { pagamentos: [{ forma, valor }] }, cookie: ctx.admin });
     expect((await receber(5300)).status).toBe(400);
     const r = await receber(5200);
     expect(r.status).toBe(201);
@@ -281,5 +281,36 @@ describe("pagamentos da venda", () => {
     const v = await (await pagar([{ forma: "pix", valor: TOTAL }])).json();
     const r = await ctx.chamar(`/api/vendas/${v.id}/cancelar`, { metodo: "POST", cookie: ctx.admin });
     expect(r.status).toBe(409);
+  });
+
+  it("saldo a receber vira parcelas (padrão: 1 em 30 dias); recebido quita a mais antiga", async () => {
+    const um = await (await pagar([{ forma: "pix", valor: 20000 }], { divergencia: "saldo" })).json();
+    expect(um.parcelas).toHaveLength(1);
+    expect(um.parcelas[0]).toMatchObject({ numero: 1, valor: 5200, aberto: 5200 });
+
+    const r = await pagar([], { divergencia: "saldo", parcelamento: { parcelas: 3, primeiroVencimento: "2026-12-18" } });
+    expect(r.status).toBe(201);
+    const v = await r.json();
+    expect(v.parcelas.map((p: { vencimento: string; valor: number }) => [p.vencimento, p.valor])).toEqual([["2026-12-18", 8400], ["2027-01-17", 8400], ["2027-02-16", 8400]]);
+    const rec = await ctx.chamar(`/api/vendas/${v.id}/pagamentos`, { corpo: { pagamentos: [{ forma: "pix", valor: 5000 }, { forma: "dinheiro", valor: 4000 }] }, cookie: ctx.admin });
+    expect(rec.status).toBe(201);
+    expect((await rec.json()).parcelas.map((p: { aberto: number }) => p.aberto)).toEqual([0, 7800, 8400]);
+  });
+
+  it("crédito parcelado guarda as vezes", async () => {
+    const v = await (await pagar([{ forma: "credito", valor: TOTAL, parcelasCartao: 3 }])).json();
+    expect(v.pagamentos[0]).toMatchObject({ forma: "credito", parcelasCartao: 3 });
+    expect((await pagar([{ forma: "credito", valor: TOTAL, parcelasCartao: 13 }])).status).toBe(400);
+  });
+
+  it("vencimento inválido ou no passado é recusado (400, não 500)", async () => {
+    expect((await pagar([], { divergencia: "saldo", parcelamento: { parcelas: 1, primeiroVencimento: "2027-02-31" } })).status).toBe(400);
+    expect((await pagar([], { divergencia: "saldo", parcelamento: { parcelas: 1, primeiroVencimento: "2020-01-10" } })).status).toBe(400);
+  });
+
+  it("venda cancelada não mostra parcelas", async () => {
+    const v = await (await pagar([], { divergencia: "saldo" })).json();
+    const c = await ctx.chamar(`/api/vendas/${v.id}/cancelar`, { metodo: "POST", cookie: ctx.admin });
+    expect(await c.json()).toMatchObject({ status: "cancelada", parcelas: [], saldo: 0 });
   });
 });

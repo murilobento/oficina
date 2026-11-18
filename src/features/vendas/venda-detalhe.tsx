@@ -20,6 +20,7 @@ import { mascararPlaca } from "@/features/veiculos/tipos";
 import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
 
 import { useEstornarPagamento } from "./api";
+import { hojeISO } from "./parcelas";
 import { ReceberPagamentoDialog, SeloSaldo } from "./recebimento";
 import { FORMAS_PAGAMENTO, rotuloPagamento, totaisDaVenda, type PagamentoVenda, type Venda } from "./tipos";
 
@@ -105,7 +106,10 @@ export function VendaDetalhe({
                       {venda.pagamentos.map((p) => (
                         <li key={p.id} className="flex items-center justify-between gap-3 p-3 text-sm">
                           <span className={p.estornadoEm ? "text-muted-foreground line-through" : ""}>
-                            <span className="font-medium">{FORMAS_PAGAMENTO.find((f) => f.valor === p.forma)?.texto ?? p.forma}</span>
+                            <span className="font-medium">
+                              {FORMAS_PAGAMENTO.find((f) => f.valor === p.forma)?.texto ?? p.forma}
+                              {p.parcelasCartao && p.parcelasCartao > 1 ? ` ${p.parcelasCartao}x` : ""}
+                            </span>
                             <span className="text-muted-foreground block text-xs">
                               {new Date(p.criadoEm).toLocaleDateString("pt-BR")}
                               {p.criadoPor && ` · ${p.criadoPor}`}
@@ -123,6 +127,29 @@ export function VendaDetalhe({
                         </li>
                       ))}
                     </ul>
+                  )}
+                  {venda.parcelas.length > 0 && (
+                    <>
+                      <RotuloSecao>A receber</RotuloSecao>
+                      <ul className="divide-y rounded-md border">
+                        {venda.parcelas.map((p) => {
+                          const vencida = p.aberto > 0 && p.vencimento < hojeISO();
+                          return (
+                            <li key={p.numero} className="flex items-center justify-between gap-3 p-3 text-sm">
+                              <span>
+                                <span className="font-mono font-medium">
+                                  {p.numero}/{venda.parcelas.length} · {p.vencimento.split("-").reverse().join("/")}
+                                </span>
+                                <span className={`block text-xs ${vencida ? "text-erro font-semibold" : "text-muted-foreground"}`}>
+                                  {p.aberto === 0 ? "Paga" : vencida ? "Vencida" : p.pago > 0 ? `Falta ${formatarBRL(p.aberto)}` : "Em aberto"}
+                                </span>
+                              </span>
+                              <span className={`font-mono font-semibold tabular-nums ${p.aberto === 0 ? "text-muted-foreground line-through" : ""}`}>{formatarBRL(p.valor)}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </>
                   )}
                   {podeEditar && venda.saldo > 0 && (
                     <Button type="button" className="self-start" onClick={() => setRecebendo((a) => ({ aberto: true, abertura: a.abertura + 1 }))}>

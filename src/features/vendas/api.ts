@@ -4,14 +4,13 @@ import { api, type ApiErro } from "@/lib/api";
 import { criarCadastroApi } from "@/lib/cadastro-api";
 import { invalidar } from "@/lib/invalidar";
 
+import type { CorpoRecebimento } from "./pagamentos";
 import type { DadosBaseVenda, Venda } from "./tipos";
 
 /** Corpo da venda na API (sem id, número, status e data; sem vínculo com orçamento, que tem rota própria). */
 export type DadosVenda = Omit<DadosBaseVenda, "orcamentoId" | "itens"> & {
   itens: Omit<Venda["itens"][number], "id">[];
-  pagamentos: { forma: string; valor: number }[];
-  divergencia?: "saldo" | "desconto";
-};
+} & CorpoRecebimento;
 
 const vendas = criarCadastroApi<Venda, DadosVenda>("vendas");
 
@@ -28,7 +27,7 @@ export function useRegistrarVenda() {
 
 /** Orçamento aprovado vira venda: a API copia itens e desconto e marca o orçamento como "Virou venda". */
 export function useGerarVendaDoOrcamento() {
-  return useMutation<Venda, ApiErro, { orcamentoId: string; pagamentos: { forma: string; valor: number }[]; divergencia?: "saldo" | "desconto" }>({
+  return useMutation<Venda, ApiErro, { orcamentoId: string } & CorpoRecebimento>({
     mutationFn: ({ orcamentoId, ...corpo }) => api<Venda>(`/orcamentos/${orcamentoId}/venda`, { corpo }),
     onSuccess: aposVenda,
   });
@@ -41,7 +40,7 @@ export function useCancelarVenda() {
 
 /** Recebe parte (ou todo) do saldo em aberto. */
 export function useReceberPagamento() {
-  return useMutation<Venda, ApiErro, { vendaId: string; forma: string; valor: number }>({
+  return useMutation<Venda, ApiErro, { vendaId: string; pagamentos: CorpoRecebimento["pagamentos"] }>({
     mutationFn: ({ vendaId, ...corpo }) => api<Venda>(`/vendas/${vendaId}/pagamentos`, { corpo }),
     onSuccess: () => invalidar("vendas"),
   });
