@@ -24,6 +24,8 @@ import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 
 import { mascararDocumento, mascararTelefone } from "./documento";
 import { capitalizar, type EntidadeConfig } from "./entidades";
+import { usePode } from "@/features/auth/sessao";
+import { VeiculoForm } from "@/features/veiculos/veiculo-form";
 import { PessoaDetalhe } from "./pessoa-detalhe";
 import { PessoaForm } from "./pessoa-form";
 import { AcoesPessoa, ConfirmarExclusao, StatusBadge } from "./pessoa-partes";
@@ -68,6 +70,9 @@ export function PessoasLista({ config }: { config: EntidadeConfig }) {
   const [formAberto, setFormAberto] = useState(false);
   const [emEdicao, setEmEdicao] = useState<Pessoa | null>(null);
   const [abertura, setAbertura] = useState(0);
+  // Cadastro de veículo aberto a partir de um cliente.
+  const [veiculoNovo, setVeiculoNovo] = useState({ aberto: false, clienteId: "", abertura: 0 });
+  const podeCadastrarVeiculo = usePode("veiculos.editar") && config.chave === "clientes";
   const [detalheAberto, setDetalheAberto] = useState(false);
   const [visualizandoId, setVisualizandoId] = useState<string | null>(null);
   const [excluindo, setExcluindo] = useState<Pessoa | null>(null);
@@ -104,6 +109,11 @@ export function PessoasLista({ config }: { config: EntidadeConfig }) {
     setFormAberto(true);
   }
 
+  function adicionarVeiculo(pessoa: Pessoa) {
+    setDetalheAberto(false);
+    setVeiculoNovo((atual) => ({ aberto: true, clienteId: pessoa.id, abertura: atual.abertura + 1 }));
+  }
+
   function abrirDetalhe(pessoa: Pessoa) {
     setVisualizandoId(pessoa.id);
     setDetalheAberto(true);
@@ -133,7 +143,7 @@ export function PessoasLista({ config }: { config: EntidadeConfig }) {
   }
 
   useAbrirQuandoPedido(config.singular === "cliente" ? "cliente" : "fornecedor", () => abrirForm(null));
-  const acoes = { aoVisualizar: abrirDetalhe, aoEditar: abrirForm, aoAlternarAtivo, aoExcluir: pedirExclusao };
+  const acoes = { aoVisualizar: abrirDetalhe, aoEditar: abrirForm, aoAlternarAtivo, aoExcluir: pedirExclusao, aoAdicionarVeiculo: podeCadastrarVeiculo ? adicionarVeiculo : undefined };
   const vazio = (
     <ListagemVazia>
       {consulta.isPending
@@ -306,7 +316,17 @@ export function PessoasLista({ config }: { config: EntidadeConfig }) {
         aoEditar={abrirForm}
         aoAlternarAtivo={aoAlternarAtivo}
         aoExcluir={pedirExclusao}
+        aoAdicionarVeiculo={podeCadastrarVeiculo ? adicionarVeiculo : undefined}
       />
+      {podeCadastrarVeiculo && (
+        <VeiculoForm
+          key={veiculoNovo.abertura}
+          aberto={veiculoNovo.aberto}
+          veiculo={null}
+          clienteInicial={veiculoNovo.clienteId}
+          aoFechar={() => setVeiculoNovo((atual) => ({ ...atual, aberto: false }))}
+        />
+      )}
       <ConfirmarExclusao
         config={config}
         pessoa={excluindo}

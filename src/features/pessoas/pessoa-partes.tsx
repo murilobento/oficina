@@ -1,4 +1,4 @@
-import { Check, Eye, MoreHorizontal, Pause, Pencil, Trash2, UserCheck, UserX } from "lucide-react";
+import { Car, Check, Eye, MoreHorizontal, Pause, Pencil, Trash2, UserCheck, UserX } from "lucide-react";
 
 import { FitaStatus } from "@/components/marca/fita-status";
 
@@ -29,6 +29,8 @@ export type AcoesPessoaProps = {
   aoEditar: (pessoa: Pessoa) => void;
   aoAlternarAtivo: (pessoa: Pessoa) => void;
   aoExcluir: (pessoa: Pessoa) => void;
+  /** Só clientes: abre o cadastro de veículo já com este cliente. Ausente = sem o item. */
+  aoAdicionarVeiculo?: (pessoa: Pessoa) => void;
 };
 
 export function StatusBadge({ ativo }: { ativo: boolean }) {
@@ -42,6 +44,7 @@ export function AcoesPessoa({
   aoEditar,
   aoAlternarAtivo,
   aoExcluir,
+  aoAdicionarVeiculo,
 }: { pessoa: Pessoa } & AcoesPessoaProps) {
   return (
     <DropdownMenu>
@@ -62,6 +65,11 @@ export function AcoesPessoa({
         <DropdownMenuItem onSelect={() => aoEditar(pessoa)}>
           <Pencil /> Editar
         </DropdownMenuItem>
+        {aoAdicionarVeiculo && (
+          <DropdownMenuItem onSelect={() => aoAdicionarVeiculo(pessoa)}>
+            <Car /> Adicionar veículo
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onSelect={() => aoAlternarAtivo(pessoa)}>
           {pessoa.ativo ? <UserX /> : <UserCheck />}
           {pessoa.ativo ? "Inativar" : "Ativar"}

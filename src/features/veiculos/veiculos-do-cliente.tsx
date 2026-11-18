@@ -1,5 +1,8 @@
 import { useVeiculos } from "@/features/veiculos/api";
 import { Link } from "@tanstack/react-router";
+import { Plus } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 
 import { useOrcamentos } from "@/features/orcamentos/api";
 import { totaisDoOrcamento } from "@/features/orcamentos/tipos";
@@ -11,7 +14,7 @@ import { mascararPlaca } from "./tipos";
 const data = (valor: string | null) => (valor ? new Date(valor).toLocaleDateString("pt-BR") : "");
 
 /** Seção "Veículos" do painel do cliente: carros, visitas, total gasto e atalho para o histórico. */
-export function VeiculosDoCliente({ clienteId }: { clienteId: string }) {
+export function VeiculosDoCliente({ clienteId, aoAdicionar }: { clienteId: string; aoAdicionar?: () => void }) {
   const veiculos = useVeiculos().filter((v) => v.clienteId === clienteId);
   const orcamentos = useOrcamentos();
 
@@ -63,6 +66,11 @@ export function VeiculosDoCliente({ clienteId }: { clienteId: string }) {
             );
           })}
         </ul>
+      )}
+      {aoAdicionar && (
+        <Button type="button" variant="outline" className="self-start" onClick={aoAdicionar}>
+          <Plus /> Adicionar veículo
+        </Button>
       )}
     </section>
   );

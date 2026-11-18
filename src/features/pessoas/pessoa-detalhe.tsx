@@ -43,6 +43,7 @@ export function PessoaDetalhe({
   aoEditar,
   aoAlternarAtivo,
   aoExcluir,
+  aoAdicionarVeiculo,
 }: {
   config: EntidadeConfig;
   aberto: boolean;
@@ -51,6 +52,7 @@ export function PessoaDetalhe({
   aoEditar: (pessoa: Pessoa) => void;
   aoAlternarAtivo: (pessoa: Pessoa) => void;
   aoExcluir: (pessoa: Pessoa) => void;
+  aoAdicionarVeiculo?: (pessoa: Pessoa) => void;
 }) {
   const pessoaJuridica = pessoa?.tipo === "PJ";
 
@@ -123,7 +125,7 @@ export function PessoaDetalhe({
                 <Dado rotulo="Cidade / UF">{[pessoa.cidade, pessoa.uf].filter(Boolean).join("/")}</Dado>
               </Secao>
 
-              {config.chave === "clientes" && <VeiculosDoCliente clienteId={pessoa.id} />}
+              {config.chave === "clientes" && <VeiculosDoCliente clienteId={pessoa.id} aoAdicionar={aoAdicionarVeiculo && (() => aoAdicionarVeiculo(pessoa))} />}
 
               <Secao titulo="Outras informações">
                 <Dado rotulo="Observações" largo>
