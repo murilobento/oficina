@@ -7,7 +7,11 @@ import "@fontsource-variable/geist";
 import "@fontsource-variable/geist-mono";
 import "@fontsource-variable/inter";
 
+import { AtualizacaoApp } from "@/components/layout/atualizacao-app";
+import { AvisoSemConexao } from "@/components/layout/aviso-sem-conexao";
 import { Toaster } from "@/components/ui/sonner";
+import { escutarInstalacao } from "@/lib/pwa";
+import { LOGIN_ATIVO, useSessao } from "@/features/auth/sessao";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { bootPreferences } from "@/lib/preferences/boot";
 import { queryClient } from "@/lib/query-client";
@@ -26,6 +30,9 @@ for (const chave of ["empresa", "clientes", "fornecedores", "produtos", "servico
   }
 }
 
+// App instalável: guarda o pedido de instalação do navegador para o item "Instalar app" do menu.
+escutarInstalacao();
+
 // Aplica tema e layout salvos antes da primeira renderização (evita "piscar").
 const preferenciasIniciais = bootPreferences();
 
@@ -38,13 +45,22 @@ declare module "@tanstack/react-router" {
   }
 }
 
+// Quando a internet volta, confere a sessão de novo: se expirou enquanto estava sem rede, volta ao login.
+window.addEventListener("online", async () => {
+  if (!LOGIN_ATIVO) return;
+  const eu = await useSessao.getState().carregar();
+  if (eu === null && router.state.location.pathname !== "/login") await router.navigate({ to: "/login" });
+});
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <PreferencesStoreProvider initialValues={preferenciasIniciais}>
+          <AvisoSemConexao />
           <RouterProvider router={router} />
           <Toaster />
+          <AtualizacaoApp />
         </PreferencesStoreProvider>
       </TooltipProvider>
     </QueryClientProvider>

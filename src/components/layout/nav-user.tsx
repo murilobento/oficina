@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { Link, useNavigate } from "@tanstack/react-router";
 import { EllipsisVertical, KeyRound, LogOut } from "lucide-react";
 
@@ -16,6 +18,8 @@ import { LOGIN_ATIVO, useSessao } from "@/features/auth/sessao";
 import { authClient } from "@/lib/auth-client";
 import { getInitials } from "@/lib/utils";
 
+import { InstalarAppItem, PassoAPassoIOS } from "./instalar-app";
+
 export function NavUser({
   user,
 }: {
@@ -26,6 +30,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const navigate = useNavigate();
+  const [passosIOS, setPassosIOS] = useState(false);
 
   async function sair() {
     await authClient.signOut();
@@ -77,6 +82,7 @@ export function NavUser({
                   Trocar senha
                 </Link>
               </DropdownMenuItem>
+              <InstalarAppItem aoMostrarPassos={() => setPassosIOS(true)} />
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             {LOGIN_ATIVO ? (
@@ -94,6 +100,7 @@ export function NavUser({
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+        <PassoAPassoIOS aberto={passosIOS} aoFechar={() => setPassosIOS(false)} />
       </SidebarMenuItem>
     </SidebarMenu>
   );

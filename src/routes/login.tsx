@@ -16,7 +16,7 @@ export const Route = createFileRoute("/login")({
   beforeLoad: async () => {
     if (!LOGIN_ATIVO) return;
     const eu = await useSessao.getState().carregar();
-    if (eu) throw redirect({ to: eu.trocarSenha ? "/trocar-senha" : "/" });
+    if (eu && eu !== "sem-conexao") throw redirect({ to: eu.trocarSenha ? "/trocar-senha" : "/" });
   },
   component: Login,
 });
@@ -48,7 +48,7 @@ function Login() {
       return;
     }
     const eu = await useSessao.getState().carregar();
-    await navigate({ to: eu?.trocarSenha ? "/trocar-senha" : "/" });
+    await navigate({ to: eu && eu !== "sem-conexao" && eu.trocarSenha ? "/trocar-senha" : "/" });
   }
 
   return (

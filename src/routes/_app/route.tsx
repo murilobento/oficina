@@ -9,6 +9,7 @@ export const Route = createFileRoute('/_app')({
   beforeLoad: async () => {
     if (!LOGIN_ATIVO) return
     const eu = await useSessao.getState().carregar()
+    if (eu === 'sem-conexao') return // abre a casca do app; a faixa avisa e os dados vêm quando a rede voltar
     if (!eu) throw redirect({ to: '/login' })
     if (eu.trocarSenha) throw redirect({ to: '/trocar-senha' })
   },
