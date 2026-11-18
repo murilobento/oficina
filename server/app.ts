@@ -10,6 +10,8 @@ import { registrarRotasCompras } from "./rotas/compras";
 import { registrarRotasEmpresa } from "./rotas/empresa";
 import { registrarRotasEstoque } from "./rotas/estoque";
 import { registrarRotasFipe } from "./rotas/fipe";
+import { registrarRotasFuncionarios } from "./rotas/funcionarios";
+import { registrarRotasPerfis } from "./rotas/perfis";
 import { registrarRotasOrcamentos } from "./rotas/orcamentos";
 import { registrarRotasPessoas } from "./rotas/pessoas";
 import { registrarRotasProdutos } from "./rotas/produtos";
@@ -33,8 +35,11 @@ export function criarApp(banco: Banco, auth: Auth, opcoes: { buscar?: typeof fet
     return c.json({ ok: true });
   });
 
-  // Troca de senha pelo próprio funcionário encerra a "senha provisória"; redefinição feita pelo
-  // administrador a reativa. O Better Auth cuida da senha; aqui só mantemos esse sinalizador.
+  // As rotas administrativas do plugin do Better Auth não são expostas: funcionários e perfis
+  // passam só pelas rotas /funcionarios e /perfis, que aplicam as proteções da oficina.
+  app.all("/auth/admin/*", (c) => c.json({ erro: "Rota não encontrada." }, 404));
+
+  // Troca de senha pelo próprio funcionário encerra a "senha provisória".
   app.on(["GET", "POST"], "/auth/*", async (c) => {
     const rota = new URL(c.req.url).pathname;
     let aposSucesso: (() => Promise<void>) | null = null;
@@ -42,9 +47,6 @@ export function criarApp(banco: Banco, auth: Auth, opcoes: { buscar?: typeof fet
     if (c.req.method === "POST" && rota.endsWith("/change-password")) {
       const sessao = await auth.api.getSession({ headers: c.req.raw.headers });
       if (sessao) aposSucesso = async () => void (await banco.consultar(`update "user" set "trocarSenha" = false where id = $1`, [sessao.user.id]));
-    } else if (c.req.method === "POST" && rota.endsWith("/admin/set-user-password")) {
-      const corpo = (await c.req.raw.clone().json().catch(() => null)) as { userId?: string } | null;
-      if (corpo?.userId) aposSucesso = async () => void (await banco.consultar(`update "user" set "trocarSenha" = true where id = $1`, [corpo.userId]));
     }
 
     const resposta = await auth.handler(c.req.raw);
@@ -54,7 +56,9 @@ export function criarApp(banco: Banco, auth: Auth, opcoes: { buscar?: typeof fet
 
   const exigirSessao: MiddlewareHandler<{ Variables: Variaveis }> = async (c, proximo) => {
     const sessao = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!sessao) return c.json({ erro: "Entre no sistema para continuar." }, 401);
+    if (!sessao || (sessao.user as { banned?: boolean | null }).banned) return c.json({ erro: "Entre no sistema para continuar." }, 401);
+    // Senha provisória: até trocá-la, a sessão só serve para ver quem é (/eu); a troca em si passa por /auth/*.
+    if ((sessao.user as { trocarSenha?: boolean }).trocarSenha && !c.req.path.endsWith("/eu")) return c.json({ erro: "Troque a senha provisória para continuar." }, 403);
     c.set("sessao", sessao);
     c.set("permissoes", await permissoesDoPerfil(banco, (sessao.user as { role?: string }).role ?? ""));
     await proximo();
@@ -92,6 +96,8 @@ export function criarApp(banco: Banco, auth: Auth, opcoes: { buscar?: typeof fet
   registrarRotasOrcamentos(contexto);
   registrarRotasVendas(contexto);
   registrarRotasFipe(contexto, opcoes.buscar);
+  registrarRotasPerfis(contexto);
+  registrarRotasFuncionarios(contexto, auth);
 
   app.notFound((c) => c.json({ erro: "Rota não encontrada." }, 404));
   app.onError((erro, c) => {

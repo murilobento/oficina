@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-import type { Usuario } from "./data";
+import type { Usuario } from "./api";
 
 /** Mostra a senha provisória uma única vez (PRD RF-03). Fechou, não dá para ver de novo. */
 export function SenhaProvisoriaDialog({
@@ -50,7 +50,7 @@ export function SenhaProvisoriaDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {dados?.motivo === "redefinicao" ? "Senha redefinida" : "Usuário cadastrado"}
+            {dados?.motivo === "redefinicao" ? "Senha redefinida" : "Funcionário cadastrado"}
           </DialogTitle>
           <DialogDescription>
             Repasse a senha provisória abaixo para <strong>{dados?.usuario.nome}</strong>. No primeiro acesso, o
@@ -84,9 +84,11 @@ export function SenhaProvisoriaDialog({
 /** Confirmação antes de redefinir a senha ou de desativar/reativar alguém. */
 export function ConfirmacaoDialog({
   confirmacao,
+  enviando = false,
   aoCancelar,
   aoConfirmar,
 }: {
+  enviando?: boolean;
   confirmacao: { tipo: "redefinir" | "desativar" | "reativar"; usuario: Usuario } | null;
   aoCancelar: () => void;
   aoConfirmar: () => void;
@@ -122,7 +124,11 @@ export function ConfirmacaoDialog({
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             variant={confirmacao?.tipo === "desativar" ? "destructive" : "default"}
-            onClick={aoConfirmar}
+            disabled={enviando}
+            onClick={(evento) => {
+              evento.preventDefault();
+              aoConfirmar();
+            }}
           >
             {texto?.acao}
           </AlertDialogAction>

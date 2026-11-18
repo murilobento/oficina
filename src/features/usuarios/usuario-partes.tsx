@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-import { statusMeta, type Usuario, type UsuarioStatus } from "./data";
+import type { Usuario } from "./api";
+import { statusMeta, type UsuarioStatus } from "./data";
 
 export type AcoesUsuarioProps = {
   aoEditar: (usuario: Usuario) => void;

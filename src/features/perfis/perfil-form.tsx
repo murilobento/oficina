@@ -2,6 +2,7 @@ import { useEffect } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { PERMISSOES, type Permissao } from "@/features/auth/permissoes";
+import { useEnvioUnico } from "@/lib/envio-unico";
 
 import { MODULOS, moduloDaPermissao, type PerfilAcesso } from "./data";
 
@@ -29,17 +31,15 @@ const VAZIO: PerfilFormValores = { nome: "", descricao: "", permissoes: [] };
 export function PerfilForm({
   aberto,
   perfil,
-  nomesEmUso,
   aoFechar,
   aoSalvar,
 }: {
   aberto: boolean;
   /** Perfil em edição; `null` = perfil novo. */
   perfil: PerfilAcesso | null;
-  /** Nomes de outros perfis, para barrar duplicidade. */
-  nomesEmUso: string[];
   aoFechar: () => void;
-  aoSalvar: (valores: PerfilFormValores) => void;
+  /** Grava na API; se falhar, lança o erro e o formulário mostra a mensagem. */
+  aoSalvar: (valores: PerfilFormValores) => Promise<void>;
 }) {
   const editando = perfil !== null;
   const protegido = perfil?.protegido ?? false;
@@ -54,12 +54,15 @@ export function PerfilForm({
     );
   }, [aberto, perfil, form]);
 
-  const enviar = form.handleSubmit((valores) => {
-    if (nomesEmUso.includes(valores.nome.toLowerCase())) {
-      form.setError("nome", { message: "Já existe um perfil com este nome." });
-      return;
+  const { enviando, enviar: enviarUnico } = useEnvioUnico();
+  const enviar = enviarUnico(form, async (valores) => {
+    try {
+      await aoSalvar(protegido ? { ...valores, permissoes: [...CHAVES] } : valores);
+    } catch (erro) {
+      const campos = (erro as { campos?: Record<string, string> }).campos ?? {};
+      for (const [campo, texto] of Object.entries(campos)) form.setError(campo as keyof PerfilFormValores, { message: texto }, { shouldFocus: true });
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível salvar. Tente de novo.");
     }
-    aoSalvar(protegido ? { ...valores, permissoes: [...CHAVES] } : valores);
   });
 
   return (
@@ -176,8 +179,8 @@ export function PerfilForm({
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none">
-              {editando ? "Salvar alterações" : "Criar perfil"}
+            <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando}>
+              {enviando ? "Salvando…" : editando ? "Salvar alterações" : "Criar perfil"}
             </Button>
           </SheetFooter>
         </form>

@@ -1,48 +1,45 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { toast } from "sonner";
 
-import { Listagem, ListagemCabecalho } from "@/components/layout/listagem";
-import { usuariosIniciais } from "@/features/usuarios/data";
+import { Listagem, ListagemCabecalho, ListagemVazia } from "@/components/layout/listagem";
+import { ConfirmarExclusaoRegistro } from "@/components/layout/registro-partes";
 
-import { type PerfilAcesso, perfisIniciais } from "./data";
+import { type PerfilApi, useExcluirPerfil, usePerfis, usePerfisConsulta, useSalvarPerfil } from "./api";
 import { PerfilForm, type PerfilFormValores } from "./perfil-form";
 import { PerfisCards } from "./perfis-cards";
-import { novoId } from "@/lib/id";
 
-/**
- * Tela de perfis (protótipo): cartões com os perfis e o formulário para editar nome, descrição
- * e permissões por módulo. Os dados ficam só na memória até a ligação com a API.
- */
+/** Tela de perfis: cartões com os perfis e o formulário para editar nome, descrição e permissões por módulo. */
 export function Perfis() {
-  const [perfis, setPerfis] = useState<PerfilAcesso[]>(perfisIniciais);
+  const consulta = usePerfisConsulta();
+  const perfis = usePerfis();
+  const salvarPerfil = useSalvarPerfil();
+  const excluirPerfil = useExcluirPerfil();
   const [formAberto, setFormAberto] = useState(false);
-  const [emEdicao, setEmEdicao] = useState<PerfilAcesso | null>(null);
+  const [emEdicao, setEmEdicao] = useState<PerfilApi | null>(null);
+  const [paraExcluir, setParaExcluir] = useState<PerfilApi | null>(null);
 
-  // Quantos funcionários têm cada perfil (vem da lista de exemplo da tela de funcionários).
-  const usuariosPorPerfil = useMemo(() => {
-    const contagem: Record<string, number> = {};
-    for (const usuario of usuariosIniciais) {
-      contagem[usuario.perfilId] = (contagem[usuario.perfilId] ?? 0) + 1;
-    }
-    return contagem;
-  }, []);
-
-  function abrir(perfil: PerfilAcesso | null) {
+  function abrir(perfil: PerfilApi | null) {
     setEmEdicao(perfil);
     setFormAberto(true);
   }
 
-  function salvar(valores: PerfilFormValores) {
-    if (emEdicao) {
-      setPerfis((lista) => lista.map((item) => (item.id === emEdicao.id ? { ...item, ...valores } : item)));
-      toast.success(`Perfil ${valores.nome} atualizado.`);
-    } else {
-      const novo: PerfilAcesso = { id: novoId(), ...valores, protegido: false };
-      setPerfis((lista) => [...lista, novo]);
-      toast.success(`Perfil ${valores.nome} criado.`);
-    }
+  async function salvar(valores: PerfilFormValores) {
+    await salvarPerfil.mutateAsync({ id: emEdicao?.id, dados: valores });
+    toast.success(emEdicao ? `Perfil ${valores.nome} atualizado.` : `Perfil ${valores.nome} criado.`);
     setFormAberto(false);
+  }
+
+  async function excluir() {
+    if (!paraExcluir) return;
+    const perfil = paraExcluir;
+    setParaExcluir(null);
+    try {
+      await excluirPerfil.mutateAsync(perfil.id);
+      toast.success(`Perfil ${perfil.nome} excluído.`);
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível excluir. Tente de novo.");
+    }
   }
 
   return (
@@ -54,14 +51,23 @@ export function Perfis() {
         aoNovo={() => abrir(null)}
       />
 
-      <PerfisCards perfis={perfis} usuariosPorPerfil={usuariosPorPerfil} aoEditar={abrir} />
+      {consulta.isPending || consulta.isError ? (
+        <ListagemVazia>{consulta.isPending ? "Carregando…" : consulta.error.message}</ListagemVazia>
+      ) : (
+        <PerfisCards perfis={perfis} aoEditar={abrir} aoExcluir={setParaExcluir} />
+      )}
 
       <PerfilForm
         aberto={formAberto}
         perfil={emEdicao}
-        nomesEmUso={perfis.filter((item) => item.id !== emEdicao?.id).map((item) => item.nome.toLowerCase())}
         aoFechar={() => setFormAberto(false)}
         aoSalvar={salvar}
+      />
+      <ConfirmarExclusaoRegistro
+        nome={paraExcluir?.nome ?? null}
+        singular="perfil"
+        aoCancelar={() => setParaExcluir(null)}
+        aoConfirmar={() => void excluir()}
       />
     </Listagem>
   );

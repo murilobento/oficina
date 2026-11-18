@@ -2,6 +2,7 @@ import { useEffect } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -10,12 +11,15 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
-import { perfis, type Usuario } from "./data";
+import { useEnvioUnico } from "@/lib/envio-unico";
+import { usePerfis } from "@/features/perfis/api";
 
-// O mesmo esquema valida o formulário aqui e, depois, a entrada da Edge Function no servidor.
+import type { Usuario } from "./api";
+
+// A API valida de novo (e-mail repetido, perfil, permissões); aqui só o básico, para avisar na hora.
 const esquema = z.object({
   nome: z.string().trim().min(3, { message: "Informe o nome completo." }),
-  email: z.email({ message: "Informe um e-mail válido." }),
+  email: z.string().trim().pipe(z.email({ message: "Informe um e-mail válido." })),
   perfilId: z.string().min(1, { message: "Escolha um perfil." }),
 });
 
@@ -26,19 +30,18 @@ const VAZIO: UsuarioFormValores = { nome: "", email: "", perfilId: "" };
 export function UsuarioForm({
   aberto,
   usuario,
-  emailsEmUso,
   aoFechar,
   aoSalvar,
 }: {
   aberto: boolean;
   /** Usuário em edição; `null` = cadastro novo. */
   usuario: Usuario | null;
-  /** E-mails de outros usuários, para barrar duplicidade. */
-  emailsEmUso: string[];
   aoFechar: () => void;
-  aoSalvar: (valores: UsuarioFormValores) => void;
+  /** Grava na API; se falhar, lança o erro e o formulário mostra a mensagem. */
+  aoSalvar: (valores: UsuarioFormValores) => Promise<void>;
 }) {
   const editando = usuario !== null;
+  const perfis = usePerfis();
   const form = useForm<UsuarioFormValores>({ resolver: zodResolver(esquema), defaultValues: VAZIO });
 
   // Ao abrir, carrega os dados do usuário em edição (ou limpa, no cadastro novo).
@@ -52,12 +55,15 @@ export function UsuarioForm({
   }, [aberto, usuario, form]);
 
 
-  const enviar = form.handleSubmit((valores) => {
-    if (emailsEmUso.includes(valores.email.toLowerCase())) {
-      form.setError("email", { message: "Já existe um funcionário com este e-mail." });
-      return;
+  const { enviando, enviar: enviarUnico } = useEnvioUnico();
+  const enviar = enviarUnico(form, async (valores) => {
+    try {
+      await aoSalvar({ ...valores, email: valores.email.toLowerCase() });
+    } catch (erro) {
+      const campos = (erro as { campos?: Record<string, string> }).campos ?? {};
+      for (const [campo, texto] of Object.entries(campos)) form.setError(campo as keyof UsuarioFormValores, { message: texto }, { shouldFocus: true });
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível salvar. Tente de novo.");
     }
-    aoSalvar({ ...valores, email: valores.email.toLowerCase() });
   });
 
   return (
@@ -140,8 +146,8 @@ export function UsuarioForm({
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none">
-              {editando ? "Salvar alterações" : "Cadastrar funcionário"}
+            <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando}>
+              {enviando ? "Salvando…" : editando ? "Salvar alterações" : "Cadastrar funcionário"}
             </Button>
           </SheetFooter>
         </form>

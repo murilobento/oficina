@@ -21,23 +21,24 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CLASSE_TABELA, normalizar, paginar } from "@/lib/listagem";
 import { cn, getInitials } from "@/lib/utils";
 
+import { usePerfis } from "@/features/perfis/api";
+import { useEnvioUnico } from "@/lib/envio-unico";
+
 import {
-  formatarData,
-  formatarDataHora,
-  gerarSenhaProvisoria,
-  perfilPorId,
-  perfis,
-  statusDoUsuario,
   type Usuario,
-  usuariosIniciais,
-} from "./data";
+  useAlternarAtivoUsuario,
+  useCriarUsuario,
+  useEditarUsuario,
+  useRedefinirSenhaUsuario,
+  useUsuarios,
+  useUsuariosConsulta,
+} from "./api";
+import { formatarData, formatarDataHora, statusDoUsuario } from "./data";
 import { ConfirmacaoDialog, SenhaProvisoriaDialog } from "./usuario-dialogs";
 import { UsuarioForm, type UsuarioFormValores } from "./usuario-form";
 import { AcoesUsuario, StatusBadge } from "./usuario-partes";
-import { novoId } from "@/lib/id";
 
 const TODOS = "todos";
-const FILTRO_PERFIL = [{ valor: TODOS, texto: "Todos" }, ...perfis.map((perfil) => ({ valor: perfil.id, texto: perfil.nome }))];
 const FILTRO_STATUS = [
   { valor: TODOS, texto: "Todos" },
   { valor: "Ativo", texto: "Ativo" },
@@ -63,11 +64,20 @@ function Identidade({ usuario }: { usuario: Usuario }) {
 }
 
 /**
- * Tela de funcionários (protótipo), no padrão de listagem do sistema. Os dados são de exemplo
- * e ficam só na memória; a ligação com a API (Better Auth) vem na etapa seguinte.
+ * Tela de funcionários, no padrão de listagem do sistema. Cadastro, edição, ativação e redefinição
+ * de senha passam pela API, que aplica as proteções (último administrador, próprio acesso etc.).
  */
 export function Usuarios() {
-  const [usuarios, setUsuarios] = useState<Usuario[]>(usuariosIniciais);
+  const consulta = useUsuariosConsulta();
+  const usuarios = useUsuarios();
+  const perfis = usePerfis();
+  const criar = useCriarUsuario();
+  const editar = useEditarUsuario();
+  const alternarAtivo = useAlternarAtivoUsuario();
+  const redefinirSenha = useRedefinirSenhaUsuario();
+  const { enviando, proteger } = useEnvioUnico();
+  const perfilPorId = (id: string) => perfis.find((perfil) => perfil.id === id);
+  const opcoesPerfil = [{ valor: TODOS, texto: "Todos" }, ...perfis.map((perfil) => ({ valor: perfil.id, texto: perfil.nome }))];
 
   const [busca, setBusca] = useState("");
   const [filtroPerfil, setFiltroPerfil] = useState(TODOS);
@@ -102,40 +112,40 @@ export function Usuarios() {
       setConfirmacao({ tipo: usuario.ativo ? "desativar" : "reativar", usuario }),
   };
 
-  function salvar(valores: UsuarioFormValores) {
+  async function salvar(valores: UsuarioFormValores) {
     if (emEdicao) {
-      setUsuarios((lista) => lista.map((item) => (item.id === emEdicao.id ? { ...item, ...valores } : item)));
+      await editar.mutateAsync({ id: emEdicao.id, dados: valores });
       toast.success(`Dados de ${valores.nome} atualizados.`);
     } else {
-      const novo: Usuario = {
-        id: novoId(),
-        ...valores,
-        ativo: true,
-        trocarSenha: true,
-        criadoEm: new Date().toISOString(),
-        ultimoAcesso: null,
-      };
-      setUsuarios((lista) => [...lista, novo]);
-      setSenhaExibida({ usuario: novo, senha: gerarSenhaProvisoria(), motivo: "cadastro" });
+      const { funcionario, senhaProvisoria } = await criar.mutateAsync(valores);
+      setSenhaExibida({ usuario: funcionario, senha: senhaProvisoria, motivo: "cadastro" });
     }
     setFormAberto(false);
   }
 
-  function confirmar() {
+  const confirmar = proteger(async () => {
     if (!confirmacao) return;
     const { tipo, usuario } = confirmacao;
-    if (tipo === "redefinir") {
-      setUsuarios((lista) => lista.map((item) => (item.id === usuario.id ? { ...item, trocarSenha: true } : item)));
-      setSenhaExibida({ usuario, senha: gerarSenhaProvisoria(), motivo: "redefinicao" });
-    } else {
-      const ativo = tipo === "reativar";
-      setUsuarios((lista) => lista.map((item) => (item.id === usuario.id ? { ...item, ativo } : item)));
-      toast.success(ativo ? `${usuario.nome} foi reativado.` : `${usuario.nome} foi desativado.`);
+    try {
+      if (tipo === "redefinir") {
+        const { funcionario, senhaProvisoria } = await redefinirSenha.mutateAsync(usuario.id);
+        setSenhaExibida({ usuario: funcionario, senha: senhaProvisoria, motivo: "redefinicao" });
+      } else {
+        const ativo = tipo === "reativar";
+        await alternarAtivo.mutateAsync({ id: usuario.id, ativo });
+        toast.success(ativo ? `${usuario.nome} foi reativado.` : `${usuario.nome} foi desativado.`);
+      }
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível concluir. Tente de novo.");
     }
     setConfirmacao(null);
-  }
+  });
 
-  const vazio = <ListagemVazia>Nenhum funcionário encontrado com esses filtros.</ListagemVazia>;
+  const vazio = (
+    <ListagemVazia>
+      {consulta.isPending ? "Carregando…" : consulta.isError ? consulta.error.message : "Nenhum funcionário encontrado com esses filtros."}
+    </ListagemVazia>
+  );
 
   return (
     <Listagem>
@@ -160,7 +170,7 @@ export function Usuarios() {
           <ListagemFiltro
             rotulo="Perfil"
             valor={filtroPerfil}
-            opcoes={FILTRO_PERFIL}
+            opcoes={opcoesPerfil}
             aoMudar={(valor) => {
               setFiltroPerfil(valor);
               setPagina(1);
@@ -247,11 +257,10 @@ export function Usuarios() {
       <UsuarioForm
         aberto={formAberto}
         usuario={emEdicao}
-        emailsEmUso={usuarios.filter((item) => item.id !== emEdicao?.id).map((item) => item.email.toLowerCase())}
         aoFechar={() => setFormAberto(false)}
         aoSalvar={salvar}
       />
-      <ConfirmacaoDialog confirmacao={confirmacao} aoCancelar={() => setConfirmacao(null)} aoConfirmar={confirmar} />
+      <ConfirmacaoDialog confirmacao={confirmacao} enviando={enviando} aoCancelar={() => setConfirmacao(null)} aoConfirmar={confirmar} />
       <SenhaProvisoriaDialog dados={senhaExibida} aoFechar={() => setSenhaExibida(null)} />
     </Listagem>
   );

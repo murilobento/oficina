@@ -1,20 +1,21 @@
-import { Lock, Pencil } from "lucide-react";
+import { Lock, Pencil, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PERMISSOES } from "@/features/auth/permissoes";
 
-import { MODULOS, moduloDaPermissao, type PerfilAcesso } from "./data";
+import type { PerfilApi } from "./api";
+import { MODULOS, moduloDaPermissao } from "./data";
 
 /** Lista de perfis em cartões: funciona no celular e no computador. */
 export function PerfisCards({
   perfis,
-  usuariosPorPerfil,
   aoEditar,
+  aoExcluir,
 }: {
-  perfis: PerfilAcesso[];
-  usuariosPorPerfil: Record<string, number>;
-  aoEditar: (perfil: PerfilAcesso) => void;
+  perfis: PerfilApi[];
+  aoEditar: (perfil: PerfilApi) => void;
+  aoExcluir: (perfil: PerfilApi) => void;
 }) {
   const totalPermissoes = Object.keys(PERMISSOES).length;
 
@@ -24,7 +25,7 @@ export function PerfisCards({
         const modulos = MODULOS.filter((modulo) =>
           perfil.permissoes.some((permissao) => moduloDaPermissao(permissao) === modulo.id),
         );
-        const pessoas = usuariosPorPerfil[perfil.id] ?? 0;
+        const pessoas = perfil.funcionarios;
 
         return (
           <li key={perfil.id} className="bg-card flex min-w-0 flex-col gap-3 rounded-xl border p-4 uppercase [&_button]:uppercase">
@@ -38,14 +39,25 @@ export function PerfisCards({
                 </p>
                 <p className="text-muted-foreground text-sm">{perfil.descricao}</p>
               </div>
-              <Button
-                variant="outline"
-                className="shrink-0"
-                aria-label={`Editar ${perfil.nome}`}
-                onClick={() => aoEditar(perfil)}
-              >
-                <Pencil /> Editar
-              </Button>
+              <div className="flex shrink-0 gap-1.5">
+                {!perfil.protegido && (
+                  <Button variant="outline" aria-label={`Editar ${perfil.nome}`} onClick={() => aoEditar(perfil)}>
+                    <Pencil /> Editar
+                  </Button>
+                )}
+                {!perfil.protegido && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label={`Excluir ${perfil.nome}`}
+                    title={pessoas > 0 ? "Troque o perfil dos funcionários antes de excluir." : "Excluir perfil"}
+                    disabled={pessoas > 0}
+                    onClick={() => aoExcluir(perfil)}
+                  >
+                    <Trash2 />
+                  </Button>
+                )}
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-1.5">

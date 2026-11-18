@@ -18,7 +18,7 @@ export async function semearPerfis(banco: Banco): Promise<void> {
 }
 
 /** Permissões do perfil. O perfil protegido (Administrador) sempre tem todas. */
-export async function permissoesDoPerfil(banco: Banco, perfilId: string): Promise<Permissao[]> {
+export async function permissoesDoPerfil(banco: Pick<Banco, "consultar">, perfilId: string): Promise<Permissao[]> {
   const [perfil] = await banco.consultar<{ protegido: boolean }>("select protegido from perfis where id = $1", [perfilId]);
   if (!perfil) return [];
   if (perfil.protegido) return Object.keys(PERMISSOES) as Permissao[];

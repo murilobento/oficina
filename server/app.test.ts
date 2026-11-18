@@ -10,7 +10,7 @@ let entrar: Awaited<ReturnType<typeof iniciarAppDeTeste>>["entrar"];
 let fechar: () => Promise<void>;
 
 beforeAll(async () => {
-  const ctx = await iniciarAppDeTeste();
+  const ctx = await iniciarAppDeTeste({ senhaJaTrocada: false });
   ({ banco, chamar, entrar, fechar } = ctx);
 }, 60_000);
 
@@ -79,44 +79,30 @@ describe("login", () => {
   });
 });
 
-describe("funcionários", () => {
-  it("administrador cria funcionário com perfil; ele recebe só as permissões do perfil e não administra", async () => {
+describe("funcionários e a senha provisória", () => {
+  it("o funcionário criado recebe só as permissões do perfil e não administra", async () => {
     const admin = await entrar("admin@oficina.com", "senha-nova-segura-2");
-    const criacao = await chamar("/api/auth/admin/create-user", {
-      cookie: admin,
-      corpo: { email: "joao@oficina.com", name: "João", password: "provisoria-joao-1", role: "mecanico" },
-    });
-    expect(criacao.status).toBe(200);
+    const criacao = await chamar("/api/funcionarios", { cookie: admin, corpo: { email: "joao@oficina.com", nome: "João da Silva", perfilId: "mecanico" } });
+    expect(criacao.status).toBe(201);
+    const { senhaProvisoria } = await criacao.json();
 
-    const cookie = await entrar("joao@oficina.com", "provisoria-joao-1");
+    const cookie = await entrar("joao@oficina.com", senhaProvisoria);
     const eu = await (await chamar("/api/eu", { cookie })).json();
     expect(eu).toMatchObject({ perfil: "mecanico", trocarSenha: true });
     expect(eu.permissoes).toContain("ordens.editar");
     expect(eu.permissoes).not.toContain("perfis.gerenciar");
 
-    const tentativa = await chamar("/api/auth/admin/create-user", {
-      cookie,
-      corpo: { email: "outro@oficina.com", name: "Outro", password: "12345678-abc", role: "administrador" },
-    });
-    expect(tentativa.ok).toBe(false);
+    const tentativa = await chamar("/api/funcionarios", { cookie, corpo: { email: "outro@oficina.com", nome: "Outro Nome", perfilId: "administrador" } });
+    expect(tentativa.status).toBe(403);
   });
 
-  it("redefinição pelo administrador volta a exigir a troca de senha", async () => {
+  it("trocar a senha encerra a senha provisória do funcionário", async () => {
     const admin = await entrar("admin@oficina.com", "senha-nova-segura-2");
     const [joao] = await banco.consultar<{ id: string }>(`select id from "user" where email = 'joao@oficina.com'`);
-    const cookie = await entrar("joao@oficina.com", "provisoria-joao-1");
-    await chamar("/api/auth/change-password", { cookie, corpo: { currentPassword: "provisoria-joao-1", newPassword: "joao-trocou-a-senha" } });
-    const reset = await chamar("/api/auth/admin/set-user-password", { cookie: admin, corpo: { userId: joao.id, newPassword: "nova-provisoria-3" } });
-    expect(reset.status).toBe(200);
-    const novo = await entrar("joao@oficina.com", "nova-provisoria-3");
-    expect((await (await chamar("/api/eu", { cookie: novo })).json()).trocarSenha).toBe(true);
-  });
-
-  it("funcionário banido não entra", async () => {
-    const admin = await entrar("admin@oficina.com", "senha-nova-segura-2");
-    const [joao] = await banco.consultar<{ id: string }>(`select id from "user" where email = 'joao@oficina.com'`);
-    expect((await chamar("/api/auth/admin/ban-user", { cookie: admin, corpo: { userId: joao.id } })).status).toBe(200);
-    const resposta = await chamar("/api/auth/sign-in/email", { corpo: { email: "joao@oficina.com", password: "nova-provisoria-3" } });
-    expect(resposta.ok).toBe(false);
+    const { senhaProvisoria } = await (await chamar(`/api/funcionarios/${joao.id}/redefinir-senha`, { cookie: admin, corpo: {} })).json();
+    const cookie = await entrar("joao@oficina.com", senhaProvisoria);
+    await chamar("/api/auth/change-password", { cookie, corpo: { currentPassword: senhaProvisoria, newPassword: "joao-trocou-a-senha" } });
+    const novo = await entrar("joao@oficina.com", "joao-trocou-a-senha");
+    expect((await (await chamar("/api/eu", { cookie: novo })).json()).trocarSenha).toBe(false);
   });
 });
