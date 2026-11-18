@@ -10,6 +10,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
+      position="top-center"
       icons={{
         success: (
           <CircleCheckIcon className="size-4" />
@@ -38,6 +39,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast: "cn-toast",
+          success: "!border-transparent !bg-[oklch(0.45_0.12_150)] !text-white",
+          error: "!border-transparent !bg-[oklch(0.5_0.19_27)] !text-white",
         },
       }}
       {...props}
