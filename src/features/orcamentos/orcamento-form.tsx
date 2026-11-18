@@ -207,7 +207,7 @@ export function OrcamentoForm({
                       <div className="flex gap-2">
                         <NativeSelect
                           id="orcamento-veiculoId"
-                          className="w-full"
+                          className="w-full uppercase"
                           disabled={!clienteId}
                           value={field.value}
                           onBlur={field.onBlur}
@@ -222,7 +222,7 @@ export function OrcamentoForm({
                                 : "Selecione o veículo"}
                           </NativeSelectOption>
                           {veiculosDisponiveis.map((v) => (
-                            <NativeSelectOption key={v.id} value={v.id}>
+                            <NativeSelectOption key={v.id} value={v.id} className="uppercase">
                               {veiculoEmTexto(v)}
                             </NativeSelectOption>
                           ))}

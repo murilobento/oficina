@@ -53,7 +53,7 @@ export function CampoBusca({
           disabled={desabilitado}
           className={cn("w-full min-w-0 justify-between px-3 font-normal", !escolhida && "text-muted-foreground")}
         >
-          <span className="truncate">{carregando ? "Carregando…" : escolhida ? escolhida.nome : placeholder}</span>
+          <span className="truncate uppercase">{carregando ? "Carregando…" : escolhida ? escolhida.nome : placeholder}</span>
           <ChevronsUpDown className="text-muted-foreground size-4 shrink-0" />
         </Button>
       </PopoverTrigger>
@@ -72,7 +72,7 @@ export function CampoBusca({
                 }}
               >
                 <Check className={cn("size-4 shrink-0", opcao.codigo === valor ? "opacity-100" : "opacity-0")} />
-                <span className="truncate">{opcao.nome}</span>
+                <span className="truncate uppercase">{opcao.nome}</span>
               </CommandItem>
             ))}
             {encontradas.length === 0 && <p className="text-muted-foreground py-4 text-center text-sm">Nada encontrado.</p>}

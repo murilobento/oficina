@@ -77,7 +77,7 @@ export function CampoCliente({
             !escolhido && "text-muted-foreground",
           )}
         >
-          <span className="truncate">{escolhido ? escolhido.nome : `Digite para buscar o ${entidade}`}</span>
+          <span className="truncate uppercase">{escolhido ? escolhido.nome : `Digite para buscar o ${entidade}`}</span>
           <ChevronsUpDown className="text-muted-foreground size-4 shrink-0" />
         </Button>
       </PopoverTrigger>
@@ -102,7 +102,7 @@ export function CampoCliente({
                 }}
               >
                 <Check className={cn("size-4 shrink-0", cliente.id === valor ? "opacity-100" : "opacity-0")} />
-                <span className="min-w-0">
+                <span className="min-w-0 uppercase">
                   <span className="block truncate">{cliente.nome}</span>
                   {cliente.documento && (
                     <span className="text-muted-foreground block truncate text-xs">
@@ -131,7 +131,7 @@ export function CampoCliente({
               }}
             >
               <Plus className="size-4" />
-              {busca.trim() ? `Cadastrar "${busca.trim()}"` : `Cadastrar novo ${entidade}`}
+              {busca.trim() ? `Cadastrar "${busca.trim().toUpperCase()}"` : `Cadastrar novo ${entidade}`}
             </CommandItem>
           </CommandGroup>
         </Command>

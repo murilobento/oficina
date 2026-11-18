@@ -145,10 +145,10 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
                     <Field className="gap-1.5 sm:col-span-2">
                       <FieldLabel htmlFor="venda-veiculoId">Veículo (opcional)</FieldLabel>
                       <div className="flex gap-2">
-                        <NativeSelect id="venda-veiculoId" className="w-full" value={veiculoId} onChange={(evento) => escolherVeiculo(evento.target.value)}>
+                        <NativeSelect id="venda-veiculoId" className="w-full uppercase" value={veiculoId} onChange={(evento) => escolherVeiculo(evento.target.value)}>
                           <NativeSelectOption value="">{veiculosDisponiveis.length === 0 ? "Nenhum veículo cadastrado" : "Sem veículo"}</NativeSelectOption>
                           {veiculosDisponiveis.map((v) => (
-                            <NativeSelectOption key={v.id} value={v.id}>
+                            <NativeSelectOption key={v.id} value={v.id} className="uppercase">
                               {veiculoEmTexto(v)}
                             </NativeSelectOption>
                           ))}

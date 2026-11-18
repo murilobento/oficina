@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { AppSidebar } from "./app-sidebar";
 import { LayoutControls } from "./layout-controls";
 import { SearchDialog } from "./search-dialog";
+import { BotaoTelaCheia } from "./tela-cheia";
 
 /**
  * Casca das telas internas: menu lateral, barra superior e área de conteúdo.
@@ -49,6 +50,7 @@ export function AppLayout({ children }: Readonly<{ children: ReactNode }>) {
               <SearchDialog />
             </div>
             <div className="flex items-center gap-2">
+              <BotaoTelaCheia />
               <LayoutControls />
             </div>
           </div>
