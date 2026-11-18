@@ -24,6 +24,7 @@ import { Route as AppComprasIndexRouteImport } from './routes/_app/compras.index
 import { Route as AppFornecedoresIndexRouteImport } from './routes/_app/fornecedores.index'
 import { Route as AppOrcamentosIndexRouteImport } from './routes/_app/orcamentos.index'
 import { Route as AppProdutosIndexRouteImport } from './routes/_app/produtos.index'
+import { Route as AppReceberIndexRouteImport } from './routes/_app/receber.index'
 import { Route as AppServicosIndexRouteImport } from './routes/_app/servicos.index'
 import { Route as AppVeiculosIndexRouteImport } from './routes/_app/veiculos.index'
 import { Route as AppVendasIndexRouteImport } from './routes/_app/vendas.index'
@@ -104,6 +105,11 @@ const AppProdutosIndexRoute = AppProdutosIndexRouteImport.update({
   path: '/produtos/',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppReceberIndexRoute = AppReceberIndexRouteImport.update({
+  id: '/receber/',
+  path: '/receber/',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppServicosIndexRoute = AppServicosIndexRouteImport.update({
   id: '/servicos/',
   path: '/servicos/',
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/fornecedores/': typeof AppFornecedoresIndexRoute
   '/orcamentos/': typeof AppOrcamentosIndexRoute
   '/produtos/': typeof AppProdutosIndexRoute
+  '/receber/': typeof AppReceberIndexRoute
   '/servicos/': typeof AppServicosIndexRoute
   '/veiculos/': typeof AppVeiculosIndexRoute
   '/vendas/': typeof AppVendasIndexRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/fornecedores': typeof AppFornecedoresIndexRoute
   '/orcamentos': typeof AppOrcamentosIndexRoute
   '/produtos': typeof AppProdutosIndexRoute
+  '/receber': typeof AppReceberIndexRoute
   '/servicos': typeof AppServicosIndexRoute
   '/veiculos': typeof AppVeiculosIndexRoute
   '/vendas': typeof AppVendasIndexRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/_app/fornecedores/': typeof AppFornecedoresIndexRoute
   '/_app/orcamentos/': typeof AppOrcamentosIndexRoute
   '/_app/produtos/': typeof AppProdutosIndexRoute
+  '/_app/receber/': typeof AppReceberIndexRoute
   '/_app/servicos/': typeof AppServicosIndexRoute
   '/_app/veiculos/': typeof AppVeiculosIndexRoute
   '/_app/vendas/': typeof AppVendasIndexRoute
@@ -213,6 +222,7 @@ export interface FileRouteTypes {
     | '/fornecedores/'
     | '/orcamentos/'
     | '/produtos/'
+    | '/receber/'
     | '/servicos/'
     | '/veiculos/'
     | '/vendas/'
@@ -234,6 +244,7 @@ export interface FileRouteTypes {
     | '/fornecedores'
     | '/orcamentos'
     | '/produtos'
+    | '/receber'
     | '/servicos'
     | '/veiculos'
     | '/vendas'
@@ -256,6 +267,7 @@ export interface FileRouteTypes {
     | '/_app/fornecedores/'
     | '/_app/orcamentos/'
     | '/_app/produtos/'
+    | '/_app/receber/'
     | '/_app/servicos/'
     | '/_app/veiculos/'
     | '/_app/vendas/'
@@ -376,6 +388,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProdutosIndexRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/receber/': {
+      id: '/_app/receber/'
+      path: '/receber'
+      fullPath: '/receber/'
+      preLoaderRoute: typeof AppReceberIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/servicos/': {
       id: '/_app/servicos/'
       path: '/servicos'
@@ -427,6 +446,7 @@ interface AppRouteRouteChildren {
   AppFornecedoresIndexRoute: typeof AppFornecedoresIndexRoute
   AppOrcamentosIndexRoute: typeof AppOrcamentosIndexRoute
   AppProdutosIndexRoute: typeof AppProdutosIndexRoute
+  AppReceberIndexRoute: typeof AppReceberIndexRoute
   AppServicosIndexRoute: typeof AppServicosIndexRoute
   AppVeiculosIndexRoute: typeof AppVeiculosIndexRoute
   AppVendasIndexRoute: typeof AppVendasIndexRoute
@@ -447,6 +467,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppFornecedoresIndexRoute: AppFornecedoresIndexRoute,
   AppOrcamentosIndexRoute: AppOrcamentosIndexRoute,
   AppProdutosIndexRoute: AppProdutosIndexRoute,
+  AppReceberIndexRoute: AppReceberIndexRoute,
   AppServicosIndexRoute: AppServicosIndexRoute,
   AppVeiculosIndexRoute: AppVeiculosIndexRoute,
   AppVendasIndexRoute: AppVendasIndexRoute,

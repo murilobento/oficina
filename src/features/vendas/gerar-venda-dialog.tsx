@@ -5,8 +5,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { usePode } from "@/features/auth/sessao";
 import { useProdutos } from "@/features/produtos/api";
 import { itensSemSaldo } from "@/features/estoque/movimentar";
 import type { Orcamento } from "@/features/orcamentos/tipos";
@@ -15,7 +14,8 @@ import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
 import { useEnvioUnico } from "@/lib/envio-unico";
 
 import { useGerarVendaDoOrcamento } from "./api";
-import { FORMAS_PAGAMENTO } from "./tipos";
+import { corpoPagamento, type EstadoPagamento, estadoInicial, validarPagamento } from "./pagamentos";
+import { PagamentosCampos } from "./pagamentos-campos";
 
 /**
  * Confirma a venda de um orçamento aprovado: pede a forma de pagamento e avisa quando faltar
@@ -30,23 +30,26 @@ export function GerarVendaDialog({
   aoFechar: () => void;
   aoGerada?: (numero: string) => void;
 }) {
-  const [forma, setForma] = useState("");
+  const [pagamento, setPagamento] = useState<EstadoPagamento>(estadoInicial);
   const [erro, setErro] = useState("");
   const gerar = useGerarVendaDoOrcamento();
   const { proteger } = useEnvioUnico();
   const produtos = useProdutos();
+  const verValores = usePode("valores.ver");
 
+  const total = orcamento ? totaisDoOrcamento(orcamento).total : 0;
   const faltas = orcamento ? itensSemSaldo(orcamento.itens.filter((item) => item.tipo === "produto"), produtos) : [];
 
   const confirmar = proteger(async () => {
     if (!orcamento) return;
-    if (forma === "") {
-      setErro("Escolha a forma de pagamento.");
+    const problema = validarPagamento(pagamento, total, orcamento.clienteId !== "", verValores);
+    if (problema) {
+      setErro(problema);
       return;
     }
     try {
-      const venda = await gerar.mutateAsync({ orcamentoId: orcamento.id, formaPagamento: forma });
-      toast.success(`${venda.numero} gerada a partir de ${orcamento.numero}.`);
+      const venda = await gerar.mutateAsync({ orcamentoId: orcamento.id, ...corpoPagamento(pagamento, total, verValores) });
+      toast.success(venda.saldo > 0 ? `${venda.numero} gerada. Saldo a receber: ${formatarBRL(venda.saldo)}.` : `${venda.numero} gerada a partir de ${orcamento.numero}.`);
       aoGerada?.(venda.numero);
       aoFechar();
     } catch (falha) {
@@ -56,34 +59,24 @@ export function GerarVendaDialog({
 
   return (
     <Dialog open={orcamento !== null} onOpenChange={(open) => !open && aoFechar()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Gerar venda de {orcamento?.numero}</DialogTitle>
           <DialogDescription>
-            {orcamento && `Total de ${formatarBRL(totaisDoOrcamento(orcamento).total)}.`}
+            {orcamento && verValores && `Total de ${formatarBRL(totaisDoOrcamento(orcamento).total)}.`}
           </DialogDescription>
         </DialogHeader>
-        <Field className="gap-1.5" data-invalid={erro !== ""}>
-          <FieldLabel htmlFor="gerar-venda-forma">Forma de pagamento</FieldLabel>
-          <NativeSelect
-            id="gerar-venda-forma"
-            className="w-full"
-            value={forma}
-            aria-invalid={erro !== ""}
-            onChange={(evento) => {
-              setForma(evento.target.value);
-              setErro("");
-            }}
-          >
-            <NativeSelectOption value="">Selecione</NativeSelectOption>
-            {FORMAS_PAGAMENTO.map((item) => (
-              <NativeSelectOption key={item.valor} value={item.valor}>
-                {item.texto}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-          {erro && <p role="alert" className="text-destructive text-sm">{erro}</p>}
-        </Field>
+        <PagamentosCampos
+          prefixo="gerar-venda"
+          total={total}
+          estado={pagamento}
+          aoMudar={(novo) => {
+            setPagamento(novo);
+            setErro("");
+          }}
+          temCliente={orcamento?.clienteId !== undefined && orcamento.clienteId !== ""}
+          erro={erro}
+        />
         {faltas.length > 0 && (
           <div role="status" className="flex gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" />

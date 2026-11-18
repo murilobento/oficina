@@ -54,6 +54,7 @@ export const navModules: NavModule[] = [
         items: [
           { id: "orcamentos", title: "Orçamento", url: "/orcamentos", permissao: "orcamentos.ver" },
           { id: "vendas", title: "Venda", url: "/vendas", permissao: "vendas.ver" },
+          { id: "receber", title: "A receber", url: "/receber", permissao: "valores.ver" },
           { id: "compras", title: "Compra", url: "/compras", permissao: "compras.ver" },
         ],
       },

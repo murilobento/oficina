@@ -8,7 +8,7 @@ import { CarFront, TriangleAlert, UserPlus, X } from "lucide-react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
-import { CampoSelect, CampoTexto, CampoTextarea } from "@/components/layout/campos-form";
+import { CampoTexto, CampoTextarea } from "@/components/layout/campos-form";
 import { SecaoFormulario } from "@/components/layout/registro-partes";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -22,11 +22,14 @@ import { CampoCliente } from "@/features/pessoas/campo-cliente";
 import { ClienteRapido } from "@/features/pessoas/cliente-rapido";
 import { veiculoEmTexto } from "@/features/veiculos/tipos";
 import { VeiculoRapido } from "@/features/veiculos/veiculo-rapido";
-import { formatarQuantidade, mascararMoeda, mascararQuantidade, textoParaCentavos, textoParaNumero } from "@/lib/numeros";
+import { formatarBRL, formatarQuantidade, mascararMoeda, mascararQuantidade, textoParaCentavos, textoParaNumero } from "@/lib/numeros";
 import { useEnvioUnico } from "@/lib/envio-unico";
 
 import { useRegistrarVenda } from "./api";
-import { esquemaVenda, FORM_VAZIO, FORMAS_PAGAMENTO, paraVenda, type VendaFormValores } from "./tipos";
+import { usePode } from "@/features/auth/sessao";
+import { corpoPagamento, type EstadoPagamento, estadoInicial, validarPagamento } from "./pagamentos";
+import { PagamentosCampos } from "./pagamentos-campos";
+import { esquemaVenda, FORM_VAZIO, paraVenda, type VendaFormValores } from "./tipos";
 
 const soDigitos = (limite: number) => (valor: string) => valor.replace(/\D/g, "").slice(0, limite);
 
@@ -55,6 +58,9 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
     descontoTipo,
     descontoTipo === "valor" ? textoParaCentavos(desconto) : textoParaNumero(desconto) || 0,
   );
+  const [pagamento, setPagamento] = useState<EstadoPagamento>(estadoInicial);
+  const [erroPagamento, setErroPagamento] = useState("");
+  const verValores = usePode("valores.ver");
   const registrar = useRegistrarVenda();
   const produtos = useProdutos();
   const faltas = itensSemSaldo(
@@ -88,9 +94,14 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
   }
 
   const enviar = enviarUnico(form, async (valores) => {
+    const problema = validarPagamento(pagamento, totais.total, valores.clienteId !== "", verValores);
+    if (problema) {
+      setErroPagamento(problema);
+      return;
+    }
     try {
-      const venda = await registrar.mutateAsync(paraVenda(valores));
-      toast.success(`${venda.numero} lançada.`);
+      const venda = await registrar.mutateAsync({ ...paraVenda(valores), ...corpoPagamento(pagamento, totais.total, verValores) });
+      toast.success(venda.saldo > 0 ? `${venda.numero} lançada. Saldo a receber: ${formatarBRL(venda.saldo)}.` : `${venda.numero} lançada.`);
       aoFechar();
     } catch (erro) {
       toast.error(erro instanceof Error ? erro.message : "Não foi possível lançar a venda. Tente de novo.");
@@ -218,8 +229,21 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
                   placeholder={descontoTipo === "valor" ? "0,00" : "0"}
                   mascara={descontoTipo === "valor" ? mascararMoeda : mascararQuantidade}
                 />
-                <CampoSelect control={control} prefixo="venda" nome="formaPagamento" rotulo="Forma de pagamento" opcoes={FORMAS_PAGAMENTO} />
               </div>
+            </SecaoFormulario>
+
+            <SecaoFormulario titulo="Pagamento">
+              <PagamentosCampos
+                prefixo="venda"
+                total={totais.total}
+                estado={pagamento}
+                aoMudar={(novo) => {
+                  setPagamento(novo);
+                  setErroPagamento("");
+                }}
+                temCliente={clienteId !== ""}
+                erro={erroPagamento}
+              />
             </SecaoFormulario>
 
             <SecaoFormulario titulo="Outras informações">

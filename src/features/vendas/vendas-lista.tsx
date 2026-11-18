@@ -27,11 +27,12 @@ import { formatarBRL } from "@/lib/numeros";
 
 import { useCancelarVenda, useVendas } from "./api";
 import { FORMAS_PAGAMENTO, rotuloPagamento, totaisDaVenda, type Venda } from "./tipos";
+import { SeloSaldo } from "./recebimento";
 import { VendaDetalhe } from "./venda-detalhe";
 import { VendaForm } from "./venda-form";
 
 const FILTRO_STATUS = FILTRO_STATUS_DOCUMENTO("Concluídas");
-const FILTRO_PAGAMENTO = [{ valor: "todos", texto: "Todas" }, ...FORMAS_PAGAMENTO];
+const FILTRO_PAGAMENTO = [{ valor: "todos", texto: "Todas" }, { valor: "areceber", texto: "A receber" }, ...FORMAS_PAGAMENTO];
 const data = (valor: string) => new Date(valor).toLocaleDateString("pt-BR");
 
 /** Listagem de vendas. Orçamento aprovado vira venda no próprio orçamento; aqui também se lança venda manual. */
@@ -59,7 +60,7 @@ export function VendasLista() {
     const termo = normalizar(busca.trim());
     return vendas
       .filter((v) => filtroStatus === "todos" || v.status === filtroStatus)
-      .filter((v) => filtroPagamento === "todos" || v.formaPagamento === filtroPagamento)
+      .filter((v) => filtroPagamento === "todos" || (filtroPagamento === "areceber" ? v.saldo > 0 : v.formaPagamento === filtroPagamento || v.pagamentos.some((p) => !p.estornadoEm && p.forma === filtroPagamento)))
       .filter((v) => {
         if (termo === "") return true;
         const cliente = clientes.find((c) => c.id === v.clienteId)?.nome ?? (v.clienteId ? "" : "consumidor final");
@@ -133,7 +134,7 @@ export function VendasLista() {
           <ListagemCartaoDocumento
             key={venda.id}
             codigo={venda.numero}
-            status={<StatusDocumentoBadge status={venda.status} concluida="Concluída" />}
+            status={venda.saldo > 0 ? <SeloSaldo venda={venda} /> : <StatusDocumentoBadge status={venda.status} concluida="Concluída" />}
             acoes={<AcoesDocumento item={venda} {...acoes} />}
             titulo={nomeCliente(venda)}
             detalhe={rotuloPagamento(venda.formaPagamento)}
@@ -171,7 +172,10 @@ export function VendasLista() {
                 <TableCell className="hidden py-3 whitespace-nowrap @6xl:table-cell">{rotuloPagamento(venda.formaPagamento)}</TableCell>
                 <TableCell className="py-3 text-right whitespace-nowrap tabular-nums">{formatarBRL(totaisDaVenda(venda).total)}</TableCell>
                 <TableCell className="py-3">
-                  <StatusDocumentoBadge status={venda.status} concluida="Concluída" />
+                  <div className="flex flex-wrap items-center gap-1">
+                    <StatusDocumentoBadge status={venda.status} concluida="Concluída" />
+                    <SeloSaldo venda={venda} />
+                  </div>
                 </TableCell>
                 <TableCell className="py-3 text-right">
                   <AcoesDocumento item={venda} {...acoes} />

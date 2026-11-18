@@ -1,10 +1,16 @@
 import { useVeiculos } from "@/features/veiculos/api";
 import { usePessoas } from "@/features/pessoas/api";
-import { Ban } from "lucide-react";
+import { useState } from "react";
+
+import { Ban, HandCoins, Undo2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { StatusDocumentoBadge } from "@/components/layout/documento-partes";
+import { RotuloSecao } from "@/components/marca/rotulo-secao";
 import { Dado, SecaoDados } from "@/components/layout/registro-partes";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { usePode } from "@/features/auth/sessao";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { subtotalItem } from "@/features/orcamentos/calculo";
 import { ResumoTotais } from "@/features/orcamentos/orcamento-partes";
@@ -13,7 +19,9 @@ import { mascararDocumento, mascararTelefone } from "@/features/pessoas/document
 import { mascararPlaca } from "@/features/veiculos/tipos";
 import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
 
-import { rotuloPagamento, totaisDaVenda, type Venda } from "./tipos";
+import { useEstornarPagamento } from "./api";
+import { ReceberPagamentoDialog, SeloSaldo } from "./recebimento";
+import { FORMAS_PAGAMENTO, rotuloPagamento, totaisDaVenda, type PagamentoVenda, type Venda } from "./tipos";
 
 /** Painel lateral de visualização da venda, com a ação de cancelar. */
 export function VendaDetalhe({
@@ -27,6 +35,11 @@ export function VendaDetalhe({
   aoFechar: () => void;
   aoCancelar: (venda: Venda) => void;
 }) {
+  const [recebendo, setRecebendo] = useState({ aberto: false, abertura: 0 });
+  const [estornando, setEstornando] = useState<PagamentoVenda | null>(null);
+  const estornar = useEstornarPagamento();
+  const verValores = usePode("valores.ver");
+  const podeEditar = usePode("vendas.editar");
   const clientes = usePessoas("cliente");
   const veiculos = useVeiculos();
   const orcamentos = useOrcamentos();
@@ -44,6 +57,7 @@ export function VendaDetalhe({
               <SheetDescription>{cliente?.nome ?? (venda.clienteId ? "Cliente removido" : "Consumidor final")}</SheetDescription>
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <StatusDocumentoBadge status={venda.status} concluida="Concluída" />
+                <SeloSaldo venda={venda} />
                 <span className="text-muted-foreground text-sm">{new Date(venda.criadoEm).toLocaleDateString("pt-BR")}</span>
               </div>
             </SheetHeader>
@@ -81,7 +95,44 @@ export function VendaDetalhe({
                 <ResumoTotais totais={totaisDaVenda(venda)} className="rounded-xl border p-3" />
               </section>
 
-              <SecaoDados titulo="Pagamento e origem">
+              {verValores && (
+                <section className="flex flex-col gap-3">
+                  <RotuloSecao>Pagamentos</RotuloSecao>
+                  {venda.pagamentos.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">Nenhum pagamento recebido.</p>
+                  ) : (
+                    <ul className="divide-y rounded-md border">
+                      {venda.pagamentos.map((p) => (
+                        <li key={p.id} className="flex items-center justify-between gap-3 p-3 text-sm">
+                          <span className={p.estornadoEm ? "text-muted-foreground line-through" : ""}>
+                            <span className="font-medium">{FORMAS_PAGAMENTO.find((f) => f.valor === p.forma)?.texto ?? p.forma}</span>
+                            <span className="text-muted-foreground block text-xs">
+                              {new Date(p.criadoEm).toLocaleDateString("pt-BR")}
+                              {p.criadoPor && ` · ${p.criadoPor}`}
+                              {p.estornadoEm && " · estornado"}
+                            </span>
+                          </span>
+                          <span className="flex shrink-0 items-center gap-1">
+                            <span className={`font-mono font-semibold tabular-nums ${p.estornadoEm ? "text-muted-foreground line-through" : ""}`}>{formatarBRL(p.valor)}</span>
+                            {podeEditar && !p.estornadoEm && venda.status === "concluida" && (
+                              <Button type="button" variant="ghost" size="icon" aria-label={`Estornar pagamento de ${formatarBRL(p.valor)}`} onClick={() => setEstornando(p)}>
+                                <Undo2 />
+                              </Button>
+                            )}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {podeEditar && venda.saldo > 0 && (
+                    <Button type="button" className="self-start" onClick={() => setRecebendo((a) => ({ aberto: true, abertura: a.abertura + 1 }))}>
+                      <HandCoins /> Receber {formatarBRL(venda.saldo)}
+                    </Button>
+                  )}
+                </section>
+              )}
+
+              <SecaoDados titulo="Origem">
                 <Dado rotulo="Forma de pagamento">{rotuloPagamento(venda.formaPagamento)}</Dado>
                 <Dado rotulo="Origem">{orcamento ? `Orçamento ${orcamento.numero}` : "Lançamento manual"}</Dado>
                 <Dado rotulo="Observações" largo>
@@ -92,13 +143,41 @@ export function VendaDetalhe({
 
             {venda.status === "concluida" && (
               <SheetFooter className="flex-row justify-end gap-2 border-t">
-                <Button variant="outline" className="text-destructive" onClick={() => aoCancelar(venda)}>
+                {venda.temPagamento && <p className="text-muted-foreground mr-auto self-center text-xs">Para cancelar, estorne os pagamentos.</p>}
+                <Button variant="outline" className="text-destructive" disabled={venda.temPagamento} onClick={() => aoCancelar(venda)}>
                   <Ban /> Cancelar venda
                 </Button>
               </SheetFooter>
             )}
           </>
         )}
+        <ReceberPagamentoDialog key={recebendo.abertura} venda={recebendo.aberto ? venda : null} aoFechar={() => setRecebendo((a) => ({ ...a, aberto: false }))} />
+        <AlertDialog open={estornando !== null} onOpenChange={(open) => !open && setEstornando(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Estornar pagamento?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {estornando && `O pagamento de ${formatarBRL(estornando.valor)} deixa de contar e o saldo da venda volta a abrir.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Voltar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  if (!venda || !estornando) return;
+                  try {
+                    await estornar.mutateAsync({ vendaId: venda.id, pagamentoId: estornando.id });
+                    toast.success("Pagamento estornado.");
+                  } catch (falha) {
+                    toast.error(falha instanceof Error ? falha.message : "Não foi possível estornar.");
+                  }
+                }}
+              >
+                Estornar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </SheetContent>
     </Sheet>
   );
