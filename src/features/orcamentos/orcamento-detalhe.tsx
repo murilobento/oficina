@@ -1,6 +1,7 @@
 import { useVeiculos } from "@/features/veiculos/api";
 import { usePessoas } from "@/features/pessoas/api";
-import { CheckCircle2, Pencil, Printer, RefreshCw, RotateCcw, Send, ShoppingCart, Trash2, XCircle } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { CheckCircle2, ClipboardList, Pencil, Printer, RefreshCw, RotateCcw, Send, ShoppingCart, Trash2, XCircle } from "lucide-react";
 
 import { FolhaAbas } from "@/components/layout/folha-abas";
 import { Dado, SecaoDados } from "@/components/layout/registro-partes";
@@ -9,6 +10,9 @@ import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetT
 import { mascararDocumento, mascararTelefone } from "@/features/pessoas/documento";
 import { mascararPlaca } from "@/features/veiculos/tipos";
 import { formatarBRL, formatarQuantidade } from "@/lib/numeros";
+import { usePode } from "@/features/auth/sessao";
+import { useAbrirOrdemDoOrcamento, useOrdens } from "@/features/ordens/api";
+import { toast } from "sonner";
 
 import { subtotalItem, validoAte } from "./calculo";
 import { ResumoTotais, StatusOrcamentoBadge } from "./orcamento-partes";
@@ -46,6 +50,24 @@ export function OrcamentoDetalhe({
   const cliente = clientes.find((item) => item.id === orcamento?.clienteId) ?? null;
   const veiculos = useVeiculos();
   const veiculo = veiculos.find((item) => item.id === orcamento?.veiculoId) ?? null;
+  const verOrdens = usePode("ordens.ver");
+  const podeAbrirOs = usePode("ordens.editar");
+  const ordens = useOrdens(verOrdens);
+  const abrirOs = useAbrirOrdemDoOrcamento();
+  const navegar = useNavigate();
+  // OS em andamento deste orçamento: a venda sai na entrega da OS.
+  const osAtiva = ordens.find((o) => o.orcamentoId === orcamento?.id && o.status !== "cancelada" && o.status !== "entregue");
+
+  async function abrirOrdem(atual: Orcamento) {
+    try {
+      const ordem = await abrirOs.mutateAsync(atual.id);
+      toast.success(`${ordem.numero} aberta. O carro entrou na fila do pátio.`);
+      aoFechar();
+      await navegar({ to: "/ordens" });
+    } catch (falha) {
+      toast.error(falha instanceof Error ? falha.message : "Não foi possível abrir a OS.");
+    }
+  }
 
   return (
     <Sheet open={aberto && orcamento !== null} onOpenChange={(open) => !open && aoFechar()}>
@@ -168,12 +190,27 @@ export function OrcamentoDetalhe({
               </Button>
             </>
           )}
-          {atual.status === "aprovado" && (
+          {atual.status === "aprovado" && osAtiva && (
+            <Button
+              onClick={() => {
+                aoFechar();
+                void navegar({ to: "/ordens" });
+              }}
+            >
+              <ClipboardList /> Na {osAtiva.numero}
+            </Button>
+          )}
+          {atual.status === "aprovado" && !osAtiva && (
             <>
               <Button variant="outline" onClick={() => aoMudar(atual, { status: "enviado" })}>
                 <RotateCcw /> Reabrir
               </Button>
-              <Button onClick={() => aoGerarVenda(atual)}>
+              {podeAbrirOs && (
+                <Button disabled={abrirOs.isPending} onClick={() => abrirOrdem(atual)}>
+                  <ClipboardList /> Abrir OS
+                </Button>
+              )}
+              <Button variant={podeAbrirOs ? "outline" : "default"} onClick={() => aoGerarVenda(atual)}>
                 <ShoppingCart /> Gerar venda
               </Button>
             </>

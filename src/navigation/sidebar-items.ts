@@ -8,6 +8,7 @@ import {
   Receipt,
   Users,
   Wrench,
+  ClipboardList,
 } from "lucide-react";
 
 import type { Permissao } from "@/features/auth/permissoes";
@@ -52,6 +53,7 @@ export const navModules: NavModule[] = [
       {
         id: "atendimento",
         items: [
+          { id: "ordens", title: "Ordem de serviço", url: "/ordens", permissao: "ordens.ver" },
           { id: "orcamentos", title: "Orçamento", url: "/orcamentos", permissao: "orcamentos.ver" },
           { id: "vendas", title: "Venda", url: "/vendas", permissao: "vendas.ver" },
           { id: "receber", title: "A receber", url: "/receber", permissao: "valores.ver" },
@@ -119,7 +121,7 @@ export const navModules: NavModule[] = [
 ];
 
 /** Telas que ainda não estão no menu mas já têm permissão definida. */
-const PERMISSAO_EXTRA: Record<string, Permissao> = { "/agenda": "agenda.ver", "/ordens": "ordens.ver" };
+const PERMISSAO_EXTRA: Record<string, Permissao> = { "/agenda": "agenda.ver" };
 
 /**
  * Menu que a pessoa pode ver: tira os itens sem permissão e, em cascata, os grupos e módulos que ficaram vazios.
@@ -158,6 +160,7 @@ export function isSamePath(url: string, pathname: string): boolean {
 /** Atalhos da barra inferior do celular, na ordem de prioridade. O Início sempre entra; os demais pedem permissão. */
 const ATALHOS_CANDIDATOS: { id: string; titulo: string; url: string; icone: LucideIcon; permissao?: Permissao }[] = [
   { id: "inicio", titulo: "Início", url: "/", icone: Home },
+  { id: "ordens", titulo: "OS", url: "/ordens", icone: ClipboardList, permissao: "ordens.ver" },
   { id: "orcamentos", titulo: "Orçam.", url: "/orcamentos", icone: FileText, permissao: "orcamentos.ver" },
   { id: "vendas", titulo: "Vendas", url: "/vendas", icone: Receipt, permissao: "vendas.ver" },
   { id: "estoque", titulo: "Estoque", url: "/estoque/movimentacoes", icone: Package, permissao: "estoque.ver" },
@@ -172,6 +175,7 @@ export function atalhosInferiores(permissoes: readonly Permissao[] | null): Atal
 
 /** Ações do botão ＋ Novo. `chave` liga a ação à lista que abre o formulário (ver src/lib/acao-novo.ts). */
 const ACOES_NOVO: { id: string; titulo: string; url: string; icone: LucideIcon; permissoes: Permissao[] }[] = [
+  { id: "ordem", titulo: "Nova OS", url: "/ordens", icone: ClipboardList, permissoes: ["ordens.ver", "ordens.editar"] },
   { id: "orcamento", titulo: "Novo orçamento", url: "/orcamentos", icone: FileText, permissoes: ["orcamentos.ver", "orcamentos.editar"] },
   { id: "venda", titulo: "Nova venda", url: "/vendas", icone: Receipt, permissoes: ["vendas.ver", "vendas.editar"] },
   { id: "compra", titulo: "Nova compra", url: "/compras", icone: Package, permissoes: ["compras.ver", "compras.editar", "valores.ver"] },

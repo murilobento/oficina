@@ -107,7 +107,7 @@ export function SeletorItem({
           </DialogTitle>
           <DialogDescription>
             {cadastrando
-              ? `Cadastro rápido: já fica salvo no cadastro e entra ${documento === "venda" ? "na" : "no"} ${documento}.`
+              ? `Cadastro rápido: já fica salvo no cadastro e entra ${documento === "venda" || documento === "OS" ? "na" : "no"} ${documento}.`
               : "Escolha um produto ou serviço do cadastro, ou cadastre um novo."}
           </DialogDescription>
         </DialogHeader>
@@ -182,7 +182,7 @@ export function SeletorItem({
                 Serviço avulso
               </Button>
               <p className="text-muted-foreground col-span-2 text-center text-xs">
-                Avulso vale só para {documento === "venda" ? "esta" : "este"} {documento} e não entra no cadastro.
+                Avulso vale só para {documento === "venda" || documento === "OS" ? "esta" : "este"} {documento} e não entra no cadastro.
               </p>
             </div>
           </>

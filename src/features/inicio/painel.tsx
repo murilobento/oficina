@@ -10,6 +10,8 @@ import type { Permissao } from "@/features/auth/permissoes";
 import { useOrcamentos } from "@/features/orcamentos/api";
 import { useProdutos } from "@/features/produtos/api";
 import { useVendas } from "@/features/vendas/api";
+import { useOrdens } from "@/features/ordens/api";
+import { contarPorEtapa, ETAPAS } from "@/features/ordens/tipos";
 import { formatarBRL } from "@/lib/numeros";
 import { usePermissoes } from "@/navigation/acesso";
 import { permissaoDaRota } from "@/navigation/sidebar-items";
@@ -36,6 +38,9 @@ export function PainelDoDia() {
   const orcamentos = useOrcamentos(verOrcamentos);
   const vendas = useVendas(verVendas);
   const produtos = useProdutos(verEstoque);
+  const verOrdens = pode("ordens.ver");
+  const ordens = useOrdens(verOrdens);
+  const patio = contarPorEtapa(ordens);
 
   const resumo = useMemo(
     () => resumoDoDia({ orcamentos: orcamentos, vendas: vendas, produtos: produtos }),
@@ -44,6 +49,18 @@ export function PainelDoDia() {
 
   return (
     <div className="flex flex-col gap-6">
+      {verOrdens && (
+        <section className="flex flex-col gap-3">
+          <RotuloSecao>No pátio</RotuloSecao>
+          <Link to="/ordens" className="grid grid-cols-2 gap-px overflow-hidden rounded-md border bg-border sm:grid-cols-4">
+            {ETAPAS.map((e) => (
+              <div key={e.status} className="bg-card p-4">
+                <Numeral rotulo={e.texto} valor={String(patio[e.status])} tamanho="sm" />
+              </div>
+            ))}
+          </Link>
+        </section>
+      )}
       {(verOrcamentos || verVendas) && (
         <section aria-label="Resumo do dia" className={`grid gap-px overflow-hidden rounded-md border bg-border ${verOrcamentos && verVendas ? "grid-cols-2" : "grid-cols-1"}`}>
           {verVendas && (

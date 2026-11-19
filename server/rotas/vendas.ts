@@ -1,13 +1,13 @@
 import type { Context } from "hono";
 import { z } from "zod";
 
-import type { Consulta } from "../banco";
 import { movimentar } from "../estoque";
 
 import { comItens } from "./documentos";
 import { situacaoParcelas } from "../../src/features/vendas/parcelas";
-import { camposPagamentos, conferirPagamentos, contaDaVenda, esquemaRecebimento, gravarPagamentos, gravarParcelas, type PagamentoEntrada, totalDaVenda } from "./pagamentos-venda";
-import { camposItensEDesconto, conferirClienteEVeiculo, gravarItens, type ItemVendaApi, precificar, protegerValores, somarPorProduto, subirKm, validarDescontoApi } from "./itens-venda";
+import { camposPagamentos, contaDaVenda, esquemaRecebimento, gravarPagamentos, type PagamentoEntrada, totalDaVenda } from "./pagamentos-venda";
+import { gravarVenda, quemSou } from "./venda-gravar";
+import { camposItensEDesconto, conferirClienteEVeiculo, type ItemVendaApi, precificar, protegerValores, validarDescontoApi } from "./itens-venda";
 import { type Contexto, ErroApi, lerCorpo, type Variaveis, violaChaveEstrangeira } from "./util";
 
 const texto = (max: number) => z.string().trim().max(max, `No máximo ${max} caracteres.`);
@@ -83,39 +83,12 @@ export function registrarRotasVendas({ app, banco, exigirSessao, exigirPermissao
     return ver ? protegidas : protegidas.map((v) => ({ ...v, ajuste: 0, pagamentos: [], parcelas: [], totalPago: 0, saldo: 0 }));
   };
 
-  /** Quem vê valores informa os pagamentos; quem não vê só escolhe a forma e a API paga o total. */
-  function acertarPagamentos(itens: ItemVendaApi[], tipo: "valor" | "percentual", desconto: number, pagamentos: PagamentoEntrada[], divergencia: "saldo" | "desconto" | undefined, temCliente: boolean, verValores: boolean) {
-    const total = totalDaVenda(itens, tipo, desconto, 0);
-    if (!verValores) {
-      if (pagamentos.length === 0) throw new ErroApi(400, "Escolha a forma de pagamento.", { pagamentos: "Escolha a forma de pagamento." });
-      return { pagamentos: total > 0 ? [{ forma: pagamentos[0].forma, valor: total, parcelasCartao: pagamentos[0].parcelasCartao }] : [], ajuste: 0, saldo: 0 };
-    }
-    const r = conferirPagamentos(total, pagamentos, divergencia, temCliente);
-    return { ...r, saldo: total - r.ajuste - r.pagamentos.reduce((s, p) => s + p.valor, 0) };
-  }
-  const quemSou = (c: Context<{ Variables: Variaveis }>) => String((c.get("sessao") as { user?: { name?: string } } | null)?.user?.name ?? "");
-
-  /** Baixa o estoque das peças do cadastro (serviços e itens avulsos não mexem no estoque), em ordem fixa de produto. */
-  async function baixar(q: Consulta, itens: ItemVendaApi[], documento: string) {
-    const pecas = itens.filter((i) => i.tipo === "produto" && i.origemId !== "").map((i) => ({ produtoId: i.origemId, quantidade: i.quantidade }));
-    for (const [produtoId, quantidade] of somarPorProduto(pecas)) await movimentar(q, { produtoId, delta: -quantidade, origem: "venda", documento, motivo: "" });
-  }
-
   /** Lança a venda: grava, baixa o estoque dos produtos do cadastro e sobe o km do veículo. Tudo numa transação. */
   async function lancar(dados: DadosVenda, verValores: boolean, quem: string): Promise<string> {
     try {
       return await banco.transacao(async (q) => {
         const d = await precificar(q, dados, verValores);
-        const acerto = acertarPagamentos(d.itens, d.descontoTipo, d.desconto, d.pagamentos, d.divergencia, d.clienteId !== "", verValores);
-        const [venda] = await q<{ id: string; numero: string }>(
-          "insert into vendas (cliente_id, veiculo_id, km, orcamento_id, desconto_tipo, desconto, ajuste, observacoes) values ($1,$2,$3,$4,$5,$6,$7,$8) returning id, numero",
-          [d.clienteId || null, d.veiculoId || null, d.km, d.orcamentoId || null, d.descontoTipo, d.desconto, acerto.ajuste, d.observacoes],
-        );
-        await gravarPagamentos(q, venda.id, acerto.pagamentos, quem);
-        await gravarParcelas(q, venda.id, acerto.saldo, d.parcelamento);
-        await gravarItens(q, "venda_itens", "venda_id", venda.id, d.itens);
-        await baixar(q, d.itens, venda.numero);
-        await subirKm(q, d.veiculoId || null, d.km);
+        const venda = await gravarVenda(q, d, verValores, quem);
         return venda.id;
       });
     } catch (erro) {
@@ -145,6 +118,11 @@ export function registrarRotasVendas({ app, banco, exigirSessao, exigirPermissao
     const id = await banco
       .transacao(async (q) => {
         // O cabeçalho vem da própria linha travada pelo update, então não mistura versões do orçamento.
+        // Trava o orçamento antes de conferir a OS: "Abrir OS" ao mesmo tempo espera e depois vê o orçamento convertido.
+        await q("select 1 from orcamentos where id = $1::uuid for update", [orcamentoId]);
+        // Orçamento que está numa OS em andamento é entregue pela própria OS.
+        const [naOs] = await q<{ numero: string }>("select numero from ordens where orcamento_id = $1::uuid and status <> 'cancelada'", [orcamentoId]);
+        if (naOs) throw new ErroApi(409, `Este orçamento está na ${naOs.numero}: a venda é gerada na entrega da OS.`);
         const [orc] = await q<Record<string, unknown>>("update orcamentos set status = 'convertido' where id = $1::uuid and status = 'aprovado' returning *", [orcamentoId]);
         if (!orc) throw new ErroApi(409, "Só orçamentos aprovados viram venda (e cada um só uma vez).");
         const itens = await q<Record<string, unknown>>("select * from orcamento_itens where orcamento_id = $1::uuid order by posicao", [orcamentoId]);
@@ -152,17 +130,16 @@ export function registrarRotasVendas({ app, banco, exigirSessao, exigirPermissao
           tipo: i.tipo as "produto" | "servico", origemId: (i.origem_id as string | null) ?? "", descricao: String(i.descricao), unidade: String(i.unidade),
           quantidade: Number(i.quantidade), valor: Number(i.valor),
         }));
-        const acerto = acertarPagamentos(lista0, orc.desconto_tipo as "valor" | "percentual", Number(orc.desconto), corpo.pagamentos, corpo.divergencia, orc.cliente_id !== null, verValores);
-        const [venda] = await q<{ id: string; numero: string }>(
-          "insert into vendas (cliente_id, veiculo_id, km, orcamento_id, desconto_tipo, desconto, ajuste) values ($1,$2,$3,$4,$5,$6,$7) returning id, numero",
-          [orc.cliente_id, orc.veiculo_id, orc.km, orcamentoId, orc.desconto_tipo, orc.desconto, acerto.ajuste],
+        const venda = await gravarVenda(
+          q,
+          {
+            clienteId: (orc.cliente_id as string | null) ?? "", veiculoId: (orc.veiculo_id as string | null) ?? "", km: Number(orc.km), orcamentoId,
+            itens: lista0, descontoTipo: orc.desconto_tipo as "valor" | "percentual", desconto: Number(orc.desconto), observacoes: "",
+            pagamentos: corpo.pagamentos, divergencia: corpo.divergencia, parcelamento: corpo.parcelamento,
+          },
+          verValores,
+          quemSou(c),
         );
-        await gravarPagamentos(q, venda.id, acerto.pagamentos, quemSou(c));
-        await gravarParcelas(q, venda.id, acerto.saldo, corpo.parcelamento);
-        const lista = lista0;
-        await gravarItens(q, "venda_itens", "venda_id", venda.id, lista);
-        await baixar(q, lista, venda.numero);
-        await subirKm(q, orc.veiculo_id as string, Number(orc.km));
         return venda.id;
       })
       .catch((erro) => {
@@ -220,6 +197,9 @@ export function registrarRotasVendas({ app, banco, exigirSessao, exigirPermissao
         const [existe] = await q("select 1 from produtos where id = $1::uuid", [peca.origem_id]);
         if (existe) await movimentar(q, { produtoId: peca.origem_id, delta: Number(peca.quantidade), origem: "venda", documento: venda.numero, motivo: "Cancelamento da venda" });
       }
+      // Venda que veio da entrega de uma OS: o carro volta a "Pronto" para nova entrega.
+      await q("insert into ordem_eventos (ordem_id, texto, quem) select id, $2, $3 from ordens where venda_id = $1::uuid", [id, `Venda ${venda.numero} cancelada: a OS voltou para Pronto.`, quemSou(c)]);
+      await q("update ordens set status = 'pronto', venda_id = null, entregue_em = null, atualizado_em = now() where venda_id = $1::uuid", [id]);
       if (venda.orcamento_id) await q("update orcamentos set status = 'aprovado' where id = $1::uuid and status = 'convertido'", [venda.orcamento_id]);
     });
     return c.json(enviar(c, [await buscar(id)])[0]);

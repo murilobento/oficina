@@ -1,6 +1,8 @@
 import type { Context } from "hono";
 import { z } from "zod";
 
+import type { Consulta } from "../banco";
+
 import { comItens } from "./documentos";
 import { camposItensEDesconto, conferirClienteEVeiculo, gravarItens, precificar, precificarEdicao, protegerValores, subirKm, validarDescontoApi } from "./itens-venda";
 import { type Contexto, ErroApi, lerCorpo, type Variaveis, violaChaveEstrangeira } from "./util";
@@ -28,6 +30,12 @@ const TRANSICOES: Record<Status, Status[]> = {
   recusado: ["rascunho"],
   convertido: [],
 };
+
+/** Orçamento que está numa OS em andamento não muda mais: o serviço já está no pátio. */
+async function semOsAtiva(q: Consulta, orcamentoId: string) {
+  const [os] = await q<{ numero: string }>("select numero from ordens where orcamento_id = $1::uuid and status not in ('cancelada', 'entregue')", [orcamentoId]);
+  if (os) throw new ErroApi(409, `Este orçamento está na ${os.numero} e não pode mais mudar.`);
+}
 
 export function registrarRotasOrcamentos({ app, banco, exigirSessao, exigirPermissao }: Contexto) {
   const ver = [exigirSessao, exigirPermissao("orcamentos.ver")] as const;
@@ -61,6 +69,7 @@ export function registrarRotasOrcamentos({ app, banco, exigirSessao, exigirPermi
           const [atual] = await q<{ status: Status; desconto_tipo: "valor" | "percentual"; desconto: string }>("select status, desconto_tipo, desconto from orcamentos where id = $1::uuid for update", [id]);
           if (!atual) throw new ErroApi(404, "Orçamento não encontrado.");
           if (atual.status !== "rascunho" && atual.status !== "enviado") throw new ErroApi(409, "Este orçamento já foi aprovado ou encerrado e não pode mais ser alterado.");
+          await semOsAtiva(q, id);
           if (!verValores) {
             const anteriores = await q<{ tipo: string; origem_id: string | null; descricao: string; valor: number }>("select tipo, origem_id, descricao, valor from orcamento_itens where orcamento_id = $1::uuid", [id]);
             dados = await precificarEdicao(q, bruto, anteriores, atual);
@@ -103,7 +112,11 @@ export function registrarRotasOrcamentos({ app, banco, exigirSessao, exigirPermi
     const { status } = await lerCorpo(c, z.object({ status: z.enum(["rascunho", "enviado", "aprovado", "recusado"]) }));
     const atual = (await buscar(c.req.param("id"))) as { id: string; status: Status };
     if (!TRANSICOES[atual.status].includes(status)) throw new ErroApi(409, "Esta mudança de status não é possível a partir do status atual.");
-    const mudou = await banco.consultar("update orcamentos set status = $1 where id = $2::uuid and status = $3 returning id", [status, atual.id, atual.status]);
+    const mudou = await banco.transacao(async (q) => {
+      await q("select 1 from orcamentos where id = $1::uuid for update", [atual.id]);
+      await semOsAtiva(q, atual.id);
+      return q("update orcamentos set status = $1 where id = $2::uuid and status = $3 returning id", [status, atual.id, atual.status]);
+    });
     if (mudou.length === 0) throw new ErroApi(409, "O orçamento mudou enquanto você mexia. Atualize a tela.");
     return c.json(protegerValores([await buscar(atual.id)], c.get("permissoes").includes("valores.ver"))[0]);
   });
@@ -121,7 +134,7 @@ export function registrarRotasOrcamentos({ app, banco, exigirSessao, exigirPermi
     try {
       await banco.consultar("delete from orcamentos where id = $1::uuid", [String(atual.id)]);
     } catch (erro) {
-      if (violaChaveEstrangeira(erro)) throw new ErroApi(409, "Este orçamento gerou uma venda e não pode ser excluído.");
+      if (violaChaveEstrangeira(erro)) throw new ErroApi(409, "Este orçamento gerou uma venda ou uma OS e não pode ser excluído.");
       throw erro;
     }
     return c.body(null, 204);

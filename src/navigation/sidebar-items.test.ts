@@ -39,12 +39,14 @@ describe("barra inferior do celular", () => {
     expect(atalhosInferiores([]).map((a) => a.id)).toEqual(["inicio"]);
     expect(atalhosInferiores(["orcamentos.ver", "estoque.ver"]).map((a) => a.id)).toEqual(["inicio", "orcamentos", "estoque"]);
     expect(atalhosInferiores(["orcamentos.ver", "vendas.ver", "estoque.ver", "clientes.ver"]).map((a) => a.id)).toEqual(["inicio", "orcamentos", "vendas"]);
+    // Quem vê OS (pátio) tem a OS logo depois do Início.
+    expect(atalhosInferiores(["ordens.ver", "orcamentos.ver", "vendas.ver"]).map((a) => a.id)).toEqual(["inicio", "ordens", "orcamentos"]);
   });
 
   it("＋ Novo lista só o que a pessoa pode criar; sem nenhuma permissão de edição, vazio", () => {
     expect(acoesNovoPermitidas([])).toEqual([]);
     expect(acoesNovoPermitidas(["orcamentos.ver", "orcamentos.editar", "clientes.ver", "clientes.editar"]).map((a) => a.id)).toEqual(["orcamento", "cliente"]);
-    expect(acoesNovoPermitidas(null).length).toBe(5);
+    expect(acoesNovoPermitidas(null).length).toBe(6);
     // Só editar, sem ver a tela, não oferece a ação.
     expect(acoesNovoPermitidas(["orcamentos.editar"])).toEqual([]);
     // Compra também exige ver valores.

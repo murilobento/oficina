@@ -13,6 +13,7 @@ import { registrarRotasFipe } from "./rotas/fipe";
 import { registrarRotasFuncionarios } from "./rotas/funcionarios";
 import { registrarRotasPerfis } from "./rotas/perfis";
 import { registrarRotasOrcamentos } from "./rotas/orcamentos";
+import { registrarRotasOrdens } from "./rotas/ordens";
 import { registrarRotasPessoas } from "./rotas/pessoas";
 import { registrarRotasProdutos } from "./rotas/produtos";
 import { registrarRotasServicos } from "./rotas/servicos";
@@ -95,6 +96,7 @@ export function criarApp(banco: Banco, auth: Auth, opcoes: { buscar?: typeof fet
   registrarRotasEstoque(contexto);
   registrarRotasOrcamentos(contexto);
   registrarRotasVendas(contexto);
+  registrarRotasOrdens(contexto);
   registrarRotasFipe(contexto, opcoes.buscar);
   registrarRotasPerfis(contexto);
   registrarRotasFuncionarios(contexto, auth);

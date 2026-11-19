@@ -89,7 +89,8 @@ describe("funcionários e a senha provisória", () => {
     const cookie = await entrar("joao@oficina.com", senhaProvisoria);
     const eu = await (await chamar("/api/eu", { cookie })).json();
     expect(eu).toMatchObject({ perfil: "mecanico", trocarSenha: true });
-    expect(eu.permissoes).toContain("ordens.editar");
+    expect(eu.permissoes).toContain("ordens.executar");
+    expect(eu.permissoes).not.toContain("ordens.editar");
     expect(eu.permissoes).not.toContain("perfis.gerenciar");
 
     const tentativa = await chamar("/api/funcionarios", { cookie, corpo: { email: "outro@oficina.com", nome: "Outro Nome", perfilId: "administrador" } });
