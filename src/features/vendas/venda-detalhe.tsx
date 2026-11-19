@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { StatusDocumentoBadge } from "@/components/layout/documento-partes";
 import { RotuloSecao } from "@/components/marca/rotulo-secao";
+import { FolhaAbas } from "@/components/layout/folha-abas";
 import { Dado, SecaoDados } from "@/components/layout/registro-partes";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,11 @@ export function VendaDetalhe({
               </div>
             </SheetHeader>
 
-            <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4">
+            <FolhaAbas
+              key={venda.id}
+              abas={[
+                { id: "dados", titulo: "Cliente e itens", conteudo: (
+                  <>
               <SecaoDados titulo="Cliente">
                 <Dado rotulo="Nome">{cliente?.nome ?? (venda.clienteId ? "Cliente removido" : "Consumidor final")}</Dado>
                 <Dado rotulo="CPF / CNPJ">{cliente ? mascararDocumento(cliente.tipo, cliente.documento) : ""}</Dado>
@@ -93,8 +98,12 @@ export function VendaDetalhe({
                     </li>
                   ))}
                 </ul>
-                <ResumoTotais totais={totaisDaVenda(venda)} className="rounded-xl border p-3" />
               </section>
+                  </>
+                ) },
+                { id: "valores", titulo: "Pagamentos", conteudo: (
+                  <>
+              <ResumoTotais totais={totaisDaVenda(venda)} className="rounded-md border p-3" />
 
               {verValores && (
                 <section className="flex flex-col gap-3">
@@ -166,7 +175,10 @@ export function VendaDetalhe({
                   {venda.observacoes && <span className="whitespace-pre-wrap">{venda.observacoes}</span>}
                 </Dado>
               </SecaoDados>
-            </div>
+                  </>
+                ) },
+              ]}
+            />
 
             {venda.status === "concluida" && (
               <SheetFooter className="flex-row justify-end gap-2 border-t">

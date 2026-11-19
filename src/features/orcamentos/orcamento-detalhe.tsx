@@ -2,6 +2,7 @@ import { useVeiculos } from "@/features/veiculos/api";
 import { usePessoas } from "@/features/pessoas/api";
 import { CheckCircle2, Pencil, Printer, RefreshCw, RotateCcw, Send, ShoppingCart, Trash2, XCircle } from "lucide-react";
 
+import { FolhaAbas } from "@/components/layout/folha-abas";
 import { Dado, SecaoDados } from "@/components/layout/registro-partes";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -73,7 +74,11 @@ export function OrcamentoDetalhe({
           </div>
         </SheetHeader>
 
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4">
+        <FolhaAbas
+          key={atual.id}
+          abas={[
+            { id: "dados", titulo: "Cliente e itens", conteudo: (
+              <>
           <SecaoDados titulo="Cliente">
             <Dado rotulo="Nome">{cliente?.nome ?? "Cliente removido"}</Dado>
             <Dado rotulo="CPF / CNPJ">{cliente ? mascararDocumento(cliente.tipo, cliente.documento) : ""}</Dado>
@@ -107,8 +112,12 @@ export function OrcamentoDetalhe({
                 </li>
               ))}
             </ul>
-            <ResumoTotais totais={totais} className="rounded-xl border p-3" />
           </section>
+              </>
+            ) },
+            { id: "valores", titulo: "Valores", conteudo: (
+              <>
+          <ResumoTotais totais={totais} className="rounded-md border p-3" />
 
           <SecaoDados titulo="Para o cliente">
             <Dado rotulo="Observações" largo>
@@ -117,7 +126,10 @@ export function OrcamentoDetalhe({
             <Dado rotulo="Emitido em">{new Date(atual.criadoEm).toLocaleDateString("pt-BR")}</Dado>
             <Dado rotulo="Validade">{`${atual.validadeDias} dias`}</Dado>
           </SecaoDados>
-        </div>
+              </>
+            ) },
+          ]}
+        />
 
         <SheetFooter className="flex-row flex-wrap justify-end gap-2 border-t">
           <Button

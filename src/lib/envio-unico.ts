@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import type { FieldValues, UseFormReturn } from "react-hook-form";
+import type { FieldErrors, FieldValues, UseFormReturn } from "react-hook-form";
 
 /**
  * Impede envio duplicado: enquanto uma gravação está em andamento, novos cliques/Enter são ignorados
@@ -28,7 +28,12 @@ export function useEnvioUnico() {
 
   /** `form.handleSubmit` com a trava de envio único. */
   const enviar = useCallback(
-    <T extends FieldValues, O extends FieldValues>(form: UseFormReturn<T, unknown, O>, funcao: (dados: O) => Promise<void> | void) => form.handleSubmit(proteger(funcao)),
+    <T extends FieldValues, O extends FieldValues>(
+      form: UseFormReturn<T, unknown, O>,
+      funcao: (dados: O) => Promise<void> | void,
+      /** Chamada quando a validação falha (ex.: levar à aba com erro). */
+      aoInvalido?: (erros: FieldErrors<T>) => void,
+    ) => form.handleSubmit(proteger(funcao), aoInvalido),
     [proteger],
   );
 

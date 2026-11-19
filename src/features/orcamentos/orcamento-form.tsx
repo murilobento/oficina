@@ -9,6 +9,7 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { CampoTexto, CampoTextarea } from "@/components/layout/campos-form";
+import { FolhaAbas } from "@/components/layout/folha-abas";
 import { SecaoFormulario } from "@/components/layout/registro-partes";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -47,6 +48,9 @@ const soDigitos = (limite: number) => (valor: string) => valor.replace(/\D/g, ""
  * Painel lateral de criação e edição de orçamento. `orcamento` preenchido = edição; `null` = novo.
  * Quem usa deve trocar a `key` a cada abertura, para o formulário começar limpo.
  */
+/** Campos que ficam na aba "Valores" (o resto fica em "Cliente e itens"). */
+const CAMPOS_ABA_VALORES: string[] = ["descontoTipo", "desconto", "validadeDias", "observacoes"];
+
 export function OrcamentoForm({
   aberto,
   orcamento,
@@ -63,6 +67,7 @@ export function OrcamentoForm({
   const empresa = useEmpresa();
 
   // Cadastro rápido de cliente: `abertura` troca a key para o formulário abrir limpo.
+  const [aba, setAba] = useState("dados");
   const [clienteRapido, setClienteRapido] = useState({ aberto: false, nome: "", abertura: 0 });
   const [veiculoRapido, setVeiculoRapido] = useState({ aberto: false, abertura: 0 });
   const editando = orcamento !== null;
@@ -149,7 +154,7 @@ export function OrcamentoForm({
     } catch (erro) {
       toast.error(erro instanceof Error ? erro.message : "Não foi possível salvar. Tente de novo.");
     }
-  });
+  }, (erros) => setAba(Object.keys(erros).some((c) => !CAMPOS_ABA_VALORES.includes(c)) ? "dados" : "valores"));
 
   const erroItens = formState.errors.itens?.message ?? formState.errors.itens?.root?.message;
 
@@ -162,7 +167,12 @@ export function OrcamentoForm({
         </SheetHeader>
 
         <form noValidate onSubmit={enviar} className="flex min-h-0 flex-1 flex-col">
-          <div className="flex flex-1 flex-col gap-8 overflow-y-auto p-4">
+<FolhaAbas
+            valor={aba}
+            aoMudar={setAba}
+            abas={[
+              { id: "dados", titulo: "Cliente e itens", comErro: Object.keys(formState.errors).some((c) => !CAMPOS_ABA_VALORES.includes(c)), conteudo: (
+                <>
             <SecaoFormulario titulo="Cliente">
               <Controller
                 control={control}
@@ -306,7 +316,10 @@ export function OrcamentoForm({
             </SecaoFormulario>
 
             <ItensDoDocumento control={control} prefixo={PREFIXO} documento="orçamento" erro={erroItens} />
-
+                </>
+              ) },
+              { id: "valores", titulo: "Valores", comErro: Object.keys(formState.errors).some((c) => CAMPOS_ABA_VALORES.includes(c)), conteudo: (
+                <>
             <SecaoFormulario titulo="Desconto e validade">
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field className="gap-1.5 sm:col-span-2">
@@ -361,7 +374,10 @@ export function OrcamentoForm({
                 linhas={3}
               />
             </SecaoFormulario>
-          </div>
+                </>
+              ) },
+            ]}
+          />
 
           <div className="border-t px-4 py-3">
             <ResumoTotais totais={totais} />

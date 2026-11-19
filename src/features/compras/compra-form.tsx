@@ -7,6 +7,7 @@ import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { CampoTexto, CampoTextarea } from "@/components/layout/campos-form";
+import { FolhaAbas } from "@/components/layout/folha-abas";
 import { SecaoFormulario } from "@/components/layout/registro-partes";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -28,9 +29,13 @@ import { novoId } from "@/lib/id";
  * atualiza o custo dos produtos, e só pode ser cancelada depois. Quem usa deve trocar a `key`
  * a cada abertura, para o formulário começar limpo.
  */
+/** Campos que ficam na aba "Valores" (o resto fica em "Fornecedor e itens"). */
+const CAMPOS_ABA_VALORES: string[] = ["frete", "desconto", "observacoes"];
+
 export function CompraForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () => void }) {
   const fornecedores = usePessoas("fornecedor");
   const registrar = useRegistrarCompra();
+  const [aba, setAba] = useState("dados");
   const [seletorAberto, setSeletorAberto] = useState(false);
   const [fornecedorRapido, setFornecedorRapido] = useState({ aberto: false, nome: "", abertura: 0 });
 
@@ -59,7 +64,7 @@ export function CompraForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: ()
     } catch (erro) {
       toast.error(erro instanceof Error ? erro.message : "Não foi possível lançar a compra. Tente de novo.");
     }
-  });
+  }, (erros) => setAba(Object.keys(erros).some((c) => !CAMPOS_ABA_VALORES.includes(c)) ? "dados" : "valores"));
 
   const erroItens = formState.errors.itens?.message ?? formState.errors.itens?.root?.message;
 
@@ -72,7 +77,12 @@ export function CompraForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: ()
         </SheetHeader>
 
         <form noValidate onSubmit={enviar} className="flex min-h-0 flex-1 flex-col">
-          <div className="flex flex-1 flex-col gap-8 overflow-y-auto p-4">
+<FolhaAbas
+            valor={aba}
+            aoMudar={setAba}
+            abas={[
+              { id: "dados", titulo: "Fornecedor e itens", comErro: Object.keys(formState.errors).some((c) => !CAMPOS_ABA_VALORES.includes(c)), conteudo: (
+                <>
             <SecaoFormulario titulo="Fornecedor">
               <div className="grid gap-4 sm:grid-cols-2">
                 <Controller
@@ -149,7 +159,10 @@ export function CompraForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: ()
                 )}
               </div>
             </SecaoFormulario>
-
+                </>
+              ) },
+              { id: "valores", titulo: "Valores", comErro: Object.keys(formState.errors).some((c) => CAMPOS_ABA_VALORES.includes(c)), conteudo: (
+                <>
             <SecaoFormulario titulo="Frete e desconto">
               <div className="grid gap-4 sm:grid-cols-2">
                 <CampoTexto control={control} prefixo="compra" nome="frete" rotulo="Frete (R$) (opcional)" inputMode="numeric" placeholder="0,00" mascara={mascararMoeda} />
@@ -160,7 +173,10 @@ export function CompraForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: ()
             <SecaoFormulario titulo="Outras informações">
               <CampoTextarea control={control} prefixo="compra" nome="observacoes" rotulo="Observações (opcional)" linhas={3} />
             </SecaoFormulario>
-          </div>
+                </>
+              ) },
+            ]}
+          />
 
           <div className="border-t px-4 py-3">
             <dl className="flex flex-col gap-1.5 text-sm">

@@ -4,11 +4,12 @@ import { usePessoas } from "@/features/pessoas/api";
 import { useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CarFront, ChevronLeft, TriangleAlert, UserPlus, X } from "lucide-react";
+import { CarFront, TriangleAlert, UserPlus, X } from "lucide-react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 
 import { CampoTexto, CampoTextarea } from "@/components/layout/campos-form";
+import { FolhaAbas } from "@/components/layout/folha-abas";
 import { SecaoFormulario } from "@/components/layout/registro-partes";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -37,6 +38,10 @@ const soDigitos = (limite: number) => (valor: string) => valor.replace(/\D/g, ""
  * Painel lateral de lançamento manual de venda (sem orçamento). Venda lançada já vale: dá baixa
  * no estoque e só pode ser cancelada depois. Quem usa deve trocar a `key` a cada abertura.
  */
+/** Campos da aba "Cliente e itens" e da aba "Pagamento". */
+const CAMPOS_ABA_DADOS = ["clienteId", "veiculoId", "km", "itens"] as const;
+const CAMPOS_ABA_VALORES: string[] = ["descontoTipo", "desconto", "observacoes"];
+
 export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () => void }) {
   const clientes = usePessoas("cliente");
   const veiculos = useVeiculos();
@@ -58,9 +63,8 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
     descontoTipo,
     descontoTipo === "valor" ? textoParaCentavos(desconto) : textoParaNumero(desconto) || 0,
   );
-  // Etapa 2: com os dados da venda já conferidos, a folha mostra o recebimento.
   const verValores = usePode("valores.ver");
-  const [conferida, setConferida] = useState<VendaFormValores | null>(null);
+  const [aba, setAba] = useState("dados");
   const registrar = useRegistrarVenda();
   const produtos = useProdutos();
   const faltas = itensSemSaldo(
@@ -93,12 +97,23 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
     form.clearErrors("desconto");
   }
 
-  const enviar = enviarUnico(form, (valores) => setConferida(valores));
+  /** "Continuar para pagamento": confere cliente, veículo e itens antes de abrir a aba Pagamento. */
+  const enviar = enviarUnico(form, () => setAba("pagamento"), () => setAba("dados"));
 
+  async function trocarAba(id: string) {
+    if (id === "pagamento" && !(await form.trigger(CAMPOS_ABA_DADOS))) return setAba("dados");
+    setAba(id);
+  }
+
+  // Lança com os valores atuais do formulário (o desconto pode ter mudado na aba Pagamento).
   const concluir = proteger(async (corpo: CorpoRecebimento) => {
-    if (!conferida) return;
+    const valido = await form.trigger();
+    if (!valido) {
+      setAba(Object.keys(form.formState.errors).some((c) => !CAMPOS_ABA_VALORES.includes(c)) ? "dados" : "pagamento");
+      return;
+    }
     try {
-      const venda = await registrar.mutateAsync({ ...paraVenda(conferida), ...corpo });
+      const venda = await registrar.mutateAsync({ ...paraVenda(form.getValues()), ...corpo });
       toast.success(venda.saldo > 0 ? `${venda.numero} lançada. Saldo a receber: ${formatarBRL(venda.saldo)}.` : `${venda.numero} lançada.`);
       aoFechar();
     } catch (erro) {
@@ -116,17 +131,13 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
           <SheetDescription>Lançamento direto, sem orçamento. Sem cliente, a venda é de consumidor final.</SheetDescription>
         </SheetHeader>
 
-        {conferida && (
-          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
-            <Button type="button" variant="ghost" className="-ml-2 self-start" onClick={() => setConferida(null)}>
-              <ChevronLeft /> Voltar aos itens
-            </Button>
-            <RecebimentoEtapa modo="venda" total={totais.total} temCliente={conferida.clienteId !== ""} enviando={registrar.isPending} aoConcluir={concluir} />
-          </div>
-        )}
-
-        <form noValidate onSubmit={enviar} className={conferida ? "hidden" : "flex min-h-0 flex-1 flex-col"}>
-          <div className="flex flex-1 flex-col gap-8 overflow-y-auto p-4">
+        <form noValidate onSubmit={enviar} className="flex min-h-0 flex-1 flex-col">
+<FolhaAbas
+            valor={aba}
+            aoMudar={trocarAba}
+            abas={[
+              { id: "dados", titulo: "Cliente e itens", comErro: Object.keys(formState.errors).some((c) => !CAMPOS_ABA_VALORES.includes(c)), conteudo: (
+                <>
             <SecaoFormulario titulo="Cliente e veículo" descricao="Opcional: peça vendida no balcão não precisa de cadastro.">
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field className="gap-1.5 sm:col-span-2">
@@ -209,7 +220,10 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
                 </div>
               </div>
             )}
-
+                </>
+              ) },
+              { id: "pagamento", titulo: "Pagamento", comErro: Object.keys(formState.errors).some((c) => CAMPOS_ABA_VALORES.includes(c)), conteudo: (
+                <>
             <SecaoFormulario titulo="Desconto">
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field className="gap-1.5 sm:col-span-2">
@@ -242,8 +256,17 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
             <SecaoFormulario titulo="Outras informações">
               <CampoTextarea control={control} prefixo="venda" nome="observacoes" rotulo="Observações (opcional)" linhas={3} />
             </SecaoFormulario>
-          </div>
 
+            <ResumoTotais totais={totais} className="rounded-md border p-3" />
+
+            <RecebimentoEtapa modo="venda" total={totais.total} temCliente={clienteId !== ""} enviando={registrar.isPending} aoConcluir={concluir} />
+                </>
+              ) },
+            ]}
+          />
+
+          {aba === "dados" && (
+          <>
           <div className="border-t px-4 py-3">
             <ResumoTotais totais={totais} />
           </div>
@@ -253,9 +276,13 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
               Cancelar
             </Button>
             <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando || registrar.isPending}>
-              {verValores ? `Continuar para pagamento · ${formatarBRL(totais.total)}` : "Continuar para pagamento"}
+              <span className="sm:hidden">Continuar</span>
+              <span className="hidden sm:inline">Continuar para pagamento</span>
+              {verValores && <span className="font-mono">· {formatarBRL(totais.total)}</span>}
             </Button>
           </SheetFooter>
+          </>
+          )}
         </form>
 
         <ClienteRapido

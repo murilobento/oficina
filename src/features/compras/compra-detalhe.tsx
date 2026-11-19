@@ -2,6 +2,7 @@ import { usePessoas } from "@/features/pessoas/api";
 import { Ban } from "lucide-react";
 
 import { StatusDocumentoBadge } from "@/components/layout/documento-partes";
+import { FolhaAbas } from "@/components/layout/folha-abas";
 import { Dado, SecaoDados } from "@/components/layout/registro-partes";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -41,7 +42,11 @@ export function CompraDetalhe({
               </div>
             </SheetHeader>
 
-            <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4">
+            <FolhaAbas
+              key={compra.id}
+              abas={[
+                { id: "dados", titulo: "Fornecedor e itens", conteudo: (
+                  <>
               <SecaoDados titulo="Fornecedor">
                 <Dado rotulo="Nome">{fornecedor?.nome ?? "Fornecedor removido"}</Dado>
                 <Dado rotulo="CPF / CNPJ">{fornecedor ? mascararDocumento(fornecedor.tipo, fornecedor.documento) : ""}</Dado>
@@ -63,7 +68,12 @@ export function CompraDetalhe({
                     </li>
                   ))}
                 </ul>
-                <dl className="flex flex-col gap-1.5 rounded-xl border p-3 text-sm">
+              </section>
+                  </>
+                ) },
+                { id: "valores", titulo: "Valores", conteudo: (
+                  <>
+              <dl className="flex flex-col gap-1.5 rounded-md border p-3 text-sm">
                   <div className="flex justify-between gap-4">
                     <dt className="text-muted-foreground">Produtos</dt>
                     <dd className="tabular-nums">{formatarBRL(totais.subtotal)}</dd>
@@ -85,14 +95,16 @@ export function CompraDetalhe({
                     <dd className="text-lg font-semibold tabular-nums">{formatarBRL(totais.total)}</dd>
                   </div>
                 </dl>
-              </section>
 
               <SecaoDados titulo="Outras informações">
                 <Dado rotulo="Observações" largo>
                   {compra.observacoes && <span className="whitespace-pre-wrap">{compra.observacoes}</span>}
                 </Dado>
               </SecaoDados>
-            </div>
+                  </>
+                ) },
+              ]}
+            />
 
             {compra.status === "concluida" && (
               <SheetFooter className="flex-row justify-end gap-2 border-t">
