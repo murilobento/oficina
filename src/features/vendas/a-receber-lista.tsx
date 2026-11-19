@@ -55,7 +55,7 @@ export function AReceberLista() {
         <ListagemBusca valor={busca} aoMudar={setBusca} placeholder="Número ou cliente" rotulo="Buscar contas a receber" />
       </ListagemFiltros>
 
-      <ListagemCartoes>
+      <ListagemCartoes sempre>
         {visiveis.map((l) => {
           const venda = porId.get(l.vendaId);
           return (

@@ -85,7 +85,7 @@ export function OrdensLista() {
       {consulta.isError ? (
         <ListagemVazia>Não foi possível carregar as ordens de serviço.</ListagemVazia>
       ) : (
-        <ListagemCartoes>
+        <ListagemCartoes sempre>
           {visiveis.map((o) => {
             const info = infoStatus(o.status);
             const v = veiculo(o);

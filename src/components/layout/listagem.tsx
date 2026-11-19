@@ -117,8 +117,13 @@ export function ListagemFiltro({
 }
 
 /** Lista de cartões, quando a área da tela é estreita (celular, tablet). Cada filho deve ser um <ListagemCartao>. */
-export function ListagemCartoes({ children }: { children: ReactNode }) {
-  return <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 @2xl:grid-cols-2 @4xl:hidden">{children}</ul>;
+export function ListagemCartoes({ children, sempre = false }: { children: ReactNode; sempre?: boolean }) {
+  // `sempre`: telas sem tabela (quadro de OS, A receber) mantêm os cartões no computador, em mais colunas.
+  return (
+    <ul className={sempre ? "grid grid-cols-[minmax(0,1fr)] gap-3 @2xl:grid-cols-2 @5xl:grid-cols-3 @7xl:grid-cols-4" : "grid grid-cols-[minmax(0,1fr)] gap-3 @2xl:grid-cols-2 @4xl:hidden"}>
+      {children}
+    </ul>
+  );
 }
 
 export function ListagemCartao({ children }: { children: ReactNode }) {
