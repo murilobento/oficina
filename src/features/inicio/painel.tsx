@@ -66,7 +66,7 @@ export function PainelDoDia() {
           {verVendas && (
             <div className="bg-card p-4">
               <Numeral rotulo="Vendido hoje" valor={formatarBRL(resumo.totalVendidoHoje)} tamanho="sm" />
-              <p className="text-muted-foreground mt-1 font-mono text-xs">{resumo.vendasHoje} venda(s)</p>
+              <p className="text-muted-foreground mt-1 tabular-nums text-xs">{resumo.vendasHoje} venda(s)</p>
             </div>
           )}
           {verOrcamentos && (
@@ -85,11 +85,11 @@ export function PainelDoDia() {
             {resumo.abaixoDoMinimo.slice(0, 5).map((p) => (
               <li key={p.id} className="flex flex-col gap-2 p-3">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="min-w-0 truncate text-sm font-semibold uppercase">{p.descricao}</span>
+                  <span className="min-w-0 truncate text-sm font-medium">{p.descricao}</span>
                   <FitaStatus tom={p.saldo <= 0 ? "erro" : "atencao"} icone={p.saldo <= 0 ? PackageX : TriangleAlert}>{p.saldo <= 0 ? "Sem estoque" : "Baixo"}</FitaStatus>
                 </div>
                 <MedidorSegmentado valor={p.saldo} maximo={p.estoqueMinimo} tom={p.saldo <= 0 ? "erro" : "atencao"} rotulo={`Estoque de ${p.descricao}`} />
-                <span className="text-muted-foreground font-mono text-xs">
+                <span className="text-muted-foreground tabular-nums text-xs">
                   {p.saldo} / mín. {p.estoqueMinimo}
                 </span>
               </li>

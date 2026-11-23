@@ -25,7 +25,7 @@ export function FolhaAbas({ abas, valor, aoMudar, className }: { abas: AbaFolha[
           <TabsPrimitive.Trigger
             key={aba.id}
             value={aba.id}
-            className="text-muted-foreground data-[state=active]:text-foreground focus-visible:ring-ring relative flex min-h-12 items-center justify-center gap-1.5 px-2 text-xs font-bold tracking-widest uppercase outline-none [font-stretch:75%] after:absolute after:inset-x-0 after:bottom-0 after:h-[3px] after:bg-transparent focus-visible:ring-2 focus-visible:ring-inset data-[state=active]:after:bg-primary"
+            className="text-muted-foreground data-[state=active]:text-foreground focus-visible:ring-ring relative flex min-h-12 items-center justify-center gap-1.5 px-2 text-sm font-medium outline-none after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-transparent focus-visible:ring-2 focus-visible:ring-inset data-[state=active]:after:bg-primary"
           >
             {aba.titulo}
             {aba.comErro && (

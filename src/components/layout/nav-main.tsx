@@ -47,7 +47,7 @@ function NavGroupItem({ group, pathname }: { readonly group: NavGroup; readonly 
         <CollapsibleTrigger asChild>
           <SidebarMenuButton className="font-medium">
             <ChevronRight className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-            <span className="text-xs font-bold tracking-widest uppercase [font-stretch:75%]">{group.title}</span>
+            <span className="text-xs font-medium text-muted-foreground">{group.title}</span>
           </SidebarMenuButton>
         </CollapsibleTrigger>
         <CollapsibleContent>
@@ -76,7 +76,7 @@ function NavFlatItem({ item, pathname }: { readonly item: NavItem; readonly path
 
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton asChild isActive={isSamePath(item.url, pathname)} className="data-[active=true]:border-l-[3px] data-[active=true]:border-sidebar-primary data-[active=true]:rounded-l-none">
+      <SidebarMenuButton asChild isActive={isSamePath(item.url, pathname)} className="data-[active=true]:font-medium">
         <Link to={item.url}>
           <span>{item.title}</span>
         </Link>
@@ -99,7 +99,7 @@ function NavLeaf({ item, pathname }: { readonly item: NavItem; readonly pathname
 
   return (
     <SidebarMenuSubItem>
-      <SidebarMenuSubButton asChild isActive={isSamePath(item.url, pathname)} className="data-[active=true]:border-l-[3px] data-[active=true]:border-sidebar-primary data-[active=true]:rounded-l-none">
+      <SidebarMenuSubButton asChild isActive={isSamePath(item.url, pathname)} className="data-[active=true]:font-medium">
         <Link to={item.url}>
           <span>{item.title}</span>
         </Link>

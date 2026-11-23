@@ -28,7 +28,7 @@ export function PerfisCards({
         const pessoas = perfil.funcionarios;
 
         return (
-          <li key={perfil.id} className="bg-card flex min-w-0 flex-col gap-3 rounded-xl border p-4 uppercase [&_button]:uppercase">
+          <li key={perfil.id} className="bg-card flex min-w-0 flex-col gap-3 rounded-xl border p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="flex items-center gap-1.5 font-medium">

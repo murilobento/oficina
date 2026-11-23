@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 
 import { Maximize, Minimize } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
-/** Alterna o modo de tela cheia do navegador. Só aparece no computador e onde o navegador permite. */
-export function BotaoTelaCheia() {
+/** Item do menu do usuário que alterna a tela cheia do navegador. Só aparece no computador e onde o navegador permite. */
+export function ItemTelaCheia() {
   const [ativo, setAtivo] = useState(() => typeof document !== "undefined" && !!document.fullscreenElement);
 
   useEffect(() => {
@@ -22,14 +22,9 @@ export function BotaoTelaCheia() {
   }
 
   return (
-    <Button
-      size="icon"
-      className="hidden md:inline-flex"
-      aria-label={ativo ? "Sair da tela cheia" : "Tela cheia"}
-      title={ativo ? "Sair da tela cheia" : "Tela cheia"}
-      onClick={alternar}
-    >
+    <DropdownMenuItem className="max-md:hidden" onSelect={alternar}>
       {ativo ? <Minimize /> : <Maximize />}
-    </Button>
+      {ativo ? "Sair da tela cheia" : "Tela cheia"}
+    </DropdownMenuItem>
   );
 }

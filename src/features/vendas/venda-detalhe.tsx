@@ -126,7 +126,7 @@ export function VendaDetalhe({
                             </span>
                           </span>
                           <span className="flex shrink-0 items-center gap-1">
-                            <span className={`font-mono font-semibold tabular-nums ${p.estornadoEm ? "text-muted-foreground line-through" : ""}`}>{formatarBRL(p.valor)}</span>
+                            <span className={`font-semibold tabular-nums ${p.estornadoEm ? "text-muted-foreground line-through" : ""}`}>{formatarBRL(p.valor)}</span>
                             {podeEditar && !p.estornadoEm && venda.status === "concluida" && (
                               <Button type="button" variant="ghost" size="icon" aria-label={`Estornar pagamento de ${formatarBRL(p.valor)}`} onClick={() => setEstornando(p)}>
                                 <Undo2 />
@@ -146,14 +146,14 @@ export function VendaDetalhe({
                           return (
                             <li key={p.numero} className="flex items-center justify-between gap-3 p-3 text-sm">
                               <span>
-                                <span className="font-mono font-medium">
+                                <span className="tabular-nums font-medium">
                                   {p.numero}/{venda.parcelas.length} · {p.vencimento.split("-").reverse().join("/")}
                                 </span>
                                 <span className={`block text-xs ${vencida ? "text-erro font-semibold" : "text-muted-foreground"}`}>
                                   {p.aberto === 0 ? "Paga" : vencida ? "Vencida" : p.pago > 0 ? `Falta ${formatarBRL(p.aberto)}` : "Em aberto"}
                                 </span>
                               </span>
-                              <span className={`font-mono font-semibold tabular-nums ${p.aberto === 0 ? "text-muted-foreground line-through" : ""}`}>{formatarBRL(p.valor)}</span>
+                              <span className={`font-semibold tabular-nums ${p.aberto === 0 ? "text-muted-foreground line-through" : ""}`}>{formatarBRL(p.valor)}</span>
                             </li>
                           );
                         })}

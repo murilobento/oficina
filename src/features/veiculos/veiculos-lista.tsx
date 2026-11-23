@@ -177,7 +177,7 @@ export function VeiculosLista({ abrirId }: { abrirId?: string }) {
             <p className="text-muted-foreground truncate text-sm">{nomeCliente(veiculo)}</p>
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge ativo={veiculo.ativo} />
-              <span className="text-muted-foreground font-mono text-xs">
+              <span className="text-muted-foreground tabular-nums text-xs">
                 {[veiculo.km > 0 && `${formatarQuantidade(veiculo.km)} km`, ultimaVisita(veiculo) && `visita ${data(ultimaVisita(veiculo))}`]
                   .filter(Boolean)
                   .join(" · ")}

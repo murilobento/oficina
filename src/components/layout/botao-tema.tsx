@@ -1,24 +1,25 @@
 import { Moon, Sun } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 
-import { Button } from "@/components/ui/button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
-/** Alterna entre tema claro e escuro (o padrão é o claro). */
-export function BotaoTema() {
+/** Item do menu do usuário que alterna entre tema claro e escuro (o padrão é o claro). */
+export function ItemTema() {
   const { resolvido, setPreference } = usePreferencesStore(
     useShallow((state) => ({ resolvido: state.resolvedThemeMode, setPreference: state.setPreference })),
   );
   const escuro = resolvido === "dark";
   return (
-    <Button
-      size="icon"
-      variant="outline"
-      aria-label={escuro ? "Usar tema claro" : "Usar tema escuro"}
-      title={escuro ? "Tema claro" : "Tema escuro"}
-      onClick={() => setPreference("theme_mode", escuro ? "light" : "dark")}
+    <DropdownMenuItem
+      onSelect={(evento) => {
+        // Mantém o menu aberto: dá para ver a troca e voltar atrás.
+        evento.preventDefault();
+        setPreference("theme_mode", escuro ? "light" : "dark");
+      }}
     >
       {escuro ? <Sun /> : <Moon />}
-    </Button>
+      {escuro ? "Tema claro" : "Tema escuro"}
+    </DropdownMenuItem>
   );
 }

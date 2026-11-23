@@ -51,39 +51,33 @@ function Login() {
   }
 
   const logo = empresa.logo ? (
-    <img src={empresa.logo} alt={`Logo ${empresa.nomeFantasia}`} className="size-14 rounded-md bg-white object-contain p-1" />
+    <img src={empresa.logo} alt={`Logo ${empresa.nomeFantasia}`} className="size-14 rounded-xl border bg-white object-contain p-1" />
   ) : (
     <Building2 className="text-primary size-10" />
   );
 
   return (
-    <main className="bg-sidebar text-sidebar-foreground relative min-h-dvh overflow-hidden">
-      {/* Grade técnica ao fundo, no estilo de prancheta de oficina. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.07]"
-        style={{ backgroundImage: "linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)", backgroundSize: "32px 32px" }}
-      />
+    <main className="bg-background text-foreground relative min-h-dvh overflow-hidden">
       <div className="relative mx-auto grid min-h-dvh max-w-5xl items-center gap-10 p-4 lg:grid-cols-2 lg:p-10">
         <div className="space-y-4 pt-6 lg:pt-0">
           {logo}
-          <h1 className="font-display text-4xl leading-none font-extrabold uppercase">{empresa.nomeFantasia}</h1>
-          <p className="text-sidebar-foreground/70 text-sm">Sistema de gestão da oficina.</p>
+          <h1 className="text-3xl font-semibold tracking-tight">{empresa.nomeFantasia}</h1>
+          <p className="text-muted-foreground text-sm">Sistema de gestão da oficina.</p>
           <div className="hidden gap-6 pt-6 lg:grid">
-            <div className="border-primary space-y-1 border-l-[3px] pl-3">
-              <h2 className="font-display text-xs font-bold tracking-widest uppercase">Primeiro acesso?</h2>
-              <p className="text-sidebar-foreground/70 text-sm">Use a senha provisória informada pelo administrador. Você vai trocá-la ao entrar.</p>
+            <div className="space-y-1">
+              <h2 className="text-sm font-semibold">Primeiro acesso?</h2>
+              <p className="text-muted-foreground text-sm">Use a senha provisória informada pelo administrador. Você vai trocá-la ao entrar.</p>
             </div>
-            <div className="border-primary space-y-1 border-l-[3px] pl-3">
-              <h2 className="font-display text-xs font-bold tracking-widest uppercase">Esqueceu a senha?</h2>
-              <p className="text-sidebar-foreground/70 text-sm">Peça ao administrador do sistema uma nova senha provisória.</p>
+            <div className="space-y-1">
+              <h2 className="text-sm font-semibold">Esqueceu a senha?</h2>
+              <p className="text-muted-foreground text-sm">Peça ao administrador do sistema uma nova senha provisória.</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-card text-card-foreground w-full rounded-md border-t-4 border-t-primary p-6 shadow-lg lg:max-w-sm lg:justify-self-end">
+        <div className="bg-card text-card-foreground w-full rounded-2xl border p-6 shadow-sm lg:max-w-sm lg:justify-self-end">
           <div className="mb-6 space-y-1">
-            <h2 className="font-display text-3xl leading-none font-extrabold uppercase">Entrar</h2>
+            <h2 className="text-2xl font-semibold">Entrar</h2>
             <p className="text-muted-foreground text-sm">Informe seu e-mail e sua senha.</p>
           </div>
           <form noValidate onSubmit={entrar} className="flex flex-col gap-4">
@@ -111,7 +105,7 @@ function Login() {
               </p>
             )}
           </form>
-          <p className="text-muted-foreground mt-6 font-mono text-xs">© {ANO} {empresa.nomeFantasia}</p>
+          <p className="text-muted-foreground mt-6 text-xs">© {ANO} {empresa.nomeFantasia}</p>
         </div>
       </div>
     </main>

@@ -127,7 +127,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarHeader className="h-12 shrink-0 justify-center border-b py-0">
           <div className="flex min-w-0 flex-col px-2 leading-tight">
             <span className="text-sidebar-foreground/70 truncate text-xs">{empresa.nomeFantasia}</span>
-            <span className="truncate text-lg font-extrabold tracking-wide uppercase [font-stretch:75%]">{moduloAberto.title}</span>
+            <span className="truncate text-base font-semibold">{moduloAberto.title}</span>
           </div>
         </SidebarHeader>
         <SidebarContent>

@@ -10,9 +10,7 @@ import { useEmpresa } from "@/features/empresa/api";
 
 import { AppSidebar } from "./app-sidebar";
 import { BarraInferior } from "./barra-inferior";
-import { BotaoTema } from "./botao-tema";
 import { SearchDialog } from "./search-dialog";
-import { BotaoTelaCheia } from "./tela-cheia";
 
 /**
  * Casca das telas internas: menu lateral, barra superior e área de conteúdo.
@@ -41,27 +39,22 @@ export function AppLayout({ children }: Readonly<{ children: ReactNode }>) {
       >
         <header
           className={cn(
-            "relative flex h-14 shrink-0 items-center gap-2 border-b bg-card transition-[width,height] ease-linear before:absolute before:inset-x-0 before:top-0 before:h-[3px] before:bg-primary md:h-12 group-has-data-[collapsible=icon]/sidebar-wrapper:md:h-12",
+            "relative flex h-14 shrink-0 items-center gap-2 border-b bg-background/90 backdrop-blur transition-[width,height] ease-linear md:h-12 group-has-data-[collapsible=icon]/sidebar-wrapper:md:h-12",
             "[html[data-navbar-style=sticky]_&]:sticky [html[data-navbar-style=sticky]_&]:top-0 [html[data-navbar-style=sticky]_&]:z-50 [html[data-navbar-style=sticky]_&]:overflow-hidden [html[data-navbar-style=sticky]_&]:rounded-t-[inherit]",
           )}
         >
-          <div className="flex w-full items-center justify-between px-4 lg:px-6">
-            <div className="flex items-center gap-1 lg:gap-2">
-              <SidebarTrigger className="-ml-2 max-md:hidden md:-ml-1" />
-              <div className="flex min-w-0 items-center gap-2 md:hidden">
-                <LogoEmpresa className="size-8" />
-                <span className="max-w-[40vw] truncate text-sm font-bold uppercase [font-stretch:75%] tracking-wide">{empresa.nomeFantasia}</span>
-              </div>
-              <Separator
-                orientation="vertical"
-                className="mx-2 hidden data-[orientation=vertical]:h-4 data-[orientation=vertical]:self-center md:block"
-              />
-              <SearchDialog />
+          {/* Celular: marca à esquerda, busca à direita. Computador: botão do menu e busca. Tema e tela cheia ficam no menu do usuário. */}
+          <div className="flex w-full items-center justify-between gap-2 px-4 md:justify-start lg:px-6">
+            <SidebarTrigger className="-ml-1 max-md:hidden" />
+            <Separator
+              orientation="vertical"
+              className="mx-1 hidden data-[orientation=vertical]:h-4 data-[orientation=vertical]:self-center md:block"
+            />
+            <div className="flex min-w-0 items-center gap-2 md:hidden">
+              <LogoEmpresa className="size-8" />
+              <span className="max-w-[55vw] truncate text-base font-semibold">{empresa.nomeFantasia}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <BotaoTelaCheia />
-              <BotaoTema />
-            </div>
+            <SearchDialog />
           </div>
         </header>
         {/* Uma tela pode usar data-content-padding="false" para ocupar a área inteira. */}

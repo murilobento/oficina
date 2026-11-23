@@ -103,9 +103,9 @@ export function RecebimentoEtapa({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="bg-sidebar text-sidebar-foreground flex items-baseline justify-between gap-3 rounded-md p-4">
-        <span className="text-xs font-bold tracking-widest uppercase [font-stretch:75%]">{modo === "venda" ? "Total" : "Saldo em aberto"}</span>
-        <span className="font-mono text-3xl font-bold tabular-nums">{formatarBRL(total)}</span>
+      <div className="bg-muted flex items-baseline justify-between gap-3 rounded-xl p-4">
+        <span className="text-sm font-medium">{modo === "venda" ? "Total" : "Saldo em aberto"}</span>
+        <span className="text-3xl font-semibold tabular-nums">{formatarBRL(total)}</span>
       </div>
 
       <section className="flex flex-col gap-2">
@@ -128,7 +128,7 @@ export function RecebimentoEtapa({
                 <div className="flex items-end gap-2">
                   <Field className="min-w-0 flex-1 gap-1.5">
                     <FieldLabel htmlFor={`${l.id}-valor`}>{nomeForma(l.forma)}</FieldLabel>
-                    <Input id={`${l.id}-valor`} inputMode="numeric" className="font-mono" placeholder="0,00" value={l.valor} onChange={(e) => trocar(l.id, { valor: mascararMoeda(e.target.value) })} />
+                    <Input id={`${l.id}-valor`} inputMode="numeric" className="tabular-nums" placeholder="0,00" value={l.valor} onChange={(e) => trocar(l.id, { valor: mascararMoeda(e.target.value) })} />
                   </Field>
                   {l.forma === "credito" && (
                     <Field className="w-24 gap-1.5">
@@ -145,7 +145,7 @@ export function RecebimentoEtapa({
                   {l.forma === "dinheiro" && (
                     <Field className="w-32 gap-1.5">
                       <FieldLabel htmlFor={`${l.id}-entregue`}>Entregue</FieldLabel>
-                      <Input id={`${l.id}-entregue`} inputMode="numeric" className="font-mono" placeholder={l.valor || "0,00"} value={l.entregue} onChange={(e) => trocar(l.id, { entregue: mascararMoeda(e.target.value) })} />
+                      <Input id={`${l.id}-entregue`} inputMode="numeric" className="tabular-nums" placeholder={l.valor || "0,00"} value={l.entregue} onChange={(e) => trocar(l.id, { entregue: mascararMoeda(e.target.value) })} />
                     </Field>
                   )}
                   <Button type="button" variant="ghost" size="icon" aria-label={`Remover ${nomeForma(l.forma)}`} onClick={() => mudar(linhas.filter((x) => x.id !== l.id))}>
@@ -153,7 +153,7 @@ export function RecebimentoEtapa({
                   </Button>
                 </div>
                 {troco > 0 && (
-                  <p className="text-ok font-mono text-sm font-semibold" role="status">
+                  <p className="text-ok tabular-nums text-sm font-semibold" role="status">
                     Troco: {formatarBRL(troco)}
                   </p>
                 )}
@@ -164,8 +164,8 @@ export function RecebimentoEtapa({
       )}
 
       <div className="flex items-baseline justify-between gap-3 border-t pt-3">
-        <span className="text-xs font-bold tracking-widest uppercase [font-stretch:75%]">{excesso > 0 ? "Passou do total" : falta > 0 ? "Falta" : "Quitado"}</span>
-        <span className={`font-mono text-2xl font-bold tabular-nums ${excesso > 0 || falta > 0 ? "text-erro" : "text-ok"}`}>{formatarBRL(excesso > 0 ? excesso : falta)}</span>
+        <span className="text-sm font-medium">{excesso > 0 ? "Passou do total" : falta > 0 ? "Falta" : "Quitado"}</span>
+        <span className={`text-2xl font-semibold tabular-nums ${excesso > 0 || falta > 0 ? "text-erro" : "text-ok"}`}>{formatarBRL(excesso > 0 ? excesso : falta)}</span>
       </div>
 
       {erro && <p role="alert" className="text-destructive text-sm">{erro}</p>}
@@ -195,7 +195,7 @@ export function RecebimentoEtapa({
           </div>
           <ul className="divide-y rounded-md border text-sm">
             {previa.map((p) => (
-              <li key={p.numero} className="flex justify-between gap-2 px-3 py-2 font-mono">
+              <li key={p.numero} className="flex justify-between gap-2 px-3 py-2 tabular-nums">
                 <span>
                   {p.numero}/{previa.length} · {dataBR(p.vencimento)}
                 </span>

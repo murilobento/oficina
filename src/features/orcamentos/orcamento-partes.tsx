@@ -89,8 +89,8 @@ export function ResumoTotais({ totais, className }: { totais: Totais; className?
       <Linha rotulo="Mão de obra" valor={formatarBRL(totais.maoDeObra)} />
       {totais.desconto > 0 && <Linha rotulo="Desconto" valor={`− ${formatarBRL(totais.desconto)}`} />}
       <div className="mt-1 flex items-baseline justify-between gap-4 border-t pt-2">
-        <dt className="font-display text-xs font-bold tracking-widest uppercase">Total</dt>
-        <dd className="font-mono text-2xl font-bold tabular-nums">{formatarBRL(totais.total)}</dd>
+        <dt className="text-sm font-medium">Total</dt>
+        <dd className="text-2xl font-semibold tabular-nums">{formatarBRL(totais.total)}</dd>
       </div>
     </dl>
   );
@@ -100,7 +100,7 @@ function Linha({ rotulo, valor }: { rotulo: string; valor: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
       <dt className="text-muted-foreground">{rotulo}</dt>
-      <dd className="font-mono tabular-nums">{valor}</dd>
+      <dd className="tabular-nums">{valor}</dd>
     </div>
   );
 }

@@ -18,7 +18,9 @@ import { LOGIN_ATIVO, useSessao } from "@/features/auth/sessao";
 import { authClient } from "@/lib/auth-client";
 import { getInitials } from "@/lib/utils";
 
+import { ItemTema } from "./botao-tema";
 import { InstalarAppItem, PassoAPassoIOS } from "./instalar-app";
+import { ItemTelaCheia } from "./tela-cheia";
 
 export function NavUser({
   user,
@@ -83,6 +85,11 @@ export function NavUser({
                 </Link>
               </DropdownMenuItem>
               <InstalarAppItem aoMostrarPassos={() => setPassosIOS(true)} />
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <ItemTema />
+              <ItemTelaCheia />
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             {LOGIN_ATIVO ? (

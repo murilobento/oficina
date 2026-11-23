@@ -43,7 +43,7 @@ describe.each([
     expect(par("muted-foreground", "card")).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("botão principal (sinal) tem texto legível", () => {
+  it("botão principal tem texto legível", () => {
     expect(par("primary-foreground", "primary")).toBeGreaterThanOrEqual(4.5);
   });
 
@@ -61,9 +61,14 @@ describe.each([
   });
 });
 
-describe("o sinal amarelo", () => {
-  it("o texto sinal-forte no fundo claro passa 4.5:1", () => {
-    const v = bloco(":root");
-    expect(contraste(v["sinal-forte"], v["card"])).toBeGreaterThanOrEqual(4.5);
+describe("o azul de marca", () => {
+  it.each([
+    ["claro", ":root"],
+    ["escuro", ".dark"],
+  ])("serve como texto e link no cartão e no fundo (%s)", (_nome, seletor) => {
+    const v = bloco(seletor);
+    expect(contraste(v["primary"], v["card"])).toBeGreaterThanOrEqual(4.5);
+    expect(contraste(v["primary"], v["background"])).toBeGreaterThanOrEqual(4.5);
+    expect(contraste(v["accent-foreground"], v["accent"])).toBeGreaterThanOrEqual(4.5);
   });
 });

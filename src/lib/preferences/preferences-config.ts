@@ -69,8 +69,8 @@ export const PREFERENCE_REGISTRY = {
   }),
 
   font: definePreference({
-    values: ["archivo"] as const,
-    defaultValue: "archivo",
+    values: ["inter"] as const,
+    defaultValue: "inter",
     persistence: "client-cookie",
     attribute: "data-font",
   }),

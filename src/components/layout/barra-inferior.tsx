@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 import { FolhaNovo } from "./folha-novo";
 
-const ITEM = "relative flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-bold tracking-wider uppercase [font-stretch:75%]";
+const ITEM = "relative flex min-h-14 flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium";
 
 /** Navegação do celular (abaixo de md): atalhos ao alcance do polegar, ＋ Novo no centro e o Menu completo. */
 export function BarraInferior() {
@@ -26,16 +26,15 @@ export function BarraInferior() {
   const esquerda = [primeiro, segundo].filter(Boolean);
 
   const renderAtalho = (a: (typeof atalhos)[number]) => (
-    <Link key={a.id} to={a.url} aria-current={ativo(a.url) ? "page" : undefined} className={cn(ITEM, ativo(a.url) ? "text-foreground" : "text-muted-foreground")}>
-      {ativo(a.url) && <span aria-hidden className="bg-primary absolute inset-x-[20%] top-0 h-[3px]" />}
-      <a.icone className="size-5" />
+    <Link key={a.id} to={a.url} aria-current={ativo(a.url) ? "page" : undefined} className={cn(ITEM, ativo(a.url) ? "text-primary" : "text-muted-foreground")}>
+      <a.icone className="size-[22px]" strokeWidth={ativo(a.url) ? 2.25 : 1.75} />
       {a.titulo}
     </Link>
   );
 
   return (
     <>
-      <nav aria-label="Navegação principal" className="bg-card fixed inset-x-0 bottom-0 z-40 flex items-end border-t px-1 pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav aria-label="Navegação principal" className="bg-card/95 backdrop-blur fixed inset-x-0 bottom-0 z-40 flex items-end border-t px-1 pb-[env(safe-area-inset-bottom)] md:hidden">
         {esquerda.map(renderAtalho)}
         {acoes.length > 0 && (
           <div className="flex w-[76px] shrink-0 justify-center">
@@ -43,15 +42,15 @@ export function BarraInferior() {
               type="button"
               aria-label="Criar novo"
               onClick={() => setNovoAberto(true)}
-              className="bg-primary text-primary-foreground border-background focus-visible:ring-ring -mt-6 mb-2 grid size-[60px] place-items-center rounded-md border-[3px] outline-none focus-visible:ring-2 active:translate-y-px"
+              className="bg-primary text-primary-foreground border-card focus-visible:ring-ring -mt-5 mb-2 grid size-14 place-items-center rounded-full border-4 shadow-md shadow-primary/30 outline-none focus-visible:ring-2 active:scale-95"
             >
-              <Plus className="size-8" strokeWidth={2.25} />
+              <Plus className="size-7" strokeWidth={2.25} />
             </button>
           </div>
         )}
         {terceiro && renderAtalho(terceiro)}
         <button type="button" onClick={() => setOpenMobile(true)} className={cn(ITEM, "text-muted-foreground")}>
-          <Menu className="size-5" />
+          <Menu className="size-[22px]" strokeWidth={1.75} />
           Menu
         </button>
       </nav>

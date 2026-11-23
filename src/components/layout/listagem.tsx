@@ -9,8 +9,8 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // PADRÃO DE LISTAGEM do sistema. Toda tela de cadastro monta a lista com estas peças, nesta
-// ordem: cabeçalho (título + botão "Novo"), barra de busca e filtros, cartões no celular e
-// tabela no computador, e rodapé com total e paginação. Criar, editar e visualizar abrem em
+// ordem: cabeçalho (título + botão "Novo"), barra de busca e filtros (filtros curtos viram
+// chips), linhas no celular e tabela no computador, e rodapé com total e paginação. Criar, editar e visualizar abrem em
 // painel lateral (Sheet), sem sair da lista.
 
 export function Listagem({ children }: { children: ReactNode }) {
@@ -26,22 +26,27 @@ export function ListagemCabecalho({
 }: {
   titulo: string;
   descricao: string;
-  /** Texto do botão no computador, ex.: "Novo cliente". No celular aparece só "Novo". */
+  /** Texto do botão no computador, ex.: "Novo cliente". No celular o botão é só o ＋ (com este nome acessível). */
   rotuloNovo?: string;
   /** Sem `aoNovo` o botão não aparece (listagens só de consulta). */
   aoNovo?: () => void;
 }) {
   return (
-    <div className="flex items-start justify-between gap-3">
+    <div className="flex items-center justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="text-3xl leading-none font-extrabold">{titulo}</h1>
-        <p className="text-muted-foreground mt-1 text-sm">{descricao}</p>
+        <h1 className="truncate text-2xl font-semibold">{titulo}</h1>
+        {/* No celular a descrição some: o título já diz onde se está. */}
+        <p className="text-muted-foreground mt-0.5 hidden text-sm md:block">{descricao}</p>
       </div>
       {aoNovo && (
-        <Button className="shrink-0" aria-label={rotuloNovo} onClick={aoNovo}>
-          <Plus /> <span className="hidden sm:inline">{rotuloNovo}</span>
-          <span className="sm:hidden">Novo</span>
-        </Button>
+        <>
+          <Button size="icon" className="shrink-0 rounded-full sm:hidden" aria-label={rotuloNovo ?? "Novo"} onClick={aoNovo}>
+            <Plus className="size-5" />
+          </Button>
+          <Button className="hidden shrink-0 sm:inline-flex" onClick={aoNovo}>
+            <Plus /> {rotuloNovo ?? "Novo"}
+          </Button>
+        </>
       )}
     </div>
   );
@@ -81,9 +86,14 @@ export function ListagemBusca({
 }
 
 export function ListagemGrupoFiltros({ children }: { children: ReactNode }) {
-  // Duas colunas no celular: com três filtros, o terceiro desce para a linha de baixo.
-  return <div className="grid grid-cols-2 gap-2 @2xl:flex">{children}</div>;
+  // Celular: cada filtro numa linha (chips roláveis ou seleção). Computador: tudo lado a lado.
+  return <div className="flex min-w-0 flex-col gap-2 @2xl:flex-row @2xl:flex-wrap @2xl:items-center">{children}</div>;
 }
+
+/** Filtros com até este número de opções aparecem como chips; mais que isso, como lista de seleção. */
+const MAX_CHIPS = 5;
+
+const CHIP = "focus-visible:ring-ring h-9 shrink-0 rounded-full px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
 
 export function ListagemFiltro({
   rotulo,
@@ -97,6 +107,30 @@ export function ListagemFiltro({
   aoMudar: (valor: string) => void;
   opcoes: { valor: string; texto: string }[];
 }) {
+  if (opcoes.length <= MAX_CHIPS) {
+    return (
+      <div
+        role="group"
+        aria-label={`Filtrar por ${rotulo.toLowerCase()}`}
+        className="-mx-4 flex min-w-0 gap-2 overflow-x-auto px-4 [scrollbar-width:none] md:-mx-6 md:px-6 @2xl:mx-0 @2xl:px-0"
+      >
+        {opcoes.map((opcao) => {
+          const ativo = opcao.valor === valor;
+          return (
+            <button
+              key={opcao.valor}
+              type="button"
+              aria-pressed={ativo}
+              onClick={() => aoMudar(opcao.valor)}
+              className={ativo ? `${CHIP} bg-foreground text-background font-medium` : `${CHIP} bg-card text-foreground hover:bg-muted border`}
+            >
+              {opcao.texto}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
   return (
     <Select value={valor} onValueChange={aoMudar}>
       <SelectTrigger className="min-w-0 flex-1 @2xl:flex-none" aria-label={`Filtrar por ${rotulo.toLowerCase()}`}>
@@ -118,16 +152,28 @@ export function ListagemFiltro({
 
 /** Lista de cartões, quando a área da tela é estreita (celular, tablet). Cada filho deve ser um <ListagemCartao>. */
 export function ListagemCartoes({ children, sempre = false }: { children: ReactNode; sempre?: boolean }) {
-  // `sempre`: telas sem tabela (quadro de OS, A receber) mantêm os cartões no computador, em mais colunas.
+  // Padrão: linhas num só bloco (lista de app), trocado pela tabela quando há espaço.
+  // `sempre`: telas sem tabela (quadro de OS, A receber) usam cartões soltos, em mais colunas no computador.
   return (
-    <ul className={sempre ? "grid grid-cols-[minmax(0,1fr)] gap-3 @2xl:grid-cols-2 @5xl:grid-cols-3 @7xl:grid-cols-4" : "grid grid-cols-[minmax(0,1fr)] gap-3 @2xl:grid-cols-2 @4xl:hidden"}>
+    <ul
+      data-sempre={sempre}
+      className={
+        sempre
+          ? "group/lista grid grid-cols-[minmax(0,1fr)] gap-3 @2xl:grid-cols-2 @5xl:grid-cols-3 @7xl:grid-cols-4"
+          : "group/lista bg-card flex flex-col divide-y overflow-hidden rounded-xl border @4xl:hidden"
+      }
+    >
       {children}
     </ul>
   );
 }
 
+/** Um item da lista: linha dentro do bloco, ou cartão solto quando a lista é `sempre`. */
+const ITEM_LISTA =
+  "flex min-w-0 flex-col group-data-[sempre=true]/lista:overflow-hidden group-data-[sempre=true]/lista:rounded-xl group-data-[sempre=true]/lista:border group-data-[sempre=true]/lista:bg-card";
+
 export function ListagemCartao({ children }: { children: ReactNode }) {
-  return <li className="bg-card flex min-w-0 flex-col gap-3 rounded-md border p-4 uppercase [&_button]:uppercase">{children}</li>;
+  return <li className={`${ITEM_LISTA} gap-2 px-4 py-3`}>{children}</li>;
 }
 
 /**
@@ -156,24 +202,20 @@ export function ListagemCartaoDocumento({
   aoAbrir: () => void;
 }) {
   return (
-    <li className="bg-card flex min-w-0 flex-col overflow-hidden rounded-md border uppercase [&_button]:uppercase">
-      <div className="flex items-center justify-between gap-2 border-b py-1 pr-1 pl-3">
-        <span className="font-mono text-sm font-semibold">{codigo}</span>
-        <div className="flex min-w-0 items-center gap-1">
-          {status}
-          {acoes}
-        </div>
-      </div>
-      <button type="button" className="flex min-h-14 items-center justify-between gap-3 px-3 py-2.5 text-left" onClick={aoAbrir}>
-        <span className="min-w-0">
-          <span className="block truncate font-semibold">{titulo}</span>
-          <span className="text-muted-foreground block truncate text-sm">{detalhe}</span>
+    <li className={ITEM_LISTA}>
+      <button type="button" className="hover:bg-muted/50 flex min-w-0 flex-col gap-1 px-4 pt-3 pb-1.5 text-left" onClick={aoAbrir}>
+        <span className="flex items-baseline justify-between gap-3">
+          <span className="truncate font-medium">{titulo}</span>
+          <span className="shrink-0 font-semibold tabular-nums">{valor}</span>
         </span>
-        {placa && <PlacaVeiculo placa={placa} />}
+        <span className="text-muted-foreground flex items-center justify-between gap-3 text-sm">
+          <span className="truncate">{[detalhe, codigo, data].filter(Boolean).join(" · ")}</span>
+          {placa && <PlacaVeiculo placa={placa} tamanho="sm" />}
+        </span>
       </button>
-      <div className="bg-muted/50 flex items-baseline justify-between px-3 py-2">
-        <span className="font-mono text-lg font-bold tabular-nums">{valor}</span>
-        <span className="text-muted-foreground font-mono text-xs">{data}</span>
+      <div className="flex min-h-10 items-center justify-between gap-2 pr-1 pb-1.5 pl-4">
+        {status}
+        <div className="flex items-center">{acoes}</div>
       </div>
     </li>
   );
@@ -181,11 +223,11 @@ export function ListagemCartaoDocumento({
 
 /** Moldura da tabela, quando há largura para ela. Colunas secundárias usam "hidden @6xl:table-cell". */
 export function ListagemTabela({ children }: { children: ReactNode }) {
-  return <div className="bg-card hidden overflow-x-auto rounded-md border @4xl:block">{children}</div>;
+  return <div className="bg-card hidden overflow-x-auto rounded-xl border @4xl:block">{children}</div>;
 }
 
 export function ListagemVazia({ children }: { children: ReactNode }) {
-  return <p className="text-muted-foreground py-10 text-center text-sm normal-case">{children}</p>;
+  return <p className="text-muted-foreground py-10 text-center text-sm">{children}</p>;
 }
 
 export function ListagemRodape({

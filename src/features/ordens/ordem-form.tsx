@@ -111,7 +111,7 @@ export function OrdemForm({ aberto, aoFechar, aoAberta }: { aberto: boolean; aoF
 
             <Field className="gap-1.5">
               <FieldLabel htmlFor="os-km">Quilometragem (opcional)</FieldLabel>
-              <Input id="os-km" inputMode="numeric" className="font-mono" value={km} onChange={(e) => setKm(e.target.value.replace(/\D/g, ""))} placeholder="0" />
+              <Input id="os-km" inputMode="numeric" className="tabular-nums" value={km} onChange={(e) => setKm(e.target.value.replace(/\D/g, ""))} placeholder="0" />
             </Field>
 
             <Field className="gap-1.5" data-invalid={!!erros.problema}>

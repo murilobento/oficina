@@ -109,14 +109,14 @@ export function OrdemDetalhe({ ordem, aoFechar }: { ordem: Ordem | null; aoFecha
       <li key={item.id} className="flex flex-col gap-2 p-3 text-sm">
         <div className="flex items-start justify-between gap-3">
           <div className={`min-w-0 ${recusado ? "text-muted-foreground line-through" : ""}`}>
-            <p className="font-medium break-words uppercase">{item.descricao}</p>
-            <p className="text-muted-foreground font-mono text-xs">
+            <p className="font-medium break-words">{item.descricao}</p>
+            <p className="text-muted-foreground tabular-nums text-xs">
               {item.tipo === "servico" ? "Serviço" : "Peça"} · {formatarQuantidade(item.quantidade)} {item.unidade}
               {verValores && ` × ${formatarBRL(item.valor)}`}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-1">
-            {verValores && <span className={`font-mono font-semibold tabular-nums ${recusado ? "text-muted-foreground line-through" : ""}`}>{formatarBRL(subtotalItem(item))}</span>}
+            {verValores && <span className={`font-semibold tabular-nums ${recusado ? "text-muted-foreground line-through" : ""}`}>{formatarBRL(subtotalItem(item))}</span>}
             {podeTirar && (
               <Button type="button" variant="ghost" size="icon" className="size-11" aria-label={`Tirar ${item.descricao}`} onClick={() => setTirando(item)}>
                 <X />
@@ -229,9 +229,9 @@ export function OrdemDetalhe({ ordem, aoFechar }: { ordem: Ordem | null; aoFecha
   const historico = (
     <ol className="flex flex-col gap-3">
       {[...ordem.eventos].reverse().map((e, i) => (
-        <li key={i} className="border-primary border-l-[3px] pl-3 text-sm">
+        <li key={i} className="bg-muted rounded-lg px-3 py-2 text-sm">
           <p>{e.texto}</p>
-          <p className="text-muted-foreground font-mono text-xs">
+          <p className="text-muted-foreground tabular-nums text-xs">
             {quando(e.criadoEm)}
             {e.quem && ` · ${e.quem}`}
           </p>
@@ -254,7 +254,7 @@ export function OrdemDetalhe({ ordem, aoFechar }: { ordem: Ordem | null; aoFecha
               {info.texto}
             </FitaStatus>
             {veiculo?.placa && <PlacaVeiculo placa={veiculo.placa} />}
-            <span className="text-muted-foreground font-mono text-xs">{aberta ? `aberta ${tempoDesde(ordem.criadoEm)}` : venda ? `venda ${venda.numero}` : ""}</span>
+            <span className="text-muted-foreground tabular-nums text-xs">{aberta ? `aberta ${tempoDesde(ordem.criadoEm)}` : venda ? `venda ${venda.numero}` : ""}</span>
           </div>
         </SheetHeader>
 
@@ -302,7 +302,7 @@ export function OrdemDetalhe({ ordem, aoFechar }: { ordem: Ordem | null; aoFecha
             </DialogHeader>
             <Field className="gap-1.5">
               <FieldLabel htmlFor="os-qtd">Quantidade ({escolhido?.unidade})</FieldLabel>
-              <Input id="os-qtd" inputMode="decimal" className="font-mono" value={quantidade} onChange={(e) => setQuantidade(mascararQuantidade(e.target.value))} />
+              <Input id="os-qtd" inputMode="decimal" className="tabular-nums" value={quantidade} onChange={(e) => setQuantidade(mascararQuantidade(e.target.value))} />
             </Field>
             <DialogFooter className="flex-row justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setEscolhido(null)}>
@@ -351,11 +351,11 @@ export function OrdemDetalhe({ ordem, aoFechar }: { ordem: Ordem | null; aoFecha
             <div className="grid grid-cols-2 gap-3">
               <Field className="gap-1.5">
                 <FieldLabel htmlFor="aprov-qtd">Quantidade</FieldLabel>
-                <Input id="aprov-qtd" inputMode="decimal" className="font-mono" value={aprovando?.quantidade ?? ""} onChange={(e) => aprovando && setAprovando({ ...aprovando, quantidade: mascararQuantidade(e.target.value) })} />
+                <Input id="aprov-qtd" inputMode="decimal" className="tabular-nums" value={aprovando?.quantidade ?? ""} onChange={(e) => aprovando && setAprovando({ ...aprovando, quantidade: mascararQuantidade(e.target.value) })} />
               </Field>
               <Field className="gap-1.5">
                 <FieldLabel htmlFor="aprov-valor">Valor unitário (R$)</FieldLabel>
-                <Input id="aprov-valor" inputMode="numeric" className="font-mono" value={aprovando?.valor ?? ""} onChange={(e) => aprovando && setAprovando({ ...aprovando, valor: mascararMoeda(e.target.value) })} />
+                <Input id="aprov-valor" inputMode="numeric" className="tabular-nums" value={aprovando?.valor ?? ""} onChange={(e) => aprovando && setAprovando({ ...aprovando, valor: mascararMoeda(e.target.value) })} />
               </Field>
             </div>
             {aprovando && textoParaCentavos(aprovando.valor) === 0 && <p className="text-atencao text-sm">Valor zerado: o item entra de graça na venda.</p>}

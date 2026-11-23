@@ -3,7 +3,7 @@ import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import "@fontsource-variable/archivo/wdth.css";
+import "@fontsource-variable/inter";
 import "@fontsource-variable/geist-mono";
 
 import { AtualizacaoApp } from "@/components/layout/atualizacao-app";

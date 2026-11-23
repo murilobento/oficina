@@ -1,5 +1,7 @@
 # Redesenho visual: "Telemetria + bancada"
 
+> **Substituída** em 2026-11-23 por `2026-11-23-identidade-neutra-design.md`.
+
 **Data:** 2026-11-18 · **Maturidade:** L0 (sem DESIGN.md; tema atual é o shadcn do template + 8 presets)
 
 ## Decisões do Murilo

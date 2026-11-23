@@ -174,10 +174,10 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
                     <Field className="gap-1.5 sm:col-span-2">
                       <FieldLabel htmlFor="venda-veiculoId">Veículo (opcional)</FieldLabel>
                       <div className="flex gap-2">
-                        <NativeSelect id="venda-veiculoId" className="w-full uppercase" value={veiculoId} onChange={(evento) => escolherVeiculo(evento.target.value)}>
+                        <NativeSelect id="venda-veiculoId" className="w-full" value={veiculoId} onChange={(evento) => escolherVeiculo(evento.target.value)}>
                           <NativeSelectOption value="">{veiculosDisponiveis.length === 0 ? "Nenhum veículo cadastrado" : "Sem veículo"}</NativeSelectOption>
                           {veiculosDisponiveis.map((v) => (
-                            <NativeSelectOption key={v.id} value={v.id} className="uppercase">
+                            <NativeSelectOption key={v.id} value={v.id}>
                               {veiculoEmTexto(v)}
                             </NativeSelectOption>
                           ))}
@@ -278,7 +278,7 @@ export function VendaForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
             <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando || registrar.isPending}>
               <span className="sm:hidden">Continuar</span>
               <span className="hidden sm:inline">Continuar para pagamento</span>
-              {verValores && <span className="font-mono">· {formatarBRL(totais.total)}</span>}
+              {verValores && <span className="tabular-nums">· {formatarBRL(totais.total)}</span>}
             </Button>
           </SheetFooter>
           </>

@@ -72,12 +72,12 @@ export function OrdensLista() {
             aria-pressed={filtro === f.id}
             onClick={() => setFiltro(f.id)}
             className={cn(
-              "flex min-h-11 shrink-0 items-center gap-2 rounded-md border px-3 text-xs font-bold tracking-wider whitespace-nowrap uppercase [font-stretch:75%]",
-              filtro === f.id ? "border-foreground bg-foreground text-background" : "bg-card",
+              "focus-visible:ring-ring flex h-9 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+              filtro === f.id ? "bg-foreground text-background font-medium" : "bg-card hover:bg-muted border",
             )}
           >
             {f.texto}
-            <span className="font-mono">{f.total}</span>
+            <span className="tabular-nums opacity-70">{f.total}</span>
           </button>
         ))}
       </div>
@@ -91,24 +91,24 @@ export function OrdensLista() {
             const v = veiculo(o);
             const pendentes = o.itens.filter((i) => i.situacao === "pendente").length;
             return (
-              <li key={o.id} className="bg-card flex min-w-0 flex-col overflow-hidden rounded-md border uppercase">
-                <button type="button" className="flex flex-col gap-2 p-3 text-left" onClick={() => setVerId(o.id)}>
+              <li key={o.id} className="bg-card flex min-w-0 flex-col overflow-hidden rounded-xl border">
+                <button type="button" className="hover:bg-muted/50 flex flex-col gap-2 p-4 text-left" onClick={() => setVerId(o.id)}>
                   <span className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-sm font-semibold">{o.numero}</span>
+                    <span className="text-muted-foreground font-mono text-sm">{o.numero}</span>
                     <FitaStatus tom={info.tom} icone={info.icone}>
                       {info.texto}
                     </FitaStatus>
                   </span>
                   <span className="flex items-center justify-between gap-2">
                     <span className="min-w-0">
-                      <span className="block truncate font-semibold">{v?.modelo ?? "Veículo removido"}</span>
+                      <span className="block truncate font-medium">{v?.modelo ?? "Veículo removido"}</span>
                       <span className="text-muted-foreground block truncate text-sm">{cliente(o)?.nome ?? "Cliente removido"}</span>
                     </span>
-                    {v?.placa && <PlacaVeiculo placa={v.placa} />}
+                    {v?.placa && <PlacaVeiculo placa={v.placa} tamanho="sm" />}
                   </span>
-                  {o.problema && <span className="text-muted-foreground line-clamp-2 text-sm normal-case">{o.problema}</span>}
+                  {o.problema && <span className="text-muted-foreground line-clamp-2 text-sm">{o.problema}</span>}
                 </button>
-                <div className="bg-muted/50 flex items-center justify-between gap-2 px-3 py-2">
+                <div className="flex items-center justify-between gap-2 border-t px-4 py-2.5">
                   {pendentes > 0 ? (
                     <span className="text-atencao flex items-center gap-1 text-xs font-semibold">
                       <CircleAlert className="size-3.5" /> {pendentes} extra{pendentes > 1 ? "s" : ""} p/ aprovar
@@ -116,7 +116,7 @@ export function OrdensLista() {
                   ) : (
                     <span className="text-muted-foreground text-xs">{o.itens.filter((i) => i.situacao === "aprovado").length} itens</span>
                   )}
-                  <span className="text-muted-foreground font-mono text-xs">{noPatio(o) ? tempoDesde(o.criadoEm) : new Date(o.atualizadoEm).toLocaleDateString("pt-BR")}</span>
+                  <span className="text-muted-foreground text-xs tabular-nums">{noPatio(o) ? tempoDesde(o.criadoEm) : new Date(o.atualizadoEm).toLocaleDateString("pt-BR")}</span>
                 </div>
               </li>
             );

@@ -12,7 +12,7 @@ export function FolhaNovo({ aberta, acoes, aoFechar }: { aberta: boolean; acoes:
 
   return (
     <Sheet open={aberta} onOpenChange={(abrir) => !abrir && aoFechar()}>
-      <SheetContent side="bottom" className="rounded-t-xl border-t-[3px] border-t-primary">
+      <SheetContent side="bottom" className="rounded-t-2xl">
         <SheetHeader>
           <SheetTitle className="text-xl">Criar novo</SheetTitle>
           <SheetDescription>O que você quer lançar agora?</SheetDescription>

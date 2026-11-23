@@ -59,16 +59,16 @@ export function AReceberLista() {
         {visiveis.map((l) => {
           const venda = porId.get(l.vendaId);
           return (
-            <li key={`${l.vendaId}-${l.numero}`} className="bg-card flex min-w-0 flex-col gap-2 rounded-md border p-4 uppercase">
+            <li key={`${l.vendaId}-${l.numero}`} className="bg-card flex min-w-0 flex-col gap-2 rounded-xl border p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate font-semibold">{nomeCliente(venda)}</p>
+                  <p className="truncate font-medium">{nomeCliente(venda)}</p>
                   <p className="text-muted-foreground font-mono text-xs">
                     {venda?.numero}
                     {l.de > 1 && ` · parcela ${l.numero}/${l.de}`}
                   </p>
                 </div>
-                <p className="font-mono text-lg font-bold tabular-nums">{formatarBRL(l.aberto)}</p>
+                <p className="text-lg font-semibold tabular-nums">{formatarBRL(l.aberto)}</p>
               </div>
               <div className="flex items-center justify-between gap-2">
                 {l.vencida ? (
@@ -76,7 +76,7 @@ export function AReceberLista() {
                     Vencida · {dataBR(l.vencimento)}
                   </FitaStatus>
                 ) : (
-                  <span className="text-muted-foreground font-mono text-xs">{l.vencimento === hoje ? "Vence hoje" : `Vence ${dataBR(l.vencimento)}`}</span>
+                  <span className="text-muted-foreground text-xs">{l.vencimento === hoje ? "Vence hoje" : `Vence ${dataBR(l.vencimento)}`}</span>
                 )}
               </div>
               {podeReceber && (

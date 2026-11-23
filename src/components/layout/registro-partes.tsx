@@ -137,7 +137,7 @@ export function Dado({ rotulo, children, largo }: { rotulo: string; children: Re
   return (
     <div className={largo ? "flex flex-col gap-0.5 sm:col-span-2" : "flex flex-col gap-0.5"}>
       <dt className="text-muted-foreground text-sm">{rotulo}</dt>
-      <dd className={vazio ? "text-muted-foreground text-sm normal-case" : "text-sm break-words uppercase"}>
+      <dd className={vazio ? "text-muted-foreground text-sm" : "text-sm break-words"}>
         {vazio ? "Não informado" : children}
       </dd>
     </div>
