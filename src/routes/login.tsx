@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { LOGIN_ATIVO, useSessao } from "@/features/auth/sessao";
 import { useEmpresa } from "@/features/empresa/api";
 import { authClient } from "@/lib/auth-client";
+import { CampoSenha } from "@/components/layout/campo-senha";
 
 export const Route = createFileRoute("/login")({
   // Quem já está logado não precisa ver o login de novo.
@@ -88,7 +89,7 @@ function Login() {
               </Field>
               <Field className="gap-1.5">
                 <FieldLabel htmlFor="login-senha">Senha</FieldLabel>
-                <Input id="login-senha" type="password" className="h-12" placeholder="••••••••" autoComplete="current-password" value={senha} onChange={(e) => setSenha(e.target.value)} aria-invalid={erro !== ""} />
+                <CampoSenha id="login-senha" className="h-12" placeholder="••••••••" autoComplete="current-password" value={senha} onChange={(e) => setSenha(e.target.value)} aria-invalid={erro !== ""} />
               </Field>
             </FieldGroup>
             {erro && (

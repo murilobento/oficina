@@ -5,9 +5,9 @@ import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-ro
 import { EmConstrucao, Pagina } from '@/components/layout/pagina'
 import { Button } from '@/components/ui/button'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
 import { LOGIN_ATIVO, useSessao } from '@/features/auth/sessao'
 import { authClient } from '@/lib/auth-client'
+import { CampoSenha } from '@/components/layout/campo-senha'
 
 export const Route = createFileRoute('/trocar-senha')({
   beforeLoad: async () => {
@@ -74,15 +74,15 @@ function TrocarSenha() {
         <FieldGroup className="gap-4">
           <Field className="gap-1.5">
             <FieldLabel htmlFor="senha-atual">Senha atual</FieldLabel>
-            <Input id="senha-atual" type="password" autoComplete="current-password" value={atual} onChange={(e) => setAtual(e.target.value)} />
+            <CampoSenha id="senha-atual" autoComplete="current-password" value={atual} onChange={(e) => setAtual(e.target.value)} />
           </Field>
           <Field className="gap-1.5">
             <FieldLabel htmlFor="senha-nova">Nova senha</FieldLabel>
-            <Input id="senha-nova" type="password" autoComplete="new-password" value={nova} onChange={(e) => setNova(e.target.value)} />
+            <CampoSenha id="senha-nova" autoComplete="new-password" value={nova} onChange={(e) => setNova(e.target.value)} />
           </Field>
           <Field className="gap-1.5">
             <FieldLabel htmlFor="senha-confirmacao">Repita a nova senha</FieldLabel>
-            <Input id="senha-confirmacao" type="password" autoComplete="new-password" value={confirmacao} onChange={(e) => setConfirmacao(e.target.value)} />
+            <CampoSenha id="senha-confirmacao" autoComplete="new-password" value={confirmacao} onChange={(e) => setConfirmacao(e.target.value)} />
           </Field>
         </FieldGroup>
         {erro && (
