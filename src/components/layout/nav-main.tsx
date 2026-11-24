@@ -1,74 +1,51 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
 
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import { isSamePath, type NavGroup, type NavItem, type NavModule } from "@/navigation/sidebar-items";
+import { isSamePath, type NavItem, type NavModule } from "@/navigation/sidebar-items";
+
+// Os botões do menu cortam o texto por padrão; aqui ele quebra linha e o botão cresce junto.
+const BOTAO_QUEBRA = "h-auto min-h-9 max-md:h-auto max-md:min-h-11 gap-2.5 py-2 [&_svg]:text-sidebar-foreground/60 data-[active=true]:[&_svg]:text-sidebar-accent-foreground";
+const TEXTO_QUEBRA = "min-w-0 flex-1 break-words leading-snug";
 
 /** Painel da direita: os grupos e itens do módulo escolhido na faixa de ícones. */
-export function NavMain({ module }: { readonly module: NavModule }) {
+export function NavPainel({ module }: { readonly module: NavModule }) {
   const pathname = useLocation({ select: (location) => location.pathname });
 
   return (
-    <SidebarGroup>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {module.groups?.map((group) =>
-            group.title ? (
-              <NavGroupItem key={group.id} group={group} pathname={pathname} />
-            ) : (
-              // Grupo sem título: os itens aparecem direto, sem abrir e fechar.
-              group.items.map((item) => <NavFlatItem key={item.id} item={item} pathname={pathname} />)
-            ),
-          )}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+    <>
+      {module.groups?.map((grupo) => (
+        <SidebarGroup key={grupo.id} className="py-1">
+          {grupo.title && <SidebarGroupLabel>{grupo.title}</SidebarGroupLabel>}
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-0.5">
+              {grupo.items.map((item) => (
+                <ItemPainel key={item.id} item={item} pathname={pathname} />
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      ))}
+    </>
   );
 }
 
-function NavGroupItem({ group, pathname }: { readonly group: NavGroup; readonly pathname: string }) {
-  // Os grupos começam fechados e abrem ao clicar. A exceção é o grupo da tela atual,
-  // que já vem aberto (inclusive ao recarregar a página).
-  const contemTelaAtual = group.items.some((item) => item.url && isSamePath(item.url, pathname));
+function ItemPainel({ item, pathname }: { readonly item: NavItem; readonly pathname: string }) {
+  const Icone = item.icon;
 
-  return (
-    <Collapsible asChild defaultOpen={contemTelaAtual} className="group/collapsible">
-      <SidebarMenuItem>
-        <CollapsibleTrigger asChild>
-          <SidebarMenuButton className="font-medium">
-            <ChevronRight className="transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-            <span className="text-xs font-medium text-muted-foreground">{group.title}</span>
-          </SidebarMenuButton>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <SidebarMenuSub>
-            {group.items.map((item) => (
-              <NavLeaf key={item.id} item={item} pathname={pathname} />
-            ))}
-          </SidebarMenuSub>
-        </CollapsibleContent>
-      </SidebarMenuItem>
-    </Collapsible>
-  );
-}
-
-function NavFlatItem({ item, pathname }: { readonly item: NavItem; readonly pathname: string }) {
   if (!item.url) {
     return (
       <SidebarMenuItem>
         {/* Tela ainda não construída: aparece apagada e não é clicável. */}
-        <SidebarMenuButton aria-disabled title={`${item.title} (em breve)`}>
-          <span>{item.title}</span>
+        <SidebarMenuButton aria-disabled title={`${item.title} (em breve)`} className={BOTAO_QUEBRA}>
+          {Icone && <Icone />}
+          <div className={TEXTO_QUEBRA}>{item.title}</div>
         </SidebarMenuButton>
       </SidebarMenuItem>
     );
@@ -76,34 +53,12 @@ function NavFlatItem({ item, pathname }: { readonly item: NavItem; readonly path
 
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton asChild isActive={isSamePath(item.url, pathname)} className="data-[active=true]:font-medium">
+      <SidebarMenuButton asChild isActive={isSamePath(item.url, pathname)} className={BOTAO_QUEBRA}>
         <Link to={item.url}>
-          <span>{item.title}</span>
+          {Icone && <Icone />}
+          <div className={TEXTO_QUEBRA}>{item.title}</div>
         </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>
-  );
-}
-
-function NavLeaf({ item, pathname }: { readonly item: NavItem; readonly pathname: string }) {
-  if (!item.url) {
-    return (
-      <SidebarMenuSubItem>
-        {/* Tela ainda não construída: aparece apagada e não é clicável. */}
-        <SidebarMenuSubButton aria-disabled title={`${item.title} (em breve)`}>
-          <span>{item.title}</span>
-        </SidebarMenuSubButton>
-      </SidebarMenuSubItem>
-    );
-  }
-
-  return (
-    <SidebarMenuSubItem>
-      <SidebarMenuSubButton asChild isActive={isSamePath(item.url, pathname)} className="data-[active=true]:font-medium">
-        <Link to={item.url}>
-          <span>{item.title}</span>
-        </Link>
-      </SidebarMenuSubButton>
-    </SidebarMenuSubItem>
   );
 }

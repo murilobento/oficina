@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { Link, useNavigate } from "@tanstack/react-router";
-import { EllipsisVertical, KeyRound, LogOut } from "lucide-react";
+import { KeyRound, LogOut } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
+import { useSidebar } from "@/components/ui/sidebar";
 import { LOGIN_ATIVO, useSessao } from "@/features/auth/sessao";
 import { authClient } from "@/lib/auth-client";
 import { getInitials } from "@/lib/utils";
@@ -41,27 +41,25 @@ export function NavUser({
   }
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
+    <>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            <button
+              type="button"
+              aria-label={`Menu de ${user.name}`}
+              title={user.name}
+              className="rounded-full outline-hidden focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[state=open]:ring-2 data-[state=open]:ring-sidebar-ring"
             >
-              <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarFallback className="rounded-lg">{getInitials(user.name)}</AvatarFallback>
+              <Avatar className="size-9">
+                <AvatarFallback className="bg-sidebar-accent text-xs font-semibold text-sidebar-accent-foreground">
+                  {getInitials(user.name)}
+                </AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="text-muted-foreground truncate text-xs">{user.email}</span>
-              </div>
-              <EllipsisVertical className="ml-auto size-4" />
-            </SidebarMenuButton>
+            </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
+            className="w-64 rounded-lg"
+            side={isMobile ? "top" : "right"}
             align="end"
             sideOffset={4}
           >
@@ -70,9 +68,9 @@ export function NavUser({
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarFallback className="rounded-lg">{getInitials(user.name)}</AvatarFallback>
                 </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="text-muted-foreground truncate text-xs">{user.email}</span>
+                <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+                  <span className="font-medium break-words">{user.name}</span>
+                  <span className="text-muted-foreground text-xs break-all">{user.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
@@ -108,7 +106,6 @@ export function NavUser({
           </DropdownMenuContent>
         </DropdownMenu>
         <PassoAPassoIOS aberto={passosIOS} aoFechar={() => setPassosIOS(false)} />
-      </SidebarMenuItem>
-    </SidebarMenu>
+    </>
   );
 }

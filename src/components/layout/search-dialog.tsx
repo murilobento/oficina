@@ -35,7 +35,7 @@ function montarItens(modulos: NavModule[]): SearchItem[] {
     }
     return (module.groups ?? []).flatMap((group) =>
       group.items.flatMap((item) =>
-        item.url ? [{ id: item.id, group: module.title, label: item.title, url: item.url, icon: module.icon }] : [],
+        item.url ? [{ id: item.id, group: module.title, label: item.title, url: item.url, icon: item.icon ?? module.icon }] : [],
       ),
     );
   });

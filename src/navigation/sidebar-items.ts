@@ -1,14 +1,23 @@
 import {
+  ArrowLeftRight,
+  Building2,
   Car,
+  ClipboardList,
   FileText,
   Home,
   type LucideIcon,
   Package,
-  Settings,
   Receipt,
+  ScrollText,
+  Settings,
+  Shield,
+  ShoppingCart,
+  SlidersHorizontal,
+  Truck,
+  UserCog,
   Users,
+  Wallet,
   Wrench,
-  ClipboardList,
 } from "lucide-react";
 
 import type { Permissao } from "@/features/auth/permissoes";
@@ -17,6 +26,7 @@ import type { Permissao } from "@/features/auth/permissoes";
 export interface NavItem {
   id: string;
   title: string;
+  icon?: LucideIcon;
   url?: string;
   /** Permissão exigida: sem ela o item some do menu e a tela mostra "sem permissão". */
   permissao?: Permissao;
@@ -39,6 +49,8 @@ export interface NavModule {
   icon: LucideIcon;
   url?: string;
   groups?: NavGroup[];
+  /** Nome curto que aparece embaixo do ícone na faixa (padrão: `title`). */
+  rotulo?: string;
 }
 
 // Menu do sistema. A ordem aqui é a ordem dos ícones na faixa da esquerda.
@@ -53,11 +65,11 @@ export const navModules: NavModule[] = [
       {
         id: "atendimento",
         items: [
-          { id: "ordens", title: "Ordem de serviço", url: "/ordens", permissao: "ordens.ver" },
-          { id: "orcamentos", title: "Orçamento", url: "/orcamentos", permissao: "orcamentos.ver" },
-          { id: "vendas", title: "Venda", url: "/vendas", permissao: "vendas.ver" },
-          { id: "receber", title: "A receber", url: "/receber", permissao: "valores.ver" },
-          { id: "compras", title: "Compra", url: "/compras", permissao: "compras.ver" },
+          { id: "ordens", icon: ClipboardList, title: "Ordem de serviço", url: "/ordens", permissao: "ordens.ver" },
+          { id: "orcamentos", icon: FileText, title: "Orçamento", url: "/orcamentos", permissao: "orcamentos.ver" },
+          { id: "vendas", icon: Receipt, title: "Venda", url: "/vendas", permissao: "vendas.ver" },
+          { id: "receber", icon: Wallet, title: "A receber", url: "/receber", permissao: "valores.ver" },
+          { id: "compras", icon: ShoppingCart, title: "Compra", url: "/compras", permissao: "compras.ver" },
         ],
       },
     ],
@@ -70,11 +82,11 @@ export const navModules: NavModule[] = [
       {
         id: "cadastro",
         items: [
-          { id: "clientes", title: "Cliente", url: "/clientes", permissao: "clientes.ver" },
-          { id: "veiculos", title: "Veículo", url: "/veiculos", permissao: "veiculos.ver" },
-          { id: "fornecedores", title: "Fornecedor", url: "/fornecedores", permissao: "clientes.ver" },
-          { id: "produtos", title: "Produto", url: "/produtos", permissao: "estoque.ver" },
-          { id: "servicos", title: "Serviço", url: "/servicos", permissao: "servicos.ver" },
+          { id: "clientes", icon: Users, title: "Cliente", url: "/clientes", permissao: "clientes.ver" },
+          { id: "veiculos", icon: Car, title: "Veículo", url: "/veiculos", permissao: "veiculos.ver" },
+          { id: "fornecedores", icon: Truck, title: "Fornecedor", url: "/fornecedores", permissao: "clientes.ver" },
+          { id: "produtos", icon: Package, title: "Produto", url: "/produtos", permissao: "estoque.ver" },
+          { id: "servicos", icon: Wrench, title: "Serviço", url: "/servicos", permissao: "servicos.ver" },
         ],
       },
     ],
@@ -87,8 +99,8 @@ export const navModules: NavModule[] = [
       {
         id: "estoque",
         items: [
-          { id: "movimentacoes", title: "Movimentação de estoque", url: "/estoque/movimentacoes", permissao: "estoque.ver" },
-          { id: "acertos", title: "Acerto de estoque", url: "/estoque/acertos", permissao: "estoque.editar" },
+          { id: "movimentacoes", icon: ArrowLeftRight, title: "Movimentação de estoque", url: "/estoque/movimentacoes", permissao: "estoque.ver" },
+          { id: "acertos", icon: SlidersHorizontal, title: "Acerto de estoque", url: "/estoque/acertos", permissao: "estoque.editar" },
         ],
       },
     ],
@@ -97,24 +109,25 @@ export const navModules: NavModule[] = [
     id: "administracao",
     title: "Administração",
     icon: Settings,
+    rotulo: "Admin",
     groups: [
       {
         id: "empresa",
         title: "Empresa",
-        items: [{ id: "dados-empresa", title: "Dados da empresa", url: "/admin/empresa", permissao: "empresa.gerenciar" }],
+        items: [{ id: "dados-empresa", icon: Building2, title: "Dados da empresa", url: "/admin/empresa", permissao: "empresa.gerenciar" }],
       },
       {
         id: "acesso",
         title: "Acesso",
         items: [
-          { id: "usuarios", title: "Funcionários", url: "/admin/usuarios", permissao: "funcionarios.gerenciar" },
-          { id: "perfis", title: "Perfis", url: "/admin/perfis", permissao: "perfis.gerenciar" },
+          { id: "usuarios", icon: UserCog, title: "Funcionários", url: "/admin/usuarios", permissao: "funcionarios.gerenciar" },
+          { id: "perfis", icon: Shield, title: "Perfis", url: "/admin/perfis", permissao: "perfis.gerenciar" },
         ],
       },
       {
         id: "seguranca",
         title: "Segurança",
-        items: [{ id: "auditoria", title: "Auditoria", url: "/admin/auditoria", permissao: "auditoria.ver" }],
+        items: [{ id: "auditoria", icon: ScrollText, title: "Auditoria", url: "/admin/auditoria", permissao: "auditoria.ver" }],
       },
     ],
   },

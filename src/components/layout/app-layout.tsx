@@ -24,7 +24,7 @@ export function AppLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <SidebarProvider
       defaultOpen={defaultOpen}
-      style={{ "--sidebar-width": "calc(var(--spacing) * 60)" } as CSSProperties}
+      style={{ "--sidebar-width": "20rem", "--sidebar-width-icon": "4.75rem" } as CSSProperties}
     >
       <AppSidebar />
       <SidebarInset
