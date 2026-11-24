@@ -109,7 +109,7 @@ export function paraFormulario(servico: Servico): ServicoFormValores {
 export function paraServico(valores: ServicoFormValores): Omit<Servico, "id" | "criadoEm"> {
   return {
     ...valores,
-    codigo: valores.codigo.trim().toUpperCase(),
+    codigo: valores.codigo.trim(),
     valor: textoParaCentavos(valores.valor),
     tempoHoras: textoParaNumero(valores.tempoHoras),
     garantiaDias: Number(valores.garantiaDias || 0),

@@ -22,4 +22,4 @@ export function paginar<T>(itens: T[], pagina: number, porPagina = POR_PAGINA) {
 }
 
 /** Classes padrão do <Table> dentro de <ListagemTabela>. */
-export const CLASSE_TABELA = "[&_tbody]:uppercase [&_tbody_button]:uppercase **:data-[slot='table-cell']:px-4 **:data-[slot='table-head']:px-4";
+export const CLASSE_TABELA = "**:data-[slot='table-cell']:px-4 **:data-[slot='table-head']:px-4";

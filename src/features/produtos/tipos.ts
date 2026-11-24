@@ -143,7 +143,7 @@ export function paraFormulario(produto: Produto): ProdutoFormValores {
 export function paraProduto(valores: ProdutoFormValores): Omit<Produto, "id" | "criadoEm" | "saldo"> {
   return {
     ...valores,
-    codigo: valores.codigo.trim().toUpperCase(),
+    codigo: valores.codigo.trim(),
     custo: textoParaCentavos(valores.custo),
     venda: textoParaCentavos(valores.venda),
     estoqueMinimo: textoParaNumero(valores.estoqueMinimo),
