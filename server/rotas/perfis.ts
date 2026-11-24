@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { auditar, diferencas } from "../auditoria";
 
 import { PERMISSOES, type Permissao } from "../../src/features/auth/permissoes";
 
@@ -7,6 +8,7 @@ import { permissoesDoPerfil } from "../perfis";
 import { codigoPg, type Contexto, ErroApi, lerCorpo } from "./util";
 
 const CHAVES = Object.keys(PERMISSOES) as [Permissao, ...Permissao[]];
+const rotulo = (permissao: Permissao) => PERMISSOES[permissao] ?? permissao;
 
 export const esquemaPerfilApi = z.object({
   nome: z.string().trim().min(3, "Informe o nome do perfil.").max(60, "No máximo 60 caracteres."),
@@ -72,6 +74,13 @@ export function registrarRotasPerfis({ app, banco, exigirSessao, exigirPermissao
       .transacao(async (q) => {
         await q("insert into perfis (id, nome, descricao, protegido) values ($1, $2, $3, false)", [id, dados.nome, dados.descricao]);
         for (const permissao of new Set(dados.permissoes)) await q("insert into perfil_permissoes (perfil_id, permissao) values ($1, $2)", [id, permissao]);
+        await auditar(q, c, {
+          categoria: "acesso",
+          acao: "perfil.criado",
+          descricao: `Criou o perfil ${dados.nome} com ${new Set(dados.permissoes).size} permissões.`,
+          alvo: { tipo: "perfil", id },
+          detalhes: { incluidas: [...new Set(dados.permissoes)].map(rotulo) },
+        });
       })
       .catch((erro) => {
         throw codigoPg(erro) === "23505" ? nomeRepetido() : erro;
@@ -81,14 +90,29 @@ export function registrarRotasPerfis({ app, banco, exigirSessao, exigirPermissao
 
   app.put("/perfis/:id", exigirSessao, exigirPermissao("perfis.gerenciar"), async (c) => {
     const id = c.req.param("id");
-    await exigirEditavel(id);
+    const anterior = await exigirEditavel(id);
     const dados = await lerCorpo(c, esquemaPerfilApi);
     await exigirConcedivel(c, dados.permissoes);
     await nomeLivre(dados.nome, id);
     await banco
       .transacao(async (q) => {
+        const tinha = new Set((await q<{ permissao: Permissao }>("select permissao from perfil_permissoes where perfil_id = $1", [id])).map((l) => l.permissao));
+        const tera = new Set(dados.permissoes);
         await q("update perfis set nome = $2, descricao = $3 where id = $1", [id, dados.nome, dados.descricao]);
         await q("delete from perfil_permissoes where perfil_id = $1", [id]);
+        const incluidas = [...tera].filter((p) => !tinha.has(p)).map(rotulo);
+        const retiradas = [...tinha].filter((p) => !tera.has(p)).map(rotulo);
+        const mudancas = diferencas(anterior, { nome: dados.nome, descricao: dados.descricao }, { nome: "Nome", descricao: "Descrição" });
+        if (incluidas.length > 0 || retiradas.length > 0 || mudancas.length > 0) {
+          const partes = [incluidas.length > 0 && `+${incluidas.length}`, retiradas.length > 0 && `−${retiradas.length}`].filter(Boolean).join(" / ");
+          await auditar(q, c, {
+            categoria: "acesso",
+            acao: "perfil.alterado",
+            descricao: `Alterou o perfil ${dados.nome}${partes ? ` (permissões ${partes})` : ""}.`,
+            alvo: { tipo: "perfil", id },
+            detalhes: { mudancas, incluidas, retiradas },
+          });
+        }
         for (const permissao of new Set(dados.permissoes)) await q("insert into perfil_permissoes (perfil_id, permissao) values ($1, $2)", [id, permissao]);
       })
       .catch((erro) => {
@@ -99,12 +123,13 @@ export function registrarRotasPerfis({ app, banco, exigirSessao, exigirPermissao
 
   app.delete("/perfis/:id", exigirSessao, exigirPermissao("perfis.gerenciar"), async (c) => {
     const id = c.req.param("id");
-    await exigirEditavel(id);
+    const perfil = await exigirEditavel(id);
     await banco.transacao(async (q) => {
       await q("select 1 from perfis where id = $1 for update", [id]); // espera quem estiver atribuindo este perfil
       const [{ total }] = await q<{ total: string }>(`select count(*) as total from "user" where role = $1`, [id]);
       if (Number(total) > 0) throw new ErroApi(409, "Este perfil tem funcionários. Troque o perfil deles antes de excluir.");
       await q("delete from perfis where id = $1", [id]);
+      await auditar(q, c, { categoria: "acesso", acao: "perfil.excluido", descricao: `Excluiu o perfil ${perfil.nome}.`, alvo: { tipo: "perfil", id } });
     });
     return c.body(null, 204);
   });

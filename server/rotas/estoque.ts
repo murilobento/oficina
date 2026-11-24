@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { auditar } from "../auditoria";
 import { movimentar } from "../estoque";
 import { quantidadeApi } from "./itens-venda";
 
@@ -54,6 +55,7 @@ export function registrarRotasEstoque({ app, banco, exigirSessao, exigirPermissa
         // Ordem fixa de produto: travar as linhas sempre na mesma ordem evita deadlock entre documentos simultâneos.
         const ordenados = [...dados.itens].sort((a, b) => (a.produtoId < b.produtoId ? -1 : 1));
         let posicao = 0;
+        const conferidos: { produto: string; sistema: number; contado: number; diferenca: number }[] = [];
         for (const item of ordenados) {
           // Trava a linha: o saldo do sistema gravado é o que de fato foi corrigido.
           const [produto] = await q<{ descricao: string; unidade: string; saldo: string }>("select descricao, unidade, saldo from produtos where id = $1::uuid for update", [item.produtoId]);
@@ -64,7 +66,17 @@ export function registrarRotasEstoque({ app, banco, exigirSessao, exigirPermissa
           ]);
           const delta = Math.round((item.contado - saldoSistema) * 1000) / 1000;
           await movimentar(q, { produtoId: item.produtoId, delta, origem: "acerto", documento: acerto.numero, motivo: dados.motivo });
+          conferidos.push({ produto: produto.descricao, sistema: saldoSistema, contado: item.contado, diferenca: delta });
         }
+        const comDiferenca = conferidos.filter((item) => item.diferenca !== 0);
+        const resumo = comDiferenca.length === 0 ? "sem diferenças" : `${comDiferenca.length} com diferença`;
+        await auditar(q, c, {
+          categoria: "estoque",
+          acao: "estoque.acerto",
+          descricao: `Fez o acerto ${acerto.numero} (${dados.motivo}): ${conferidos.length} ${conferidos.length === 1 ? "produto" : "produtos"}, ${resumo}.`,
+          alvo: { tipo: "acerto", id: acerto.id },
+          detalhes: { motivo: dados.motivo, observacoes: dados.observacoes, itens: comDiferenca },
+        });
         return acerto.id;
       });
       return c.json((await carregar(id))[0], 201);

@@ -1,8 +1,16 @@
 import { z } from "zod";
+import { auditar, diferencas } from "../auditoria";
 
 import { limparCNPJ, soDigitos, validarCNPJ } from "../../src/features/pessoas/documento";
 
 import { type Contexto, lerCorpo, montarUpdate, paraCamel } from "./util";
+
+const ROTULOS_EMPRESA: Record<string, string> = {
+  razaoSocial: "Razão social", nomeFantasia: "Nome fantasia", cnpj: "CNPJ", inscricaoEstadual: "Inscrição estadual",
+  inscricaoMunicipal: "Inscrição municipal", cep: "CEP", logradouro: "Logradouro", numero: "Número", complemento: "Complemento",
+  bairro: "Bairro", cidade: "Cidade", uf: "UF", whatsapp: "WhatsApp", email: "E-mail", site: "Site", instagram: "Instagram",
+  horario: "Horário", validadeOrcamentoDias: "Validade do orçamento", condicoesOrcamento: "Condições do orçamento", rodape: "Rodapé", logo: "Logo",
+};
 
 const texto = (max: number) => z.string().trim().max(max, `No máximo ${max} caracteres.`);
 const telefone = z.string().refine((v) => [0, 10, 11].includes(soDigitos(v).length), "Informe o telefone com DDD, por exemplo (11) 3333-4444.");
@@ -48,8 +56,26 @@ export function registrarRotasEmpresa({ app, banco, exigirSessao, exigirPermissa
 
   app.put("/empresa", exigirSessao, exigirPermissao("empresa.gerenciar"), async (c) => {
     const dados = await lerCorpo(c, esquemaEmpresaApi);
-    const { sql, valores } = montarUpdate("empresa", "1", { ...dados, cnpj: limparCNPJ(dados.cnpj) });
-    const [linha] = await banco.consultar(sql, valores);
+    const novos = { ...dados, cnpj: limparCNPJ(dados.cnpj) };
+    const { sql, valores } = montarUpdate("empresa", "1", novos);
+    const linha = await banco.transacao(async (q) => {
+      const [antes] = await q("select * from empresa where id = 1");
+      const [depois] = await q(sql, valores);
+      const anterior: Record<string, unknown> = antes ? paraCamel(antes) : {};
+      const mudancas = diferencas(anterior, paraCamel(depois), ROTULOS_EMPRESA).map((m) =>
+        m.campo === "Logo" ? { campo: "Logo", antes: anterior.logo ? "imagem anterior" : "sem logo", depois: novos.logo ? "imagem nova" : "sem logo" } : m,
+      );
+      if (mudancas.length > 0) {
+        await auditar(q, c, {
+          categoria: "acesso",
+          acao: "empresa.alterada",
+          descricao: `Alterou os dados da empresa: ${mudancas.map((m) => m.campo).join(", ")}.`,
+          alvo: { tipo: "empresa", id: "1" },
+          detalhes: { mudancas },
+        });
+      }
+      return depois;
+    });
     const { id: _id, ...saida } = paraCamel(linha);
     return c.json(saida);
   });

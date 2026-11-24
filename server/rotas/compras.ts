@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { auditar, reais } from "../auditoria";
 import { movimentar } from "../estoque";
 import { quantidadeApi, somarPorProduto } from "./itens-venda";
 
@@ -102,6 +103,20 @@ export function registrarRotasCompras({ app, banco, exigirSessao, exigirPermissa
     await banco.transacao(async (q) => {
       const [compra] = await q<{ numero: string }>("update compras set status = 'cancelada' where id = $1::uuid and status = 'concluida' returning numero", [id]);
       if (!compra) throw new ErroApi(409, "Esta compra já foi cancelada.");
+      const [conta] = await q<{ fornecedor: string | null; total: string }>(
+        `select p.nome as fornecedor,
+                coalesce((select sum(i.quantidade * i.custo) from compra_itens i where i.compra_id = c.id), 0) + c.frete - c.desconto as total
+           from compras c left join pessoas p on p.id = c.fornecedor_id where c.id = $1::uuid`,
+        [id],
+      );
+      const total = Math.round(Number(conta.total));
+      await auditar(q, c, {
+        categoria: "dinheiro",
+        acao: "compra.cancelada",
+        descricao: `Cancelou a compra ${compra.numero}${conta.fornecedor ? ` de ${conta.fornecedor}` : ""} (${reais(total)}).`,
+        alvo: { tipo: "compra", id },
+        detalhes: { total, fornecedor: conta.fornecedor ?? "" },
+      });
       const itens = await q<{ produto_id: string; descricao: string; quantidade: string }>(
         "select produto_id, max(descricao) as descricao, sum(quantidade) as quantidade from compra_itens where compra_id = $1::uuid group by produto_id",
         [id],

@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import { z } from "zod";
 
+import { auditar, reais } from "../auditoria";
 import { movimentar } from "../estoque";
 
 import { comItens } from "./documentos";
@@ -9,6 +10,8 @@ import { camposPagamentos, contaDaVenda, esquemaRecebimento, gravarPagamentos, t
 import { gravarVenda, quemSou } from "./venda-gravar";
 import { camposItensEDesconto, conferirClienteEVeiculo, type ItemVendaApi, precificar, protegerValores, validarDescontoApi } from "./itens-venda";
 import { type Contexto, ErroApi, lerCorpo, type Variaveis, violaChaveEstrangeira } from "./util";
+
+const FORMA_TEXTO = { dinheiro: "Dinheiro", pix: "Pix", debito: "Débito", credito: "Crédito" } as const;
 
 const texto = (max: number) => z.string().trim().max(max, `No máximo ${max} caracteres.`);
 
@@ -162,6 +165,15 @@ export function registrarRotasVendas({ app, banco, exigirSessao, exigirPermissao
       const { total, pago } = await contaDaVenda(q, id);
       if (soma > total - pago) throw new ErroApi(400, "O valor passa do saldo em aberto.", { valor: "O valor passa do saldo em aberto." });
       await gravarPagamentos(q, id, dados.pagamentos, quemSou(c));
+      const [{ numero }] = await q<{ numero: string }>("select numero from vendas where id = $1::uuid", [id]);
+      const formas = dados.pagamentos.map((p) => `${FORMA_TEXTO[p.forma]} ${reais(p.valor)}`).join(", ");
+      await auditar(q, c, {
+        categoria: "dinheiro",
+        acao: "venda.pagamento_recebido",
+        descricao: `Recebeu ${reais(soma)} da venda ${numero} (${formas}).`,
+        alvo: { tipo: "venda", id },
+        detalhes: { valor: soma, pagamentos: dados.pagamentos },
+      });
     });
     return c.json(enviar(c, [await buscar(id)])[0], 201);
   });
@@ -171,8 +183,21 @@ export function registrarRotasVendas({ app, banco, exigirSessao, exigirPermissao
     if (!c.get("permissoes").includes("valores.ver")) throw new ErroApi(403, "Sem permissão para registrar valores.");
     const id = c.req.param("id");
     await buscar(id);
-    const [feito] = await banco.consultar("update venda_pagamentos set estornado_em = now() where id = $1::uuid and venda_id = $2::uuid and estornado_em is null returning id", [c.req.param("pagamentoId"), id]).catch(() => []);
-    if (!feito) throw new ErroApi(409, "Pagamento não encontrado ou já estornado.");
+    await banco.transacao(async (q) => {
+      const [feito] = await q<{ forma: keyof typeof FORMA_TEXTO; valor: number; criado_por: string | null }>(
+        "update venda_pagamentos set estornado_em = now() where id = $1::uuid and venda_id = $2::uuid and estornado_em is null returning forma, valor, criado_por",
+        [c.req.param("pagamentoId"), id],
+      ).catch(() => []);
+      if (!feito) throw new ErroApi(409, "Pagamento não encontrado ou já estornado.");
+      const [{ numero }] = await q<{ numero: string }>("select numero from vendas where id = $1::uuid", [id]);
+      await auditar(q, c, {
+        categoria: "dinheiro",
+        acao: "venda.pagamento_estornado",
+        descricao: `Estornou ${reais(feito.valor)} (${FORMA_TEXTO[feito.forma] ?? feito.forma}) da venda ${numero}.`,
+        alvo: { tipo: "venda", id },
+        detalhes: { valor: feito.valor, forma: feito.forma, recebidoPor: feito.criado_por ?? "" },
+      });
+    });
     return c.json(enviar(c, [await buscar(id)])[0]);
   });
 
@@ -188,6 +213,14 @@ export function registrarRotasVendas({ app, banco, exigirSessao, exigirPermissao
       if (recebido) throw new ErroApi(409, "Esta venda tem pagamento recebido. Estorne os pagamentos antes de cancelar.");
       const [venda] = await q<{ numero: string; orcamento_id: string | null }>("update vendas set status = 'cancelada' where id = $1::uuid and status = 'concluida' returning numero, orcamento_id", [id]);
       if (!venda) throw new ErroApi(409, "Esta venda já foi cancelada.");
+      const { total } = await contaDaVenda(q, id);
+      await auditar(q, c, {
+        categoria: "dinheiro",
+        acao: "venda.cancelada",
+        descricao: `Cancelou a venda ${venda.numero} (${reais(total)}).`,
+        alvo: { tipo: "venda", id },
+        detalhes: { total },
+      });
       const pecas = await q<{ origem_id: string; quantidade: string }>(
         "select origem_id, sum(quantidade) as quantidade from venda_itens where venda_id = $1::uuid and tipo = 'produto' and origem_id is not null group by origem_id",
         [id],

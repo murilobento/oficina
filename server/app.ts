@@ -3,9 +3,11 @@ import type { MiddlewareHandler } from "hono";
 
 import type { Permissao } from "../src/features/auth/permissoes";
 
+import { auditar } from "./auditoria";
 import type { Auth } from "./auth";
 import type { Banco } from "./banco";
 import { permissoesDoPerfil } from "./perfis";
+import { registrarRotasAuditoria } from "./rotas/auditoria";
 import { registrarRotasCompras } from "./rotas/compras";
 import { registrarRotasEmpresa } from "./rotas/empresa";
 import { registrarRotasEstoque } from "./rotas/estoque";
@@ -45,13 +47,66 @@ export function criarApp(banco: Banco, auth: Auth, opcoes: { buscar?: typeof fet
     const rota = new URL(c.req.url).pathname;
     let aposSucesso: (() => Promise<void>) | null = null;
 
+    // Auditoria dos acessos: falha aqui nunca impede a entrada/saída (só fica no log do servidor).
+    const registrarAcesso = (registro: Parameters<typeof auditar>[2]) =>
+      auditar(banco.consultar, c as never, registro).catch((erro: Error) => console.error("Falha ao gravar auditoria:", erro.message));
+    let aposResposta: ((resposta: Response) => Promise<void>) | null = null;
+
     if (c.req.method === "POST" && rota.endsWith("/change-password")) {
       const sessao = await auth.api.getSession({ headers: c.req.raw.headers });
-      if (sessao) aposSucesso = async () => void (await banco.consultar(`update "user" set "trocarSenha" = false where id = $1`, [sessao.user.id]));
+      if (sessao) {
+        aposSucesso = async () => void (await banco.consultar(`update "user" set "trocarSenha" = false where id = $1`, [sessao.user.id]));
+        aposResposta = async (resposta) => {
+          if (!resposta.ok) return;
+          await registrarAcesso({
+            categoria: "login",
+            acao: "login.senha_trocada",
+            descricao: `${sessao.user.name} trocou a própria senha.`,
+            usuario: { id: sessao.user.id, nome: sessao.user.name },
+          });
+        };
+      }
+    }
+
+    if (c.req.method === "POST" && rota.endsWith("/sign-in/email")) {
+      const { email } = ((await c.req.raw.clone().json().catch(() => ({}))) ?? {}) as { email?: unknown };
+      const tentado = typeof email === "string" ? email.trim().toLowerCase().slice(0, 200) : "";
+      aposResposta = async (resposta) => {
+        if (resposta.ok) {
+          const corpo = (await resposta.clone().json().catch(() => null)) as { user?: { id: string; name: string } } | null;
+          await registrarAcesso({
+            categoria: "login",
+            acao: "login.entrada",
+            descricao: `${corpo?.user?.name ?? tentado} entrou no sistema.`,
+            usuario: { id: corpo?.user?.id ?? null, nome: corpo?.user?.name ?? tentado },
+          });
+        } else if (resposta.status === 401 || resposta.status === 403) {
+          const [conhecido] = await banco.consultar<{ id: string; name: string }>(`select id, name from "user" where lower(email) = $1`, [tentado]);
+          await registrarAcesso({
+            categoria: "login",
+            acao: "login.senha_errada",
+            descricao: conhecido ? `Senha errada ao entrar como ${conhecido.name} (${tentado}).` : `Tentativa de entrada com e-mail não cadastrado (${tentado}).`,
+            usuario: { id: null, nome: tentado },
+            detalhes: { email: tentado, cadastrado: Boolean(conhecido) },
+            alvo: conhecido ? { tipo: "funcionario", id: conhecido.id } : undefined,
+          });
+        }
+      };
+    }
+
+    if (c.req.method === "POST" && rota.endsWith("/sign-out")) {
+      const sessao = await auth.api.getSession({ headers: c.req.raw.headers }).catch(() => null);
+      if (sessao) {
+        aposResposta = async (resposta) => {
+          if (!resposta.ok) return;
+          await registrarAcesso({ categoria: "login", acao: "login.saida", descricao: `${sessao.user.name} saiu do sistema.`, usuario: { id: sessao.user.id, nome: sessao.user.name } });
+        };
+      }
     }
 
     const resposta = await auth.handler(c.req.raw);
     if (resposta.ok && aposSucesso) await aposSucesso();
+    if (aposResposta) await aposResposta(resposta);
     return resposta;
   });
 
@@ -100,6 +155,7 @@ export function criarApp(banco: Banco, auth: Auth, opcoes: { buscar?: typeof fet
   registrarRotasFipe(contexto, opcoes.buscar);
   registrarRotasPerfis(contexto);
   registrarRotasFuncionarios(contexto, auth);
+  registrarRotasAuditoria(contexto);
 
   app.notFound((c) => c.json({ erro: "Rota não encontrada." }, 404));
   app.onError((erro, c) => {

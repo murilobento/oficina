@@ -1,4 +1,5 @@
 import type { Context } from "hono";
+import { auditar } from "../auditoria";
 import { z } from "zod";
 
 import type { Consulta } from "../banco";
@@ -132,7 +133,16 @@ export function registrarRotasOrcamentos({ app, banco, exigirSessao, exigirPermi
   app.delete("/orcamentos/:id", ...editar, async (c) => {
     const atual = await buscar(c.req.param("id"));
     try {
-      await banco.consultar("delete from orcamentos where id = $1::uuid", [String(atual.id)]);
+      await banco.transacao(async (q) => {
+        await q("delete from orcamentos where id = $1::uuid", [String(atual.id)]);
+        await auditar(q, c, {
+          categoria: "documentos",
+          acao: "orcamento.excluido",
+          descricao: `Excluiu o orçamento ${String(atual.numero)}.`,
+          alvo: { tipo: "orcamento", id: String(atual.id) },
+          detalhes: { status: atual.status },
+        });
+      });
     } catch (erro) {
       if (violaChaveEstrangeira(erro)) throw new ErroApi(409, "Este orçamento gerou uma venda ou uma OS e não pode ser excluído.");
       throw erro;

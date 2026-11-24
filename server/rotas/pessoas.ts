@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { auditar } from "../auditoria";
 
 import { limparDocumento, soDigitos, validarDocumento } from "../../src/features/pessoas/documento";
 
@@ -117,7 +118,16 @@ export function registrarRotasPessoas({ app, banco, exigirSessao, exigirPermissa
     const [veiculo] = await banco.consultar("select 1 from veiculos where cliente_id = $1 limit 1", [atual.id]);
     if (veiculo) throw new ErroApi(409, "Este cliente tem veículos cadastrados e não pode ser excluído. Inative o cadastro.");
     try {
-      await banco.consultar("delete from pessoas where id = $1", [atual.id]);
+      await banco.transacao(async (q) => {
+        await q("delete from pessoas where id = $1", [atual.id]);
+        const papel = atual.papel === "fornecedor" ? "fornecedor" : "cliente";
+        await auditar(q, c, {
+          categoria: "cadastros",
+          acao: `${papel}.excluido`,
+          descricao: `Excluiu o ${papel} ${String(atual.nome)}${atual.documento ? ` (${String(atual.documento)})` : ""}.`,
+          alvo: { tipo: papel, id: String(atual.id) },
+        });
+      });
     } catch (erro) {
       if (violaChaveEstrangeira(erro)) throw new ErroApi(409, "Este cadastro tem orçamentos, vendas ou compras ligados e não pode ser excluído. Inative o cadastro.");
       throw erro;

@@ -1,4 +1,5 @@
 import type { Context } from "hono";
+import { auditar } from "../auditoria";
 import { z } from "zod";
 
 import type { Consulta } from "../banco";
@@ -249,9 +250,16 @@ export function registrarRotasOrdens({ app, banco, exigirSessao, exigirPermissao
     const { motivo } = await lerCorpo(c, z.object({ motivo: texto(300) }));
     const id = c.req.param("id");
     await banco.transacao(async (q) => {
-      await travarAberta(q, id);
+      const ordem = await travarAberta(q, id);
       await q("update ordens set status = 'cancelada', atualizado_em = now() where id = $1::uuid", [id]);
       await registrar(q, id, motivo ? `OS cancelada: ${motivo}` : "OS cancelada.", quemSou(c));
+      await auditar(q, c, {
+        categoria: "documentos",
+        acao: "ordem.cancelada",
+        descricao: `Cancelou a ${ordem.numero}${motivo ? `: ${motivo}` : "."}`,
+        alvo: { tipo: "ordem", id },
+        detalhes: { motivo, etapa: ordem.status },
+      });
     });
     return responder(c, id);
   });

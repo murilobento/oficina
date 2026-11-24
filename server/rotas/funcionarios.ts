@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { auditar, diferencas } from "../auditoria";
 
 import type { Auth } from "../auth";
 import type { Consulta } from "../banco";
@@ -72,6 +73,8 @@ export function registrarRotasFuncionarios({ app, banco, exigirSessao, exigirPer
     if (outros.length === 0) throw new ErroApi(409, "Este é o último administrador ativo. Cadastre outro antes de continuar.");
   }
 
+  const nomePerfil = async (q: Consulta, perfilId: string) => (await q<{ nome: string }>("select nome from perfis where id = $1", [perfilId]))[0]?.nome ?? perfilId;
+
   async function emailLivre(q: Consulta, email: string, ignorarId = "") {
     const existe = await q(`select 1 from "user" where lower(email) = $1 and id <> $2`, [email, ignorarId]);
     if (existe.length > 0) throw emailRepetido();
@@ -104,6 +107,12 @@ export function registrarRotasFuncionarios({ app, banco, exigirSessao, exigirPer
       await contexto.internalAdapter.deleteUser(usuario.id).catch(() => {}); // não deixa funcionário sem senha para trás
       throw erro;
     }
+    await auditar(banco.consultar, c, {
+      categoria: "acesso",
+      acao: "funcionario.criado",
+      descricao: `Cadastrou o funcionário ${dados.nome} (${dados.email}) com o perfil ${await nomePerfil(banco.consultar, dados.perfilId)}.`,
+      alvo: { tipo: "funcionario", id: usuario.id },
+    });
     return c.json({ funcionario: paraJson(await buscar(banco.consultar, usuario.id)), senhaProvisoria: senha }, 201);
   });
 
@@ -127,6 +136,23 @@ export function registrarRotasFuncionarios({ app, banco, exigirSessao, exigirPer
         if (codigoPg(erro) === "23505") throw emailRepetido();
         throw erro;
       }
+      const mudancas = diferencas(
+        { nome: atual.name, email: atual.email, perfil: await nomePerfil(q, atual.role) },
+        { nome: dados.nome, email: dados.email, perfil: await nomePerfil(q, dados.perfilId) },
+        { nome: "Nome", email: "E-mail", perfil: "Perfil" },
+      );
+      if (mudancas.length > 0) {
+        const trocouPerfil = mudancas.find((m) => m.campo === "Perfil");
+        await auditar(q, c, {
+          categoria: "acesso",
+          acao: trocouPerfil ? "funcionario.perfil_alterado" : "funcionario.editado",
+          descricao: trocouPerfil
+            ? `Mudou o perfil de ${dados.nome}: ${String(trocouPerfil.antes)} → ${String(trocouPerfil.depois)}.`
+            : `Editou o cadastro do funcionário ${dados.nome}.`,
+          alvo: { tipo: "funcionario", id },
+          detalhes: { mudancas },
+        });
+      }
     });
     return c.json(paraJson(await buscar(banco.consultar, id)));
   });
@@ -144,6 +170,14 @@ export function registrarRotasFuncionarios({ app, banco, exigirSessao, exigirPer
       }
       await q(`update "user" set banned = $2, "banReason" = null, "banExpires" = null, "updatedAt" = now() where id = $1`, [id, !ativo]);
       if (!ativo) await q(`delete from session where "userId" = $1`, [id]);
+      if (Boolean(atual.banned) === ativo) {
+        await auditar(q, c, {
+          categoria: "acesso",
+          acao: ativo ? "funcionario.reativado" : "funcionario.desativado",
+          descricao: `${ativo ? "Reativou" : "Desativou"} o acesso de ${atual.name}.`,
+          alvo: { tipo: "funcionario", id },
+        });
+      }
     });
     return c.json(paraJson(await buscar(banco.consultar, id)));
   });
@@ -162,6 +196,12 @@ export function registrarRotasFuncionarios({ app, banco, exigirSessao, exigirPer
     await contexto.internalAdapter.updatePassword(id, await contexto.password.hash(senha));
     await banco.consultar(`update "user" set "trocarSenha" = true where id = $1`, [id]);
     await banco.consultar(`delete from session where "userId" = $1`, [id]);
+    await auditar(banco.consultar, c, {
+      categoria: "acesso",
+      acao: "funcionario.senha_redefinida",
+      descricao: `Redefiniu a senha de ${atual.name}.`,
+      alvo: { tipo: "funcionario", id },
+    });
     return c.json({ funcionario: paraJson(await buscar(banco.consultar, id)), senhaProvisoria: senha });
   });
 }

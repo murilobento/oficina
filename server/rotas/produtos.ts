@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { auditar, diferencas, reais } from "../auditoria";
 
 import { codigoPg, violaChaveEstrangeira, type Contexto, ErroApi, lerCorpo, montarInsert, montarUpdate, paraCamel } from "./util";
 
@@ -108,7 +109,21 @@ export function registrarRotasProdutos({ app, banco, exigirSessao, exigirPermiss
     const { codigo, ...resto } = dados;
     const { sql, valores } = montarUpdate("produtos", String(atual.id), codigo === "" ? resto : dados);
     try {
-      const [linha] = await banco.consultar(sql, valores);
+      const linha = await banco.transacao(async (q) => {
+        const [nova] = await q(sql, valores);
+        const mudancas = diferencas(atual, nova, { custo: "Custo", venda: "Preço de venda" });
+        if (mudancas.length > 0) {
+          const texto = mudancas.map((m) => `${m.campo.toLowerCase()} ${reais(Number(m.antes))} → ${reais(Number(m.depois))}`).join(", ");
+          await auditar(q, c, {
+            categoria: "precos",
+            acao: "produto.preco_alterado",
+            descricao: `Alterou o preço do produto ${String(nova.descricao)}: ${texto}.`,
+            alvo: { tipo: "produto", id: String(nova.id) },
+            detalhes: { mudancas, moeda: true },
+          });
+        }
+        return nova;
+      });
       return c.json(saida(linha, verValores));
     } catch (erro) {
       return mapearErro(erro);
@@ -125,7 +140,16 @@ export function registrarRotasProdutos({ app, banco, exigirSessao, exigirPermiss
   app.delete("/produtos/:id", ...editar, async (c) => {
     const atual = await buscar(c.req.param("id"));
     try {
-      await banco.consultar("delete from produtos where id = $1", [atual.id]);
+      await banco.transacao(async (q) => {
+        await q("delete from produtos where id = $1", [atual.id]);
+        await auditar(q, c, {
+          categoria: "cadastros",
+          acao: "produto.excluido",
+          descricao: `Excluiu o produto ${String(atual.descricao)}${atual.codigo ? ` (${String(atual.codigo)})` : ""}.`,
+          alvo: { tipo: "produto", id: String(atual.id) },
+          detalhes: { saldo: Number(atual.saldo) },
+        });
+      });
     } catch (erro) {
       if (violaChaveEstrangeira(erro)) throw new ErroApi(409, "Este produto tem movimentações ou documentos ligados e não pode ser excluído. Inative o cadastro.");
       throw erro;

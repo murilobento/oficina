@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { auditar } from "../auditoria";
 
 import { codigoPg, type Contexto, ErroApi, lerCorpo, montarInsert, montarUpdate, paraCamel, violaChaveEstrangeira } from "./util";
 
@@ -88,7 +89,15 @@ export function registrarRotasVeiculos({ app, banco, exigirSessao, exigirPermiss
   app.delete("/veiculos/:id", ...editar, async (c) => {
     const atual = await buscar(c.req.param("id"));
     try {
-      await banco.consultar("delete from veiculos where id = $1", [atual.id]);
+      await banco.transacao(async (q) => {
+        await q("delete from veiculos where id = $1", [atual.id]);
+        await auditar(q, c, {
+          categoria: "cadastros",
+          acao: "veiculo.excluido",
+          descricao: `Excluiu o veículo ${String(atual.modelo ?? "")}${atual.placa ? ` (${String(atual.placa)})` : ""}.`,
+          alvo: { tipo: "veiculo", id: String(atual.id) },
+        });
+      });
     } catch (erro) {
       if (violaChaveEstrangeira(erro)) throw new ErroApi(409, "Este veículo tem orçamentos ou vendas ligados e não pode ser excluído. Inative o cadastro.");
       throw erro;
