@@ -24,10 +24,17 @@ export type RegistroAuditoria = {
 
 type Ctx = Context<{ Variables: Variaveis }>;
 
-/** IP de quem chamou (atrás de proxy, o primeiro do x-forwarded-for). */
+/**
+ * IP de quem chamou. Na Vercel vem em x-real-ip (posto pela própria Vercel); atrás de outro proxy
+ * (o do Vite, no desenvolvimento) no x-forwarded-for; sem proxy, do socket do servidor Node.
+ */
 export function ipDe(c: Context): string | null {
-  const encaminhado = c.req.header("x-forwarded-for")?.split(",")[0]?.trim();
-  return encaminhado || c.req.header("x-real-ip") || null;
+  const socket = (c.env as { incoming?: { socket?: { remoteAddress?: string } } } | undefined)?.incoming?.socket?.remoteAddress;
+  const ip = c.req.header("x-real-ip")?.trim() || c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || socket;
+  if (!ip) return null;
+  // IPv4 dentro de IPv6 ("::ffff:192.168.0.10") e o "localhost" do IPv6 ficam legíveis.
+  if (ip === "::1") return "127.0.0.1";
+  return ip.replace(/^::ffff:/, "");
 }
 
 function usuarioDaSessao(c: Ctx): { id: string | null; nome: string } {

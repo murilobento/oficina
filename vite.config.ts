@@ -47,7 +47,8 @@ export default defineConfig({
   ],
   server: {
     // A API (pnpm api) roda em outra porta; o navegador fala só com o endereço do site.
-    proxy: { '/api': 'http://localhost:8787' },
+    // xfwd: repassa o IP de quem acessou (x-forwarded-for), que a auditoria grava.
+    proxy: { '/api': { target: 'http://localhost:8787', xfwd: true } },
   },
   resolve: {
     alias: { '@': path.resolve(import.meta.dirname, './src') },
