@@ -8,7 +8,7 @@ import { type Contexto, lerCorpo, montarUpdate, paraCamel } from "./util";
 const ROTULOS_EMPRESA: Record<string, string> = {
   razaoSocial: "Razão social", nomeFantasia: "Nome fantasia", cnpj: "CNPJ", inscricaoEstadual: "Inscrição estadual",
   inscricaoMunicipal: "Inscrição municipal", cep: "CEP", logradouro: "Logradouro", numero: "Número", complemento: "Complemento",
-  bairro: "Bairro", cidade: "Cidade", uf: "UF", whatsapp: "WhatsApp", email: "E-mail", site: "Site", instagram: "Instagram",
+  bairro: "Bairro", cidade: "Cidade", uf: "UF", telefone: "Telefone", whatsapp: "WhatsApp", email: "E-mail", site: "Site", instagram: "Instagram",
   horario: "Horário", validadeOrcamentoDias: "Validade do orçamento", condicoesOrcamento: "Condições do orçamento", rodape: "Rodapé", logo: "Logo",
 };
 
