@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import { CircleAlert } from "lucide-react";
 
-import { Listagem, ListagemBusca, ListagemCabecalho, ListagemCartoes, ListagemFiltros, ListagemVazia } from "@/components/layout/listagem";
+import { Listagem, ListagemAbas, ListagemBusca, ListagemCabecalho, ListagemCartoes, ListagemFiltros, ListagemVazia } from "@/components/layout/listagem";
 import { FitaStatus } from "@/components/marca/fita-status";
 import { PlacaVeiculo } from "@/components/marca/placa-veiculo";
 import { usePode } from "@/features/auth/sessao";
@@ -10,7 +10,6 @@ import { usePessoas } from "@/features/pessoas/api";
 import { useVeiculos } from "@/features/veiculos/api";
 import { useAbrirQuandoPedido } from "@/lib/acao-novo";
 import { normalizar } from "@/lib/listagem";
-import { cn } from "@/lib/utils";
 
 import { useOrdensConsulta } from "./api";
 import { OrdemDetalhe } from "./ordem-detalhe";
@@ -60,27 +59,16 @@ export function OrdensLista() {
         aoNovo={podeAbrir ? () => setForm((a) => ({ aberto: true, abertura: a.abertura + 1 })) : undefined}
       />
 
+      <ListagemAbas
+        rotulo="Etapas"
+        valor={filtro}
+        aoMudar={setFiltro}
+        abas={filtros.map((f) => ({ valor: f.id, texto: f.texto, total: f.total }))}
+      />
+
       <ListagemFiltros>
         <ListagemBusca valor={busca} aoMudar={setBusca} placeholder="Número, cliente, modelo ou placa" rotulo="Buscar ordens de serviço" />
       </ListagemFiltros>
-
-      <div role="group" aria-label="Filtrar por etapa" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
-        {filtros.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            aria-pressed={filtro === f.id}
-            onClick={() => setFiltro(f.id)}
-            className={cn(
-              "focus-visible:ring-ring flex h-9 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-              filtro === f.id ? "bg-foreground text-background font-medium" : "bg-card hover:bg-muted border",
-            )}
-          >
-            {f.texto}
-            <span className="tabular-nums opacity-70">{f.total}</span>
-          </button>
-        ))}
-      </div>
 
       {consulta.isError ? (
         <ListagemVazia>Não foi possível carregar as ordens de serviço.</ListagemVazia>

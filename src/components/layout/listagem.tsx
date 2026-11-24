@@ -1,16 +1,24 @@
-import type { ReactNode } from "react";
+import { Children, isValidElement, type ReactNode } from "react";
 
-import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Plus, Search, X } from "lucide-react";
 
 import { PlacaVeiculo } from "@/components/marca/placa-veiculo";
 
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 // PADRÃO DE LISTAGEM do sistema. Toda tela de cadastro monta a lista com estas peças, nesta
-// ordem: cabeçalho (título + botão "Novo"), barra de busca e filtros (filtros curtos viram
-// chips), linhas no celular e tabela no computador, e rodapé com total e paginação. Criar, editar e visualizar abrem em
+// ordem: cabeçalho (título + botão "Novo"), barra de busca e filtros (cada filtro é um botão
+// suspenso "Rótulo: valor ▾", com "Limpar" quando algum está em uso), linhas no celular e tabela no computador, e rodapé com total e paginação. Criar, editar e visualizar abrem em
 // painel lateral (Sheet), sem sair da lista.
 
 export function Listagem({ children }: { children: ReactNode }) {
@@ -52,9 +60,16 @@ export function ListagemCabecalho({
   );
 }
 
-/** Linha de busca e filtros: busca em cima e filtros lado a lado no celular; tudo em linha no computador. */
+/**
+ * Linha de busca e filtros. Computador: busca e filtros na mesma linha.
+ * Celular: busca em cima e os filtros embaixo, numa linha que rola de lado.
+ */
 export function ListagemFiltros({ children }: { children: ReactNode }) {
-  return <div className="bg-background sticky top-14 z-20 -mx-4 flex flex-col gap-3 px-4 py-2 md:top-12 md:-mx-6 md:px-6 @2xl:flex-row @2xl:items-center">{children}</div>;
+  return (
+    <div className="bg-background sticky top-14 z-20 -mx-4 flex flex-col gap-2 px-4 py-2 md:top-12 md:-mx-6 md:px-6 @2xl:flex-row @2xl:items-start @2xl:gap-3">
+      {children}
+    </div>
+  );
 }
 
 export function ListagemBusca({
@@ -70,7 +85,7 @@ export function ListagemBusca({
   rotulo: string;
 }) {
   return (
-    <InputGroup className="@2xl:max-w-sm">
+    <InputGroup className="@2xl:max-w-80 @2xl:min-w-56 @2xl:flex-1">
       <InputGroupAddon align="inline-start">
         <Search className="size-4" />
       </InputGroupAddon>
@@ -85,68 +100,132 @@ export function ListagemBusca({
   );
 }
 
-export function ListagemGrupoFiltros({ children }: { children: ReactNode }) {
-  // Celular: cada filtro numa linha (chips roláveis ou seleção). Computador: tudo lado a lado.
-  return <div className="flex min-w-0 flex-col gap-2 @2xl:flex-row @2xl:flex-wrap @2xl:items-center">{children}</div>;
-}
-
-/** Filtros com até este número de opções aparecem como chips; mais que isso, como lista de seleção. */
-const MAX_CHIPS = 5;
-
-const CHIP = "focus-visible:ring-ring h-9 shrink-0 rounded-full px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
-
-export function ListagemFiltro({
-  rotulo,
-  valor,
-  aoMudar,
-  opcoes,
-}: {
+type PropsFiltro = {
   /** Ex.: "Status". Aparece antes do valor escolhido. */
   rotulo: string;
   valor: string;
   aoMudar: (valor: string) => void;
+  /** A primeira opção é o padrão (ex.: "Todos"); qualquer outra deixa o filtro "em uso". */
   opcoes: { valor: string; texto: string }[];
-}) {
-  if (opcoes.length <= MAX_CHIPS) {
-    return (
-      <div
-        role="group"
-        aria-label={`Filtrar por ${rotulo.toLowerCase()}`}
-        className="-mx-4 flex min-w-0 gap-2 overflow-x-auto px-4 [scrollbar-width:none] md:-mx-6 md:px-6 @2xl:mx-0 @2xl:px-0"
-      >
-        {opcoes.map((opcao) => {
-          const ativo = opcao.valor === valor;
-          return (
-            <button
-              key={opcao.valor}
-              type="button"
-              aria-pressed={ativo}
-              onClick={() => aoMudar(opcao.valor)}
-              className={ativo ? `${CHIP} bg-foreground text-background font-medium` : `${CHIP} bg-card text-foreground hover:bg-muted border`}
-            >
-              {opcao.texto}
-            </button>
-          );
-        })}
-      </div>
-    );
-  }
+};
+
+const emUso = ({ valor, opcoes }: PropsFiltro) => opcoes.length > 0 && valor !== opcoes[0].valor;
+
+/**
+ * Os filtros da listagem, lado a lado. Quando algum está em uso, aparece "Limpar",
+ * que volta todos para a primeira opção.
+ */
+export function ListagemGrupoFiltros({ children }: { children: ReactNode }) {
+  // Reconhece os filtros pelas props (e não pelo componente), para não depender da identidade da função.
+  const filtros = Children.toArray(children)
+    .filter(isValidElement)
+    .map((filho) => filho.props as Partial<PropsFiltro>)
+    .filter((props): props is PropsFiltro => Array.isArray(props.opcoes) && typeof props.aoMudar === "function" && typeof props.valor === "string");
+  const algumEmUso = filtros.some(emUso);
+
   return (
-    <Select value={valor} onValueChange={aoMudar}>
-      <SelectTrigger className="min-w-0 flex-1 @2xl:flex-none" aria-label={`Filtrar por ${rotulo.toLowerCase()}`}>
-        <span className="text-muted-foreground">{rotulo}:</span>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent position="popper" align="start">
-        <SelectGroup>
+    <div
+      role="group"
+      aria-label="Filtros"
+      className="-mx-4 -my-1 flex min-w-0 items-center gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] md:-mx-6 md:px-6 @2xl:mx-0 @2xl:flex-initial @2xl:flex-wrap @2xl:overflow-visible @2xl:px-0"
+    >
+      {children}
+      {algumEmUso && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground h-9 shrink-0"
+          onClick={() => filtros.filter(emUso).forEach((filtro) => filtro.aoMudar(filtro.opcoes[0].valor))}
+        >
+          <X /> Limpar
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/** Um filtro: botão compacto "Rótulo: valor ▾" que abre as opções. Destacado quando está em uso. */
+export function ListagemFiltro(props: PropsFiltro) {
+  const { rotulo, valor, aoMudar, opcoes } = props;
+  const ativo = emUso(props);
+  const escolhida = opcoes.find((opcao) => opcao.valor === valor)?.texto ?? opcoes[0]?.texto;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          aria-label={`Filtrar por ${rotulo.toLowerCase()}: ${escolhida}`}
+          className={cn(
+            "h-9 shrink-0 gap-1.5 px-3 font-normal",
+            ativo && "border-primary/40 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary dark:border-primary/40 dark:bg-primary/15",
+          )}
+        >
+          <span className={ativo ? "text-primary/80" : "text-muted-foreground"}>{rotulo}:</span>
+          <span className="font-medium">{escolhida}</span>
+          <ChevronDown className="opacity-60" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="max-h-80 min-w-48 overflow-y-auto">
+        <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">{rotulo}</DropdownMenuLabel>
+        <DropdownMenuRadioGroup value={valor} onValueChange={aoMudar}>
           {opcoes.map((opcao) => (
-            <SelectItem key={opcao.valor} value={opcao.valor}>
+            <DropdownMenuRadioItem key={opcao.valor} value={opcao.valor}>
               {opcao.texto}
-            </SelectItem>
+            </DropdownMenuRadioItem>
           ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/** Abas com contagem, para quando um filtro é o jeito principal de navegar a lista (ex.: etapas da OS). */
+export function ListagemAbas<T extends string>({
+  rotulo,
+  valor,
+  aoMudar,
+  abas,
+}: {
+  /** Nome acessível do grupo, ex.: "Etapas". */
+  rotulo: string;
+  valor: T;
+  aoMudar: (valor: T) => void;
+  abas: { valor: T; texto: string; total: number }[];
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label={rotulo}
+      className="-mx-4 flex gap-1 overflow-x-auto border-b px-4 [scrollbar-width:none] md:-mx-6 md:px-6"
+    >
+      {abas.map((aba) => {
+        const ativa = aba.valor === valor;
+        return (
+          <button
+            key={aba.valor}
+            type="button"
+            role="tab"
+            aria-selected={ativa}
+            onClick={() => aoMudar(aba.valor)}
+            className={cn(
+              "focus-visible:ring-ring -mb-px flex h-10 shrink-0 items-center gap-2 border-b-2 px-3 text-sm whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-inset",
+              ativa ? "border-primary text-foreground font-medium" : "text-muted-foreground hover:text-foreground border-transparent",
+            )}
+          >
+            {aba.texto}
+            <span
+              className={cn(
+                "rounded-full px-1.5 py-0.5 text-xs leading-none tabular-nums",
+                ativa ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+              )}
+            >
+              {aba.total}
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
