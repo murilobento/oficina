@@ -84,14 +84,13 @@ export function SenhaProvisoriaDialog({
 /** Confirmação antes de redefinir a senha ou de desativar/reativar alguém. */
 export function ConfirmacaoDialog({
   confirmacao,
-  enviando = false,
   aoCancelar,
   aoConfirmar,
 }: {
-  enviando?: boolean;
   confirmacao: { tipo: "redefinir" | "desativar" | "reativar"; usuario: Usuario } | null;
   aoCancelar: () => void;
-  aoConfirmar: () => void;
+  /** Assíncrono: o botão mostra o spinner e o diálogo espera terminar. */
+  aoConfirmar: () => Promise<unknown> | void;
 }) {
   const nome = confirmacao?.usuario.nome;
   const textos = {
@@ -124,11 +123,7 @@ export function ConfirmacaoDialog({
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             variant={confirmacao?.tipo === "desativar" ? "destructive" : "default"}
-            disabled={enviando}
-            onClick={(evento) => {
-              evento.preventDefault();
-              aoConfirmar();
-            }}
+            aoConfirmar={aoConfirmar}
           >
             {texto?.acao}
           </AlertDialogAction>

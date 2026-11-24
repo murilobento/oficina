@@ -33,13 +33,13 @@ export function Perfis() {
   async function excluir() {
     if (!paraExcluir) return;
     const perfil = paraExcluir;
-    setParaExcluir(null);
     try {
       await excluirPerfil.mutateAsync(perfil.id);
       toast.success(`Perfil ${perfil.nome} excluído.`);
     } catch (erro) {
       toast.error(erro instanceof Error ? erro.message : "Não foi possível excluir. Tente de novo.");
     }
+    setParaExcluir(null);
   }
 
   return (
@@ -67,7 +67,7 @@ export function Perfis() {
         nome={paraExcluir?.nome ?? null}
         singular="perfil"
         aoCancelar={() => setParaExcluir(null)}
-        aoConfirmar={() => void excluir()}
+        aoConfirmar={excluir}
       />
     </Listagem>
   );

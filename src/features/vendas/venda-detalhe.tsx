@@ -202,7 +202,7 @@ export function VendaDetalhe({
             <AlertDialogFooter>
               <AlertDialogCancel>Voltar</AlertDialogCancel>
               <AlertDialogAction
-                onClick={async () => {
+                aoConfirmar={async () => {
                   if (!venda || !estornando) return;
                   try {
                     await estornar.mutateAsync({ vendaId: venda.id, pagamentoId: estornando.id });
@@ -210,6 +210,7 @@ export function VendaDetalhe({
                   } catch (falha) {
                     toast.error(falha instanceof Error ? falha.message : "Não foi possível estornar.");
                   }
+                  setEstornando(null);
                 }}
               >
                 Estornar

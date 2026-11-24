@@ -93,7 +93,8 @@ export function ConfirmarExclusao({
   config: EntidadeConfig;
   pessoa: Pessoa | null;
   aoCancelar: () => void;
-  aoConfirmar: () => void;
+  /** Pode ser assíncrono: o botão mostra o spinner e o diálogo espera terminar. */
+  aoConfirmar: () => Promise<unknown> | void;
 }) {
   return (
     <AlertDialog open={pessoa !== null} onOpenChange={(aberto) => !aberto && aoCancelar()}>
@@ -107,7 +108,7 @@ export function ConfirmarExclusao({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={aoConfirmar}>
+          <AlertDialogAction variant="destructive" aoConfirmar={aoConfirmar}>
             Excluir {config.singular}
           </AlertDialogAction>
         </AlertDialogFooter>

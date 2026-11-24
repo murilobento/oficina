@@ -75,7 +75,8 @@ export function ConfirmarCancelamento({
   singular: string;
   consequencia: string;
   aoCancelar: () => void;
-  aoConfirmar: () => void;
+  /** Pode ser assíncrono: o botão mostra o spinner e o diálogo espera terminar. */
+  aoConfirmar: () => Promise<unknown> | void;
 }) {
   return (
     <AlertDialog open={numero !== null} onOpenChange={(aberto) => !aberto && aoCancelar()}>
@@ -86,7 +87,7 @@ export function ConfirmarCancelamento({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Voltar</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={aoConfirmar}>
+          <AlertDialogAction variant="destructive" aoConfirmar={aoConfirmar}>
             Cancelar {singular}
           </AlertDialogAction>
         </AlertDialogFooter>

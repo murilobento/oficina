@@ -96,8 +96,8 @@ function Login() {
                 {erro}
               </p>
             )}
-            <Button className="h-12 w-full" type="submit" disabled={!LOGIN_ATIVO || entrando}>
-              {entrando ? "Entrando..." : "Entrar"}
+            <Button className="h-12 w-full" type="submit" disabled={!LOGIN_ATIVO} carregando={entrando}>
+              {entrando ? "Entrando…" : "Entrar"}
             </Button>
             {!LOGIN_ATIVO && (
               <p className="text-muted-foreground text-center text-xs">

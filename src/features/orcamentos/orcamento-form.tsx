@@ -387,7 +387,7 @@ export function OrcamentoForm({
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando || salvar.isPending}>
+            <Button type="submit" className="flex-1 sm:flex-none" carregando={enviando || salvar.isPending}>
               {editando ? "Salvar alterações" : "Criar orçamento"}
             </Button>
           </SheetFooter>

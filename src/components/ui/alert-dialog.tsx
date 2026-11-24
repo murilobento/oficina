@@ -43,14 +43,24 @@ function AlertDialogOverlay({
   )
 }
 
+/** Ação de confirmação em andamento: trava o "Cancelar" e o Esc até terminar. */
+const CarregandoContexto = React.createContext<{ carregando: boolean; definir: (valor: boolean) => void }>({
+  carregando: false,
+  definir: () => {},
+})
+
 function AlertDialogContent({
   className,
   size = "default",
+  onEscapeKeyDown,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Content> & {
   size?: "default" | "sm"
 }) {
+  const [carregando, definir] = React.useState(false)
+  const contexto = React.useMemo(() => ({ carregando, definir }), [carregando])
   return (
+    <CarregandoContexto.Provider value={contexto}>
     <AlertDialogPortal>
       <AlertDialogOverlay />
       <AlertDialogPrimitive.Content
@@ -60,9 +70,14 @@ function AlertDialogContent({
           "group/alert-dialog-content fixed top-1/2 left-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none data-[size=default]:max-w-xs data-[size=sm]:max-w-xs data-[size=default]:sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
+        onEscapeKeyDown={(evento) => {
+          if (carregando) evento.preventDefault()
+          onEscapeKeyDown?.(evento)
+        }}
         {...props}
       />
     </AlertDialogPortal>
+    </CarregandoContexto.Provider>
   )
 }
 
@@ -146,13 +161,53 @@ function AlertDialogDescription({
   )
 }
 
+/**
+ * Botão de confirmar. Com `aoConfirmar` (assíncrono), o diálogo não fecha no clique: o botão mostra
+ * o spinner até a ação terminar, e quem abriu o diálogo o fecha (ex.: zerando o estado) quando quiser.
+ */
 function AlertDialogAction({
   className,
   variant = "default",
   size = "default",
+  aoConfirmar,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Action> &
-  Pick<React.ComponentProps<typeof Button>, "variant" | "size">) {
+  Pick<React.ComponentProps<typeof Button>, "variant" | "size"> & {
+    aoConfirmar?: () => Promise<unknown> | unknown
+  }) {
+  const { carregando, definir } = React.useContext(CarregandoContexto)
+  const montado = React.useRef(true)
+  React.useEffect(() => {
+    montado.current = true
+    return () => {
+      montado.current = false
+    }
+  }, [])
+
+  if (aoConfirmar) {
+    const { onClick: _onClick, asChild: _asChild, ...resto } = props
+    return (
+      <Button
+        type="button"
+        data-slot="alert-dialog-action"
+        variant={variant}
+        size={size}
+        className={className}
+        carregando={carregando}
+        onClick={async () => {
+          if (carregando) return
+          definir(true)
+          try {
+            await aoConfirmar()
+          } finally {
+            if (montado.current) definir(false)
+          }
+        }}
+        {...resto}
+      />
+    )
+  }
+
   return (
     <Button variant={variant} size={size} asChild>
       <AlertDialogPrimitive.Action
@@ -168,14 +223,17 @@ function AlertDialogCancel({
   className,
   variant = "outline",
   size = "default",
+  disabled,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Cancel> &
   Pick<React.ComponentProps<typeof Button>, "variant" | "size">) {
+  const { carregando } = React.useContext(CarregandoContexto)
   return (
     <Button variant={variant} size={size} asChild>
       <AlertDialogPrimitive.Cancel
         data-slot="alert-dialog-cancel"
         className={cn(className)}
+        disabled={disabled || carregando}
         {...props}
       />
     </Button>

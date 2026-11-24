@@ -206,7 +206,7 @@ export function OrcamentoDetalhe({
                 <RotateCcw /> Reabrir
               </Button>
               {podeAbrirOs && (
-                <Button disabled={abrirOs.isPending} onClick={() => abrirOrdem(atual)}>
+                <Button carregando={abrirOs.isPending} onClick={() => abrirOrdem(atual)}>
                   <ClipboardList /> Abrir OS
                 </Button>
               )}

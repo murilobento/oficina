@@ -57,6 +57,9 @@ export function RecebimentoEtapa({
   const verValores = usePode("valores.ver");
   const [linhas, setLinhas] = useState<LinhaRecebimento[]>([]);
   const [erro, setErro] = useState("");
+  // Qual botão de concluir foi clicado: só ele mostra o spinner; os outros ficam só travados.
+  const [clicado, setClicado] = useState("");
+  const girando = (id: string) => enviando && clicado === id;
   const [aReceber, setAReceber] = useState(false);
   const [parcelas, setParcelas] = useState(1);
   const [vencimento, setVencimento] = useState(() => somarDias(hojeISO(), 30));
@@ -90,7 +93,7 @@ export function RecebimentoEtapa({
           ))}
         </div>
         {erro && <p role="alert" className="text-destructive text-sm">{erro}</p>}
-        <Button type="button" className="h-12" disabled={enviando} onClick={() => (escolhida ? aoConcluir({ pagamentos: [{ forma: escolhida, valor: 0 }] }) : setErro("Escolha a forma de pagamento."))}>
+        <Button type="button" className="h-12" disabled={enviando} carregando={girando("forma")} onClick={() => (setClicado("forma"), escolhida ? aoConcluir({ pagamentos: [{ forma: escolhida, valor: 0 }] }) : setErro("Escolha a forma de pagamento."))}>
           Concluir venda
         </Button>
       </div>
@@ -171,7 +174,7 @@ export function RecebimentoEtapa({
       {erro && <p role="alert" className="text-destructive text-sm">{erro}</p>}
 
       {modo === "receber" ? (
-        <Button type="button" className="h-12" disabled={enviando || pago === 0} onClick={() => concluir()}>
+        <Button type="button" className="h-12" disabled={enviando || pago === 0} carregando={girando("pago")} onClick={() => (setClicado("pago"), concluir())}>
           {pago === 0 ? "Escolha a forma de pagamento" : falta > 0 ? `Registrar ${formatarBRL(pago)} (parcial)` : `Registrar ${formatarBRL(pago)}`}
         </Button>
       ) : aReceber ? (
@@ -208,7 +211,7 @@ export function RecebimentoEtapa({
             <Button type="button" variant="outline" className="h-12" onClick={() => setAReceber(false)}>
               Voltar
             </Button>
-            <Button type="button" className="h-12" disabled={enviando || !vencimentoOk} onClick={() => concluir({ divergencia: "saldo", parcelamento: { parcelas: Math.min(parcelas, falta), primeiroVencimento: vencimento } })}>
+            <Button type="button" className="h-12" disabled={enviando || !vencimentoOk} carregando={girando("saldo")} onClick={() => (setClicado("saldo"), concluir({ divergencia: "saldo", parcelamento: { parcelas: Math.min(parcelas, falta), primeiroVencimento: vencimento } }))}>
               Confirmar · {formatarBRL(falta)} a receber
             </Button>
           </div>
@@ -216,7 +219,7 @@ export function RecebimentoEtapa({
       ) : excesso > 0 ? (
         <p className="text-destructive text-sm">O valor passa do total. Para dar troco, use o campo Entregue do dinheiro.</p>
       ) : falta === 0 && excesso === 0 && (linhas.length > 0 || total === 0) ? (
-        <Button type="button" className="h-12" disabled={enviando} onClick={() => concluir()}>
+        <Button type="button" className="h-12" disabled={enviando} carregando={girando("total")} onClick={() => (setClicado("total"), concluir())}>
           Concluir venda
         </Button>
       ) : falta > 0 ? (
@@ -226,7 +229,7 @@ export function RecebimentoEtapa({
           </Button>
           {!temCliente && <p className="text-muted-foreground text-sm">Para deixar valor a receber, a venda precisa de cliente.</p>}
           {pago > 0 && (
-            <Button type="button" variant="outline" className="h-12" disabled={enviando} onClick={() => concluir({ divergencia: "desconto" })}>
+            <Button type="button" variant="outline" className="h-12" disabled={enviando} carregando={girando("desconto")} onClick={() => (setClicado("desconto"), concluir({ divergencia: "desconto" }))}>
               Dar {formatarBRL(falta)} de desconto e concluir
             </Button>
           )}

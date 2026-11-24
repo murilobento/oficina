@@ -75,7 +75,7 @@ export function Usuarios() {
   const editar = useEditarUsuario();
   const alternarAtivo = useAlternarAtivoUsuario();
   const redefinirSenha = useRedefinirSenhaUsuario();
-  const { enviando, proteger } = useEnvioUnico();
+  const { proteger } = useEnvioUnico();
   const perfilPorId = (id: string) => perfis.find((perfil) => perfil.id === id);
   const opcoesPerfil = [{ valor: TODOS, texto: "Todos" }, ...perfis.map((perfil) => ({ valor: perfil.id, texto: perfil.nome }))];
 
@@ -260,7 +260,7 @@ export function Usuarios() {
         aoFechar={() => setFormAberto(false)}
         aoSalvar={salvar}
       />
-      <ConfirmacaoDialog confirmacao={confirmacao} enviando={enviando} aoCancelar={() => setConfirmacao(null)} aoConfirmar={confirmar} />
+      <ConfirmacaoDialog confirmacao={confirmacao} aoCancelar={() => setConfirmacao(null)} aoConfirmar={confirmar} />
       <SenhaProvisoriaDialog dados={senhaExibida} aoFechar={() => setSenhaExibida(null)} />
     </Listagem>
   );

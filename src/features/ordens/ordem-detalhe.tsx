@@ -169,6 +169,7 @@ export function OrdemDetalhe({ ordem, aoFechar }: { ordem: Ordem | null; aoFecha
                 variant={ordem.status === status ? "default" : "outline"}
                 aria-pressed={ordem.status === status}
                 disabled={mudarEtapa.isPending}
+                carregando={mudarEtapa.isPending && mudarEtapa.variables?.status === status}
                 onClick={() => ordem.status !== status && executar(() => mudarEtapa.mutateAsync({ id: ordem.id, status }), `${ordem.numero}: ${texto}.`)}
               >
                 <Icone /> {texto}
@@ -215,7 +216,7 @@ export function OrdemDetalhe({ ordem, aoFechar }: { ordem: Ordem | null; aoFecha
         {aberta && podeExecutar ? (
           <>
             <Textarea aria-label="Laudo" rows={4} value={laudo} onChange={(e) => setLaudo(e.target.value)} placeholder="O que foi encontrado e o que recomendar para a próxima visita." />
-            <Button type="button" variant="outline" className="self-start" disabled={laudo === ordem.laudo || salvarLaudo.isPending} onClick={() => executar(() => salvarLaudo.mutateAsync({ id: ordem.id, laudo }), "Laudo salvo.")}>
+            <Button type="button" variant="outline" className="self-start" disabled={laudo === ordem.laudo} carregando={salvarLaudo.isPending} onClick={() => executar(() => salvarLaudo.mutateAsync({ id: ordem.id, laudo }), "Laudo salvo.")}>
               Salvar laudo
             </Button>
           </>
@@ -308,7 +309,7 @@ export function OrdemDetalhe({ ordem, aoFechar }: { ordem: Ordem | null; aoFecha
               <Button type="button" variant="outline" onClick={() => setEscolhido(null)}>
                 Voltar
               </Button>
-              <Button type="button" disabled={incluir.isPending} onClick={incluirEscolhido}>
+              <Button type="button" carregando={incluir.isPending} onClick={incluirEscolhido}>
                 {podeNegociar ? "Incluir" : "Apontar"}
               </Button>
             </DialogFooter>
@@ -324,7 +325,14 @@ export function OrdemDetalhe({ ordem, aoFechar }: { ordem: Ordem | null; aoFecha
             <Textarea aria-label="Motivo do cancelamento" rows={2} value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Motivo (opcional): cliente desistiu, levou para outra oficina..." />
             <AlertDialogFooter>
               <AlertDialogCancel>Voltar</AlertDialogCancel>
-              <AlertDialogAction onClick={() => executar(() => cancelar.mutateAsync({ id: ordem.id, motivo: motivo.trim() }), `${ordem.numero} cancelada.`)}>Cancelar OS</AlertDialogAction>
+              <AlertDialogAction
+                aoConfirmar={async () => {
+                  await executar(() => cancelar.mutateAsync({ id: ordem.id, motivo: motivo.trim() }), `${ordem.numero} cancelada.`);
+                  setCancelando(false);
+                }}
+              >
+                Cancelar OS
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -337,7 +345,14 @@ export function OrdemDetalhe({ ordem, aoFechar }: { ordem: Ordem | null; aoFecha
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Voltar</AlertDialogCancel>
-              <AlertDialogAction onClick={() => tirando && executar(() => remover.mutateAsync({ id: ordem.id, itemId: tirando.id }), "Item tirado da OS.")}>Tirar</AlertDialogAction>
+              <AlertDialogAction
+                aoConfirmar={async () => {
+                  if (tirando) await executar(() => remover.mutateAsync({ id: ordem.id, itemId: tirando.id }), "Item tirado da OS.");
+                  setTirando(null);
+                }}
+              >
+                Tirar
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -365,7 +380,7 @@ export function OrdemDetalhe({ ordem, aoFechar }: { ordem: Ordem | null; aoFecha
               </Button>
               <Button
                 type="button"
-                disabled={decidir.isPending}
+                carregando={decidir.isPending}
                 onClick={() =>
                   aprovando &&
                   executar(async () => {

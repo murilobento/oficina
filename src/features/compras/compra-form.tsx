@@ -207,7 +207,7 @@ export function CompraForm({ aberto, aoFechar }: { aberto: boolean; aoFechar: ()
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando || registrar.isPending}>
+            <Button type="submit" className="flex-1 sm:flex-none" carregando={enviando || registrar.isPending}>
               Lançar compra
             </Button>
           </SheetFooter>

@@ -78,7 +78,8 @@ export function ConfirmarExclusaoRegistro({
   /** Ex.: "produto". */
   singular: string;
   aoCancelar: () => void;
-  aoConfirmar: () => void;
+  /** Pode ser assíncrono: o botão mostra o spinner e o diálogo espera terminar. */
+  aoConfirmar: () => Promise<unknown> | void;
 }) {
   return (
     <AlertDialog open={nome !== null} onOpenChange={(aberto) => !aberto && aoCancelar()}>
@@ -92,7 +93,7 @@ export function ConfirmarExclusaoRegistro({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={aoConfirmar}>
+          <AlertDialogAction variant="destructive" aoConfirmar={aoConfirmar}>
             Excluir {singular}
           </AlertDialogAction>
         </AlertDialogFooter>

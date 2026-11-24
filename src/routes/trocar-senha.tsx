@@ -91,8 +91,8 @@ function TrocarSenha() {
           </p>
         )}
         <div className="flex flex-col gap-2">
-          <Button type="submit" disabled={salvando}>
-            {salvando ? 'Salvando...' : 'Trocar senha'}
+          <Button type="submit" carregando={salvando}>
+            Trocar senha
           </Button>
           {!eu?.trocarSenha && (
             <Button asChild variant="ghost">

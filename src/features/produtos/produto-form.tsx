@@ -254,7 +254,7 @@ export function ProdutoForm({
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando}>
+            <Button type="submit" className="flex-1 sm:flex-none" carregando={enviando}>
               {editando ? "Salvar alterações" : "Cadastrar produto"}
             </Button>
           </SheetFooter>

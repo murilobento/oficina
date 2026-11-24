@@ -124,7 +124,7 @@ export function OrdemForm({ aberto, aoFechar, aoAberta }: { aberto: boolean; aoF
             <Button type="button" variant="outline" className="flex-1 sm:flex-none" onClick={aoFechar}>
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1 sm:flex-none" disabled={enviando}>
+            <Button type="submit" className="flex-1 sm:flex-none" carregando={enviando}>
               Abrir OS
             </Button>
           </SheetFooter>
