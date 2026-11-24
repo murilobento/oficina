@@ -15,6 +15,7 @@ import { Route as TrocarSenhaRouteImport } from './routes/trocar-senha'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppAgendaRouteImport } from './routes/_app/agenda'
 import { Route as AppOrdensRouteImport } from './routes/_app/ordens'
+import { Route as TvTokenRouteImport } from './routes/tv.$token'
 import { Route as AppAdminAuditoriaRouteImport } from './routes/_app/admin/auditoria'
 import { Route as AppAdminEmpresaRouteImport } from './routes/_app/admin/empresa'
 import { Route as AppAdminPerfisRouteImport } from './routes/_app/admin/perfis'
@@ -59,6 +60,11 @@ const AppOrdensRoute = AppOrdensRouteImport.update({
   id: '/ordens',
   path: '/ordens',
   getParentRoute: () => AppRouteRoute,
+} as any)
+const TvTokenRoute = TvTokenRouteImport.update({
+  id: '/tv/$token',
+  path: '/tv/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppAdminAuditoriaRoute = AppAdminAuditoriaRouteImport.update({
   id: '/admin/auditoria',
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/trocar-senha': typeof TrocarSenhaRoute
   '/agenda': typeof AppAgendaRoute
   '/ordens': typeof AppOrdensRoute
+  '/tv/$token': typeof TvTokenRoute
   '/admin/auditoria': typeof AppAdminAuditoriaRoute
   '/admin/empresa': typeof AppAdminEmpresaRoute
   '/admin/perfis': typeof AppAdminPerfisRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/trocar-senha': typeof TrocarSenhaRoute
   '/agenda': typeof AppAgendaRoute
   '/ordens': typeof AppOrdensRoute
+  '/tv/$token': typeof TvTokenRoute
   '/': typeof AppIndexRoute
   '/admin/auditoria': typeof AppAdminAuditoriaRoute
   '/admin/empresa': typeof AppAdminEmpresaRoute
@@ -188,6 +196,7 @@ export interface FileRoutesById {
   '/trocar-senha': typeof TrocarSenhaRoute
   '/_app/agenda': typeof AppAgendaRoute
   '/_app/ordens': typeof AppOrdensRoute
+  '/tv/$token': typeof TvTokenRoute
   '/_app/': typeof AppIndexRoute
   '/_app/admin/auditoria': typeof AppAdminAuditoriaRoute
   '/_app/admin/empresa': typeof AppAdminEmpresaRoute
@@ -213,6 +222,7 @@ export interface FileRouteTypes {
     | '/trocar-senha'
     | '/agenda'
     | '/ordens'
+    | '/tv/$token'
     | '/admin/auditoria'
     | '/admin/empresa'
     | '/admin/perfis'
@@ -234,6 +244,7 @@ export interface FileRouteTypes {
     | '/trocar-senha'
     | '/agenda'
     | '/ordens'
+    | '/tv/$token'
     | '/'
     | '/admin/auditoria'
     | '/admin/empresa'
@@ -257,6 +268,7 @@ export interface FileRouteTypes {
     | '/trocar-senha'
     | '/_app/agenda'
     | '/_app/ordens'
+    | '/tv/$token'
     | '/_app/'
     | '/_app/admin/auditoria'
     | '/_app/admin/empresa'
@@ -279,6 +291,7 @@ export interface RootRouteChildren {
   AppRouteRoute: typeof AppRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
   TrocarSenhaRoute: typeof TrocarSenhaRoute
+  TvTokenRoute: typeof TvTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -324,6 +337,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/ordens'
       preLoaderRoute: typeof AppOrdensRouteImport
       parentRoute: typeof AppRouteRoute
+    }
+    '/tv/$token': {
+      id: '/tv/$token'
+      path: '/tv/$token'
+      fullPath: '/tv/$token'
+      preLoaderRoute: typeof TvTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/admin/auditoria': {
       id: '/_app/admin/auditoria'
@@ -483,6 +503,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
   LoginRoute: LoginRoute,
   TrocarSenhaRoute: TrocarSenhaRoute,
+  TvTokenRoute: TvTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

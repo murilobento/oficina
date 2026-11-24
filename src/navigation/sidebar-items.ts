@@ -1,6 +1,7 @@
 import {
   ArrowLeftRight,
   Building2,
+  CalendarDays,
   Car,
   ClipboardList,
   FileText,
@@ -65,6 +66,7 @@ export const navModules: NavModule[] = [
       {
         id: "atendimento",
         items: [
+          { id: "agenda", icon: CalendarDays, title: "Agenda", url: "/agenda", permissao: "agenda.ver" },
           { id: "ordens", icon: ClipboardList, title: "Ordem de serviço", url: "/ordens", permissao: "ordens.ver" },
           { id: "orcamentos", icon: FileText, title: "Orçamento", url: "/orcamentos", permissao: "orcamentos.ver" },
           { id: "vendas", icon: Receipt, title: "Venda", url: "/vendas", permissao: "vendas.ver" },
@@ -134,7 +136,7 @@ export const navModules: NavModule[] = [
 ];
 
 /** Telas que ainda não estão no menu mas já têm permissão definida. */
-const PERMISSAO_EXTRA: Record<string, Permissao> = { "/agenda": "agenda.ver" };
+const PERMISSAO_EXTRA: Record<string, Permissao> = {};
 
 /**
  * Menu que a pessoa pode ver: tira os itens sem permissão e, em cascata, os grupos e módulos que ficaram vazios.

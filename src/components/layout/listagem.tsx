@@ -31,6 +31,7 @@ export function ListagemCabecalho({
   descricao,
   rotuloNovo,
   aoNovo,
+  acoes,
 }: {
   titulo: string;
   descricao: string;
@@ -38,6 +39,8 @@ export function ListagemCabecalho({
   rotuloNovo?: string;
   /** Sem `aoNovo` o botão não aparece (listagens só de consulta). */
   aoNovo?: () => void;
+  /** Botões extras, antes do "Novo" (ex.: "Modo TV" na agenda). */
+  acoes?: ReactNode;
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
@@ -46,7 +49,10 @@ export function ListagemCabecalho({
         {/* No celular a descrição some: o título já diz onde se está. */}
         <p className="text-muted-foreground mt-0.5 hidden text-sm md:block">{descricao}</p>
       </div>
-      {aoNovo && (
+      {(aoNovo || acoes) && (
+        <div className="flex shrink-0 items-center gap-2">
+          {acoes}
+          {aoNovo && (
         <>
           <Button size="icon" className="shrink-0 rounded-full sm:hidden" aria-label={rotuloNovo ?? "Novo"} onClick={aoNovo}>
             <Plus className="size-5" />
@@ -55,6 +61,8 @@ export function ListagemCabecalho({
             <Plus /> {rotuloNovo ?? "Novo"}
           </Button>
         </>
+          )}
+        </div>
       )}
     </div>
   );

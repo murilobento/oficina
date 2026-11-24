@@ -7,6 +7,7 @@ import { auditar } from "./auditoria";
 import type { Auth } from "./auth";
 import type { Banco } from "./banco";
 import { permissoesDoPerfil } from "./perfis";
+import { registrarRotasAgenda } from "./rotas/agenda";
 import { registrarRotasAuditoria } from "./rotas/auditoria";
 import { registrarRotasCompras } from "./rotas/compras";
 import { registrarRotasEmpresa } from "./rotas/empresa";
@@ -156,6 +157,7 @@ export function criarApp(banco: Banco, auth: Auth, opcoes: { buscar?: typeof fet
   registrarRotasPerfis(contexto);
   registrarRotasFuncionarios(contexto, auth);
   registrarRotasAuditoria(contexto);
+  registrarRotasAgenda(contexto);
 
   app.notFound((c) => c.json({ erro: "Rota não encontrada." }, 404));
   app.onError((erro, c) => {
